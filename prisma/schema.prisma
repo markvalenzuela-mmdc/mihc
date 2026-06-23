@@ -1,0 +1,26 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model SmokeRun {
+  id          String      @id @default(cuid())
+  status      SmokeStatus @default(QUEUED)
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  durationMs  Int?
+  result      String?     // "ok" or error message
+  artifactKey String?     // MinIO key of the screenshot
+  createdAt   DateTime    @default(now())
+}
+
+enum SmokeStatus {
+  QUEUED
+  RUNNING
+  PASSED
+  FAILED
+}
