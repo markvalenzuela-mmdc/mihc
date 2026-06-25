@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { PlayIcon } from "lucide-react";
 
 import type { RunResult, SmokeApp, SmokeRun } from "@/lib/mock-testing-data";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,12 +18,6 @@ import {
 } from "@/components/ui/table";
 
 type FilterValue = "all" | RunResult;
-
-function resultClasses(result: RunResult) {
-  return result === "success"
-    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-    : "border-red-500/30 bg-red-500/10 text-red-300";
-}
 
 export function SmokeTestingClient({
   apps,
@@ -170,7 +165,7 @@ export function SmokeTestingClient({
               {selectedRuns.map((run) => (
                 <TableRow key={run.id}>
                   <TableCell>
-                    <Badge variant="outline" className={resultClasses(run.result)}>
+                    <Badge variant="outline" className={cn(run.result === "success" ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-red-500/30 bg-red-500/10 text-red-300")}>
                       {run.result}
                     </Badge>
                   </TableCell>

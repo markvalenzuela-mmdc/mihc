@@ -1,6 +1,6 @@
 import { AppShell } from "@/components/app-shell";
 import { smokeApps, smokeRuns } from "@/lib/mock-testing-data";
-import { SmokeTestingClient } from "./smoke-testing-client";
+import { SmokeTestingClient } from "./_components/smoke-testing-client";
 
 export default function SmokeTestingPage() {
   return (
