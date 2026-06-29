@@ -1,7 +1,11 @@
 import { Suspense } from "react";
 
 import { AppShell } from "@/components/app-shell";
-import { profileRuns, profiles, scenarios } from "@/lib/mock-testing-data";
+import {
+  e2eRuns,
+  e2eStepDefinitions,
+  profiles,
+} from "@/lib/mock-testing-data";
 import { E2eTestingClient } from "./_components/e2e-testing-client";
 
 export default function E2eTestingPage() {
@@ -9,9 +13,9 @@ export default function E2eTestingPage() {
     <AppShell>
       <Suspense fallback={null}>
         <E2eTestingClient
-          profileRuns={profileRuns}
+          initialRuns={e2eRuns}
           profiles={profiles}
-          scenarios={scenarios}
+          stepDefinitions={e2eStepDefinitions}
         />
       </Suspense>
     </AppShell>
