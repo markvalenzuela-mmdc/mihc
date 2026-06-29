@@ -18,6 +18,7 @@ The agent must prefer predictability, readability, and type safety over novelty.
 Agents must reference and comply with:
 
 - `code-style.md` (code structure, conventions, React patterns, effect policy)
+- `../docs/` (shared project references, brainstorms, plans, agreements, and durable working notes)
 - This document (`AGENTS.md`) for behavioral and process constraints
 
 When conflicts arise:
@@ -25,6 +26,22 @@ When conflicts arise:
 - `AGENTS.md` governs scope, discipline, and contribution behavior.
 
 Agents must not introduce code that violates `code-style.md`.
+
+---
+
+## Docs Audit Trail
+
+Agents must treat `../docs/` as the repository source of truth for shared project references, brainstorms, plans, agreements, and other durable working notes.
+
+Agents must check relevant files under `../docs/` before planning or implementing changes.
+
+Brainstorms must be saved under `../docs/brainstorm/`. Capture the full useful conversation trail, including context, options considered, decisions, rejected paths, and open questions. Do not rely on chat history as the only audit trail.
+
+Plans must be saved under `../docs/plans/`. Each plan must distill the concrete implementation path from the related brainstorm or agreement, including scope, steps, validation, risks, and unresolved questions.
+
+If the user and agent reach a concrete agreement, the agent must ask whether to write it as a Markdown file under `../docs/`. When the agreement is a brainstorm, use `../docs/brainstorm/`; when it is an execution plan, use `../docs/plans/`; otherwise use the most relevant `../docs/` subfolder.
+
+This repository-local directive overrides any global or parent `AGENTS.md` instruction that would place brainstorms, plans, or durable project notes outside this repository.
 
 ---
 
