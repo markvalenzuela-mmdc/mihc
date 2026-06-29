@@ -2,8 +2,7 @@
   "name": "mmdc-sanity",
   "private": true,
   "scripts": {
-    "dev": "concurrently -n web,runner -c blue,green \"pnpm --filter @mmdc/web dev\" \"pnpm --filter @mmdc/runner dev\"",
-    "build": "pnpm -r build",
+    "dev": "pnpm --filter @mmdc/web dev",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
     "db:migrate": "prisma migrate dev",

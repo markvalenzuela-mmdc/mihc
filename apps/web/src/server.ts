@@ -1,37 +1,53 @@
 import { Hono } from "hono";
-import { serve } from "@hono/node-server";
-import { prisma, getSmokeQueue, getSignedArtifactUrl } from "@mmdc/shared";
+import { serve as serveNode } from "@hono/node-server";
+import { serve as serveInngest } from "inngest/hono";
+import { prisma, getSignedArtifactUrl } from "@mmdc/shared";
+import { inngest } from "./inngest/client.js";
+import { functions } from "./inngest/functions/index.js";
 
 const app = new Hono();
 
-// POST /api/smoke - create a SmokeRun and enqueue a smoke job
+app.on(["GET", "POST", "PUT"], "/api/inngest", serveInngest({
+  client: inngest,
+  functions,
+}));
+
 app.post("/api/smoke", async (c) => {
   const run = await prisma.smokeRun.create({
     data: { status: "QUEUED" },
   });
 
-  const queue = getSmokeQueue();
-  await queue.add("smoke-check", { kind: "smoke", runId: run.id });
+  await inngest.send({
+    id: run.id,
+    name: "smoke/check.requested",
+    data: { runId: run.id },
+  });
 
   return c.json({ runId: run.id });
 });
 
-// GET /api/smoke-runs - latest 20 smoke runs
 app.get("/api/smoke-runs", async (c) => {
   const runs = await prisma.smokeRun.findMany({
     orderBy: { createdAt: "desc" },
     take: 20,
   });
+
   return c.json(runs);
 });
 
-// GET /api/artifacts/:key{.+} - redirect to signed MinIO URL
 app.get("/api/artifacts/:key{.+}", async (c) => {
-  const key = c.req.param("key");
-  const url = await getSignedArtifactUrl(key);
-  return c.redirect(url);
+  try {
+    const key = c.req.param("key");
+    const url = await getSignedArtifactUrl(key);
+
+    return c.redirect(url);
+  } catch {
+    return c.json({ error: "Invalid artifact key" }, 400);
+  }
 });
 
 const port = parseInt(process.env.API_PORT || "3001", 10);
+
 console.log(`API server listening on http://localhost:${port}`);
-serve({ fetch: app.fetch, port });
+
+serveNode({ fetch: app.fetch, port });

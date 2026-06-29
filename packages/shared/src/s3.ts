@@ -23,12 +23,26 @@ export function getS3Client(): S3Client {
   return s3Client;
 }
 
+export function isAllowedArtifactKey(key: string): boolean {
+  return (
+    key.startsWith("smoke/") &&
+    !key.includes("..") &&
+    !key.startsWith("/") &&
+    key.length <= 300
+  );
+}
+
+export function buildSmokeArtifactKey(runId: string): string {
+  return `smoke/${runId}.png`;
+}
+
 export async function uploadArtifact(
   key: string,
   body: Buffer,
   contentType = "image/png",
 ): Promise<void> {
   const client = getS3Client();
+
   await client.send(
     new PutObjectCommand({
       Bucket: env.S3_BUCKET,
@@ -43,7 +57,12 @@ export async function getSignedArtifactUrl(
   key: string,
   expiresIn = 3600,
 ): Promise<string> {
+  if (!isAllowedArtifactKey(key)) {
+    throw new Error("Invalid artifact key");
+  }
+
   const client = getS3Client();
+
   return getSignedUrl(
     client,
     new GetObjectCommand({
