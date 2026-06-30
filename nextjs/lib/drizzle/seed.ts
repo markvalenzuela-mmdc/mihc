@@ -19,8 +19,15 @@ import {
   e2eRunSteps,
   e2eRunTests,
   e2eSteps,
+  profileAdditionalInfo,
+  profileDisclosures,
+  profileDocuments,
   profileEnrollmentData,
+  profileLearnerReadiness,
+  profilePaymentDetails,
   profiles,
+  profileStudyBuddy,
+  profileSystemInfo,
   smokeRuns,
   smokeRunsTestResults,
   users,
@@ -172,6 +179,104 @@ export async function seedDatabase() {
           target: profileEnrollmentData.profileId,
           set: enrollmentValues,
         });
+
+        if (profile.learnerReadiness) {
+          const learnerReadinessValues = {
+            id: getSeedUuid(`profile-learner-readiness:${profile.id}`),
+            profileId: profile.id,
+            ...profile.learnerReadiness,
+          };
+
+          await tx.insert(profileLearnerReadiness).values(learnerReadinessValues).onConflictDoUpdate({
+            target: profileLearnerReadiness.profileId,
+            set: learnerReadinessValues,
+          });
+        }
+
+        if (profile.paymentDetails) {
+          const paymentDetailsValues = {
+            id: getSeedUuid(`profile-payment-details:${profile.id}`),
+            profileId: profile.id,
+            ...profile.paymentDetails,
+            timestampInPaymentVerification: profile.paymentDetails.timestampInPaymentVerification
+              ? new Date(profile.paymentDetails.timestampInPaymentVerification)
+              : null,
+          };
+
+          await tx.insert(profilePaymentDetails).values(paymentDetailsValues).onConflictDoUpdate({
+            target: profilePaymentDetails.profileId,
+            set: paymentDetailsValues,
+          });
+        }
+
+        if (profile.studyBuddy) {
+          const studyBuddyValues = {
+            id: getSeedUuid(`profile-study-buddy:${profile.id}`),
+            profileId: profile.id,
+            ...profile.studyBuddy,
+          };
+
+          await tx.insert(profileStudyBuddy).values(studyBuddyValues).onConflictDoUpdate({
+            target: profileStudyBuddy.profileId,
+            set: studyBuddyValues,
+          });
+        }
+
+        if (profile.documents) {
+          const documentValues = {
+            id: getSeedUuid(`profile-documents:${profile.id}`),
+            profileId: profile.id,
+            ...profile.documents,
+          };
+
+          await tx.insert(profileDocuments).values(documentValues).onConflictDoUpdate({
+            target: profileDocuments.profileId,
+            set: documentValues,
+          });
+        }
+
+        if (profile.additionalInfo) {
+          const additionalInfoValues = {
+            id: getSeedUuid(`profile-additional-info:${profile.id}`),
+            profileId: profile.id,
+            ...profile.additionalInfo,
+          };
+
+          await tx.insert(profileAdditionalInfo).values(additionalInfoValues).onConflictDoUpdate({
+            target: profileAdditionalInfo.profileId,
+            set: additionalInfoValues,
+          });
+        }
+
+        if (profile.disclosures) {
+          const disclosureValues = {
+            id: getSeedUuid(`profile-disclosures:${profile.id}`),
+            profileId: profile.id,
+            ...profile.disclosures,
+          };
+
+          await tx.insert(profileDisclosures).values(disclosureValues).onConflictDoUpdate({
+            target: profileDisclosures.profileId,
+            set: disclosureValues,
+          });
+        }
+
+        if (profile.systemInfo) {
+          const systemInfoValues = {
+            id: getSeedUuid(`profile-system-info:${profile.id}`),
+            profileId: profile.id,
+            ...profile.systemInfo,
+            lastSentToApi: profile.systemInfo.lastSentToApi
+              ? new Date(profile.systemInfo.lastSentToApi)
+              : null,
+          };
+
+          await tx.insert(profileSystemInfo).values(systemInfoValues).onConflictDoUpdate({
+            target: profileSystemInfo.profileId,
+            set: systemInfoValues,
+          });
+        }
+
         successMessages.push(`Seeded profile: ${profile.email}`);
       }
 
