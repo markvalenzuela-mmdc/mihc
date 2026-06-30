@@ -7,8 +7,15 @@ import {
   e2eRunSteps,
   e2eRunTests,
   e2eSteps,
+  profileAdditionalInfo,
+  profileDisclosures,
+  profileDocuments,
   profileEnrollmentData,
+  profileLearnerReadiness,
+  profilePaymentDetails,
   profiles,
+  profileStudyBuddy,
+  profileSystemInfo,
 } from "./profiles";
 
 export const usersRelations = relations(users, () => ({}));
@@ -59,12 +66,68 @@ export const smokeRunsTestResultsRelations = relations(smokeRunsTestResults, ({ 
 
 export const profilesRelations = relations(profiles, ({ one, many }) => ({
   enrollmentData: one(profileEnrollmentData),
+  learnerReadiness: one(profileLearnerReadiness),
+  paymentDetails: one(profilePaymentDetails),
+  studyBuddy: one(profileStudyBuddy),
+  documents: one(profileDocuments),
+  additionalInfo: one(profileAdditionalInfo),
+  disclosures: one(profileDisclosures),
+  systemInfo: one(profileSystemInfo),
   e2eRuns: many(e2eRuns),
 }));
 
 export const profileEnrollmentDataRelations = relations(profileEnrollmentData, ({ one }) => ({
   profile: one(profiles, {
     fields: [profileEnrollmentData.profileId],
+    references: [profiles.id],
+  }),
+}));
+
+export const profileLearnerReadinessRelations = relations(profileLearnerReadiness, ({ one }) => ({
+  profile: one(profiles, {
+    fields: [profileLearnerReadiness.profileId],
+    references: [profiles.id],
+  }),
+}));
+
+export const profilePaymentDetailsRelations = relations(profilePaymentDetails, ({ one }) => ({
+  profile: one(profiles, {
+    fields: [profilePaymentDetails.profileId],
+    references: [profiles.id],
+  }),
+}));
+
+export const profileStudyBuddyRelations = relations(profileStudyBuddy, ({ one }) => ({
+  profile: one(profiles, {
+    fields: [profileStudyBuddy.profileId],
+    references: [profiles.id],
+  }),
+}));
+
+export const profileDocumentsRelations = relations(profileDocuments, ({ one }) => ({
+  profile: one(profiles, {
+    fields: [profileDocuments.profileId],
+    references: [profiles.id],
+  }),
+}));
+
+export const profileAdditionalInfoRelations = relations(profileAdditionalInfo, ({ one }) => ({
+  profile: one(profiles, {
+    fields: [profileAdditionalInfo.profileId],
+    references: [profiles.id],
+  }),
+}));
+
+export const profileDisclosuresRelations = relations(profileDisclosures, ({ one }) => ({
+  profile: one(profiles, {
+    fields: [profileDisclosures.profileId],
+    references: [profiles.id],
+  }),
+}));
+
+export const profileSystemInfoRelations = relations(profileSystemInfo, ({ one }) => ({
+  profile: one(profiles, {
+    fields: [profileSystemInfo.profileId],
     references: [profiles.id],
   }),
 }));

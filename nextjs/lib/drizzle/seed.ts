@@ -1,6 +1,8 @@
 import "dotenv/config";
 
 import { createHash } from "node:crypto";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 import { drizzle } from "drizzle-orm/node-postgres";
 
 import {
@@ -37,14 +39,17 @@ function getSeedUuid(value: string) {
   return [hash.slice(0, 8), hash.slice(8, 12), hash.slice(12, 16), hash.slice(16, 20), hash.slice(20)].map((part) => part.join("")).join("-");
 }
 
-async function seedDatabase() {
+export async function seedDatabase() {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) throw new Error("DATABASE_URL is required to seed the database.");
+
+  console.log("Seeding database...");
 
   const seedDb = drizzle({
     connection: { connectionString: databaseUrl },
     schema,
   });
+  const successMessages: string[] = [];
 
   try {
     await seedDb.transaction(async (tx) => {
@@ -55,6 +60,7 @@ async function seedDatabase() {
           target: users.id,
           set: { name: currentOperator.name, email: currentOperator.email },
         });
+      successMessages.push(`Seeded operator: ${currentOperator.email}`);
 
       for (const app of smokeApps) {
         const values = {
@@ -72,6 +78,7 @@ async function seedDatabase() {
             updatedBy: values.updatedBy,
           },
         });
+        successMessages.push(`Seeded app: ${app.name}`);
       }
 
       for (const run of smokeRunFixtures) {
@@ -126,6 +133,8 @@ async function seedDatabase() {
             },
           });
         }
+
+        successMessages.push(`Seeded smoke run: ${run.appId} #${run.runNumber}`);
       }
 
       for (const profile of profileFixtures) {
@@ -163,6 +172,7 @@ async function seedDatabase() {
           target: profileEnrollmentData.profileId,
           set: enrollmentValues,
         });
+        successMessages.push(`Seeded profile: ${profile.email}`);
       }
 
       for (const step of e2eStepDefinitions) {
@@ -174,6 +184,7 @@ async function seedDatabase() {
             sortOrder: step.sortOrder,
           },
         });
+        successMessages.push(`Seeded E2E step: ${step.label}`);
       }
 
       for (const run of e2eRunFixtures) {
@@ -241,16 +252,25 @@ async function seedDatabase() {
             });
           }
         }
+
+        successMessages.push(`Seeded E2E run: ${run.profileId} #${run.runNumber}`);
       }
     });
 
+    for (const message of successMessages) console.log(message);
     console.log("Database seed completed.");
   } finally {
     await seedDb.$client.end();
   }
 }
 
-seedDatabase().catch((error: unknown) => {
-  console.error("Database seed failed.", error);
-  process.exitCode = 1;
-});
+const isMainModule =
+  process.argv[1] !== undefined &&
+  path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
+
+if (isMainModule) {
+  seedDatabase().catch((error: unknown) => {
+    console.error("Database seed failed.", error);
+    process.exitCode = 1;
+  });
+}

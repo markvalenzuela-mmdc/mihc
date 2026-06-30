@@ -1,7 +1,10 @@
 export type SmokeRunStatus = "success" | "degraded" | "failure";
 export type TestResultStatus = "success" | "failure" | "skipped";
 export type RunTrigger = "scheduled" | "manual";
-export type ProfileStatus = "ready" | "needs review";
+export type ProfileStatus =
+  | "new" | "guidance_needed" | "validated"
+  | "verification" | "enrollment_confirmation"
+  | "for_payment" | "payment_verification" | "completed";
 export type E2eRunStatus = "running" | "completed" | "aborted";
 export type E2eStepStatus = "queued" | "running" | "success" | "failure";
 
@@ -45,6 +48,8 @@ export interface SmokeRunView {
 export interface ProfileEnrollmentDataView {
   givenName: string | null;
   familyName: string | null;
+  middleName: string | null;
+  suffix: string | null;
   birthplace: string | null;
   birthdate: string | null;
   gender: string | null;
@@ -52,6 +57,9 @@ export interface ProfileEnrollmentDataView {
   civilStatus: string | null;
   monthlyIncome: string | null;
   mobile: string | null;
+  landline: string | null;
+  workType: string | null;
+  companyOrgName: string | null;
   preferredLearningHub: string | null;
   studentType: string | null;
   subStudentType: string | null;
@@ -62,6 +70,9 @@ export interface ProfileEnrollmentDataView {
   termApplied: string | null;
   programFocus: string | null;
   programApplied: string | null;
+  certificationField: string | null;
+  isLeapPadReEnrollment: boolean;
+  isSelfEnrolled: boolean;
   currentAddressCountry: string | null;
   currentAddressLine1: string | null;
   currentAddressLine2: string | null;
@@ -69,6 +80,7 @@ export interface ProfileEnrollmentDataView {
   currentAddressCity: string | null;
   currentAddressBarangay: string | null;
   currentAddressZipCode: string | null;
+  currentForeignAddress: string | null;
   permanentAddressCountry: string | null;
   permanentAddressLine1: string | null;
   permanentAddressLine2: string | null;
@@ -78,6 +90,12 @@ export interface ProfileEnrollmentDataView {
   permanentAddressZipCode: string | null;
   interestedInScholarship: string | null;
   withMedicalCondition: string | null;
+  lostDate: string | null;
+  lostReason: string | null;
+  lostReasonSpecific: string | null;
+  lostReasonRemark: string | null;
+  profileLockedDate: string | null;
+  subscriptionExpirationDate: string | null;
   fatherStatus: string | null;
   motherStatus: string | null;
   guardianType: string | null;
@@ -93,14 +111,92 @@ export interface ProfileEnrollmentDataView {
   copyPermanentGuardianAddress: boolean;
 }
 
+export interface ProfileLearnerReadinessView {
+  assistanceNeedScore: number | null;
+  computerDeviceAccess: string | null;
+  onlineLearningPlatforms: string | null;
+  softwareSkills: string | null;
+  onlinePlatformsSpecified: string | null;
+  internetConnectivity: string | null;
+  timeCommitment: string | null;
+  timeManagementEffectiveness: string | null;
+  selfDisciplineConfidence: string | null;
+  learningGoal: string | null;
+  challengesProvided: string | null;
+  potentialChallenges: string | null;
+}
+
+export interface ProfilePaymentDetailsView {
+  programFee: string | null;
+  needOfficialReceipt: boolean;
+  promoCode: string | null;
+  tinNumber: string | null;
+  discountedFee: string | null;
+  businessName: string | null;
+  paymentMethod: string | null;
+  businessTinNumber: string | null;
+  proofOfPayment: string | null;
+  businessAddress: string | null;
+  isRenewalPayment: boolean;
+  businessBir2303GDriveLink: string | null;
+  proofOfPaymentGDriveLink: string | null;
+  businessBir2303SubmittedDate: string | null;
+  proofOfPaymentSubmittedDate: string | null;
+  proofOfPaymentAaRemarks: string | null;
+  timestampInPaymentVerification: string | null;
+}
+
+export interface ProfileStudyBuddyView {
+  sbNominator: string | null;
+  sbNomineeName: string | null;
+  sbPromoCode: string | null;
+  sbNomineeEmail: string | null;
+}
+
+export interface ProfileDocumentsView {
+  applicantPersonalIdGDriveLink: string | null;
+  proofOfHsCompletionGDriveLink: string | null;
+  applicantPersonalIdSubmittedDate: string | null;
+  proofOfHsCompletionSubmittedDate: string | null;
+}
+
+export interface ProfileAdditionalInfoView {
+  howDidYouFindOut: string | null;
+  courseraInviteSent: boolean;
+  hasAppFormEdits: boolean;
+  courseraInviteSentDate: string | null;
+}
+
+export interface ProfileDisclosuresView {
+  dataPrivacy1: boolean;
+  marketingNotifConsent: boolean;
+  dataPrivacy2: boolean;
+}
+
+export interface ProfileSystemInfoView {
+  isSentToApi: boolean;
+  lastSentToApi: string | null;
+  isApiError: boolean;
+  apiErrorMessage: string | null;
+  changeRecordType: string | null;
+}
+
 export interface ProfileView {
   id: string;
   name: string;
+  middleName: string | null;
   email: string;
   program: string;
   cohort: string;
   status: ProfileStatus;
   enrollmentData: ProfileEnrollmentDataView;
+  learnerReadiness: ProfileLearnerReadinessView | null;
+  paymentDetails: ProfilePaymentDetailsView | null;
+  studyBuddy: ProfileStudyBuddyView | null;
+  documents: ProfileDocumentsView | null;
+  additionalInfo: ProfileAdditionalInfoView | null;
+  disclosures: ProfileDisclosuresView | null;
+  systemInfo: ProfileSystemInfoView | null;
 }
 
 export interface E2eStepDefinitionView {
@@ -252,14 +348,42 @@ export const smokeRuns: SmokeRunView[] = [
 ];
 
 const ariEnrollment: ProfileEnrollmentDataView = {
-  givenName: "Ari", familyName: "Santos", birthplace: "Makati City", birthdate: "2007-03-14", gender: "Female", nationality: "Filipino", civilStatus: "Single", monthlyIncome: "Below PHP 20,000", mobile: "+63 917 555 0142", preferredLearningHub: "Makati", studentType: "Freshman", subStudentType: "Senior High School Graduate", studentStatus: "New", religion: "Catholic", strand: "STEM", lastSchoolAttended: "Makati Science High School", termApplied: "Term 1 AY 2026-2027", programFocus: "Technology", programApplied: "BS Information Technology", currentAddressCountry: "Philippines", currentAddressLine1: "1421 J. P. Rizal Avenue", currentAddressLine2: null, currentAddressProvince: "Metro Manila", currentAddressCity: "Makati City", currentAddressBarangay: "Poblacion", currentAddressZipCode: "1210", permanentAddressCountry: "Philippines", permanentAddressLine1: "1421 J. P. Rizal Avenue", permanentAddressLine2: null, permanentAddressProvince: "Metro Manila", permanentAddressCity: "Makati City", permanentAddressBarangay: "Poblacion", permanentAddressZipCode: "1210", interestedInScholarship: "Yes", withMedicalCondition: "No", fatherStatus: "Living", motherStatus: "Living", guardianType: "Mother", guardianGivenName: "Liza", guardianFamilyName: "Santos", guardianSuffix: null, guardianBirthdate: "1982-08-06", guardianMobile: "+63 917 555 0188", guardianEmail: "liza.santos@example.com", guardianOccupation: "Accountant", guardianRelationship: "Mother", copyGuardianAddress: true, copyPermanentGuardianAddress: true,
+  givenName: "Ari", familyName: "Santos", middleName: null, suffix: null, birthplace: "Makati City", birthdate: "2007-03-14", gender: "Female", nationality: "Filipino", civilStatus: "Single", monthlyIncome: "Below PHP 20,000", mobile: "+63 917 555 0142", landline: null, workType: null, companyOrgName: null, preferredLearningHub: "Makati", studentType: "Freshman", subStudentType: "Senior High School Graduate", studentStatus: "New", religion: "Catholic", strand: "STEM", lastSchoolAttended: "Makati Science High School", termApplied: "Term 1 AY 2026-2027", programFocus: "Technology", programApplied: "BS Information Technology", certificationField: null, isLeapPadReEnrollment: false, isSelfEnrolled: false, currentAddressCountry: "Philippines", currentAddressLine1: "1421 J. P. Rizal Avenue", currentAddressLine2: null, currentAddressProvince: "Metro Manila", currentAddressCity: "Makati City", currentAddressBarangay: "Poblacion", currentAddressZipCode: "1210", currentForeignAddress: null, permanentAddressCountry: "Philippines", permanentAddressLine1: "1421 J. P. Rizal Avenue", permanentAddressLine2: null, permanentAddressProvince: "Metro Manila", permanentAddressCity: "Makati City", permanentAddressBarangay: "Poblacion", permanentAddressZipCode: "1210", interestedInScholarship: "Yes", withMedicalCondition: "No", lostDate: null, lostReason: null, lostReasonSpecific: null, lostReasonRemark: null, profileLockedDate: null, subscriptionExpirationDate: null, fatherStatus: "Living", motherStatus: "Living", guardianType: "Mother", guardianGivenName: "Liza", guardianFamilyName: "Santos", guardianSuffix: null, guardianBirthdate: "1982-08-06", guardianMobile: "+63 917 555 0188", guardianEmail: "liza.santos@example.com", guardianOccupation: "Accountant", guardianRelationship: "Mother", copyGuardianAddress: true, copyPermanentGuardianAddress: true,
+};
+
+const emptyLearnerReadiness: ProfileLearnerReadinessView = {
+  assistanceNeedScore: null, computerDeviceAccess: null, onlineLearningPlatforms: null, softwareSkills: null, onlinePlatformsSpecified: null, internetConnectivity: null, timeCommitment: null, timeManagementEffectiveness: null, selfDisciplineConfidence: null, learningGoal: null, challengesProvided: null, potentialChallenges: null,
+};
+
+const emptyPaymentDetails: ProfilePaymentDetailsView = {
+  programFee: null, needOfficialReceipt: false, promoCode: null, tinNumber: null, discountedFee: null, businessName: null, paymentMethod: null, businessTinNumber: null, proofOfPayment: null, businessAddress: null, isRenewalPayment: false, businessBir2303GDriveLink: null, proofOfPaymentGDriveLink: null, businessBir2303SubmittedDate: null, proofOfPaymentSubmittedDate: null, proofOfPaymentAaRemarks: null, timestampInPaymentVerification: null,
+};
+
+const emptyStudyBuddy: ProfileStudyBuddyView = {
+  sbNominator: null, sbNomineeName: null, sbPromoCode: null, sbNomineeEmail: null,
+};
+
+const emptyDocuments: ProfileDocumentsView = {
+  applicantPersonalIdGDriveLink: null, proofOfHsCompletionGDriveLink: null, applicantPersonalIdSubmittedDate: null, proofOfHsCompletionSubmittedDate: null,
+};
+
+const emptyAdditionalInfo: ProfileAdditionalInfoView = {
+  howDidYouFindOut: null, courseraInviteSent: false, hasAppFormEdits: false, courseraInviteSentDate: null,
+};
+
+const emptyDisclosures: ProfileDisclosuresView = {
+  dataPrivacy1: false, marketingNotifConsent: false, dataPrivacy2: false,
+};
+
+const emptySystemInfo: ProfileSystemInfoView = {
+  isSentToApi: false, lastSentToApi: null, isApiError: false, apiErrorMessage: null, changeRecordType: null,
 };
 
 export const profiles: ProfileView[] = [
-  { id: "3591b2d2-886b-45c6-bcbd-3c8756b40101", name: "Ari Santos", email: "ari.santos@example.edu", program: "BS Information Technology", cohort: "2026-A", status: "ready", enrollmentData: ariEnrollment },
-  { id: "3591b2d2-886b-45c6-bcbd-3c8756b40102", name: "Mika Reyes", email: "mika.reyes@example.edu", program: "BS Business Administration", cohort: "2026-A", status: "ready", enrollmentData: { ...ariEnrollment, givenName: "Mika", familyName: "Reyes", programApplied: "BS Business Administration", programFocus: "Business", strand: "ABM", guardianGivenName: "Paolo", guardianFamilyName: "Reyes" } },
-  { id: "3591b2d2-886b-45c6-bcbd-3c8756b40103", name: "Noel Cruz", email: "noel.cruz@example.edu", program: "BS Computer Science", cohort: "2025-B", status: "needs review", enrollmentData: { ...ariEnrollment, givenName: "Noel", familyName: "Cruz", programApplied: "BS Computer Science", mobile: null, currentAddressBarangay: null, guardianEmail: null, interestedInScholarship: null } },
-  { id: "3591b2d2-886b-45c6-bcbd-3c8756b40104", name: "Sam Lim", email: "sam.lim@example.edu", program: "Bachelor of Secondary Education", cohort: "2025-B", status: "ready", enrollmentData: { ...ariEnrollment, givenName: "Sam", familyName: "Lim", programApplied: "Bachelor of Secondary Education", programFocus: "Education", strand: "HUMSS" } },
+  { id: "3591b2d2-886b-45c6-bcbd-3c8756b40101", name: "Ari Santos", middleName: null, email: "ari.santos@example.edu", program: "BS Information Technology", cohort: "2026-A", status: "validated", enrollmentData: ariEnrollment, learnerReadiness: emptyLearnerReadiness, paymentDetails: emptyPaymentDetails, studyBuddy: emptyStudyBuddy, documents: emptyDocuments, additionalInfo: emptyAdditionalInfo, disclosures: emptyDisclosures, systemInfo: emptySystemInfo },
+  { id: "3591b2d2-886b-45c6-bcbd-3c8756b40102", name: "Mika Reyes", middleName: null, email: "mika.reyes@example.edu", program: "BS Business Administration", cohort: "2026-A", status: "new", enrollmentData: { ...ariEnrollment, givenName: "Mika", familyName: "Reyes", programApplied: "BS Business Administration", programFocus: "Business", strand: "ABM", guardianGivenName: "Paolo", guardianFamilyName: "Reyes" }, learnerReadiness: emptyLearnerReadiness, paymentDetails: emptyPaymentDetails, studyBuddy: emptyStudyBuddy, documents: emptyDocuments, additionalInfo: emptyAdditionalInfo, disclosures: emptyDisclosures, systemInfo: emptySystemInfo },
+  { id: "3591b2d2-886b-45c6-bcbd-3c8756b40103", name: "Noel Cruz", middleName: null, email: "noel.cruz@example.edu", program: "BS Computer Science", cohort: "2025-B", status: "guidance_needed", enrollmentData: { ...ariEnrollment, givenName: "Noel", familyName: "Cruz", programApplied: "BS Computer Science", mobile: null, currentAddressBarangay: null, guardianEmail: null, interestedInScholarship: null }, learnerReadiness: emptyLearnerReadiness, paymentDetails: emptyPaymentDetails, studyBuddy: emptyStudyBuddy, documents: emptyDocuments, additionalInfo: emptyAdditionalInfo, disclosures: emptyDisclosures, systemInfo: emptySystemInfo },
+  { id: "3591b2d2-886b-45c6-bcbd-3c8756b40104", name: "Sam Lim", middleName: null, email: "sam.lim@example.edu", program: "Bachelor of Secondary Education", cohort: "2025-B", status: "completed", enrollmentData: { ...ariEnrollment, givenName: "Sam", familyName: "Lim", programApplied: "Bachelor of Secondary Education", programFocus: "Education", strand: "HUMSS" }, learnerReadiness: emptyLearnerReadiness, paymentDetails: emptyPaymentDetails, studyBuddy: emptyStudyBuddy, documents: emptyDocuments, additionalInfo: emptyAdditionalInfo, disclosures: emptyDisclosures, systemInfo: emptySystemInfo },
 ];
 
 export const e2eStepDefinitions: E2eStepDefinitionView[] = [
