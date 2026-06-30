@@ -8,6 +8,10 @@ _default:
     @echo "    lint        Lint check"
     @echo "    typecheck   TypeScript check"
     @echo "    setup       Install dependencies"
+    @echo "    db-generate Generate database migrations"
+    @echo "    db-migrate  Apply database migrations"
+    @echo "    db-seed     Seed the database"
+    @echo "    db-reset    DANGER: Drop, recreate, migrate, and seed the database"
     @echo ""
     @echo "  docker"
     @echo "    build-docker  Build Docker images"
@@ -41,6 +45,23 @@ typecheck:
 # Install dependencies
 setup:
     cd {{project_root}}/nextjs && pnpm install
+
+# Generate database migrations
+db-generate:
+    cd {{project_root}}/nextjs && pnpm run db:generate
+
+# Apply database migrations
+db-migrate:
+    cd {{project_root}}/nextjs && pnpm run db:migrate
+
+# Seed the database
+db-seed:
+    cd {{project_root}}/nextjs && pnpm run db:seed
+
+# DANGER: Permanently drop, recreate, migrate, and seed the configured database
+[confirm("DANGER: This permanently drops and recreates the configured database. Continue? [Y/n]")]
+db-reset:
+    cd {{project_root}}/nextjs && pnpm run db:reset
 
 # ─────────────── docker ───────────────
 
