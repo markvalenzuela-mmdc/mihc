@@ -13,7 +13,6 @@ services:
       - "5432:5432"
     volumes:
       - mihc_postgres_data:/var/lib/postgresql/data
-      - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U mihc -d mihc_app"]
       interval: 10s
@@ -67,7 +66,7 @@ services:
     environment:
       INNGEST_EVENT_KEY: local-event-key
       INNGEST_SIGNING_KEY: 0123456789abcdef0123456789abcdef
-      INNGEST_POSTGRES_URI: postgresql://mihc:mihc@postgres:5432/mihc_inngest
+      INNGEST_POSTGRES_URI: postgresql://mihc:mihc@postgres:5432/mihc_app
       INNGEST_REDIS_URI: redis://redis:6379
     ports:
       - "8288:8288"

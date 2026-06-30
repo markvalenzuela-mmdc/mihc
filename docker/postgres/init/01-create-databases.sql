@@ -1,2 +1,0 @@
-ALTER USER mihc WITH PASSWORD 'mihc';
-CREATE DATABASE mihc_inngest;
