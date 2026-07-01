@@ -7,9 +7,22 @@
 ## Quick Start
 
 ```bash
-just setup    # install dependencies
-just dev      # start Next.js dev server
+just docker-local up  # start local PostgreSQL/PgDog, Inngest, Redis, and pgAdmin
+just setup            # install dependencies
+just db-migrate       # apply database migrations
+just db-seed          # seed the local database
+just dev              # start Next.js dev server
 ```
+
+Local database connections go through PgDog on `localhost:6432`. pgAdmin is available at `http://localhost:5050`.
+
+Stop local infrastructure with:
+
+```bash
+just docker-local down
+```
+
+See [`docs/containerized-infrastructure.md`](docs/containerized-infrastructure.md) for pgAdmin registration steps and service-specific environment files.
 
 ## Folder Structure
 
@@ -33,6 +46,7 @@ Run `just` to see all available commands grouped by project:
     setup       Install dependencies
 
   docker
+    docker-local up|down  Start or stop local Docker Compose services
     build-docker  Build Docker images
 
   playwright
@@ -47,7 +61,10 @@ Run `just` to see all available commands grouped by project:
 
 ```bash
 # First time setup
+just docker-local up
 just setup
+just db-migrate
+just db-seed
 
 # Start developing
 just dev

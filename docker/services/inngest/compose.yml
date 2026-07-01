@@ -1,0 +1,83 @@
+services:
+  inngest:
+    image: inngest/inngest:v1.12.1
+    restart: unless-stopped
+    command: >
+      inngest start
+      --host 0.0.0.0
+      --port 8288
+      --event-key ${INNGEST_EVENT_KEY}
+      --signing-key ${INNGEST_SIGNING_KEY}
+      --postgres-uri ${INNGEST_POSTGRES_URI}
+      --redis-uri ${INNGEST_REDIS_URI}
+      --poll-interval ${INNGEST_POLL_INTERVAL:-60}
+      --queue-workers ${INNGEST_QUEUE_WORKERS:-100}
+    environment:
+      - INNGEST_PORT=8288
+      - INNGEST_HOST=0.0.0.0
+      - INNGEST_EVENT_KEY=${INNGEST_EVENT_KEY}
+      - INNGEST_SIGNING_KEY=${INNGEST_SIGNING_KEY}
+      - INNGEST_POSTGRES_URI=${INNGEST_POSTGRES_URI}
+      - INNGEST_REDIS_URI=${INNGEST_REDIS_URI}
+      - INNGEST_POLL_INTERVAL=${INNGEST_POLL_INTERVAL:-60}
+      - INNGEST_QUEUE_WORKERS=${INNGEST_QUEUE_WORKERS:-100}
+      - INNGEST_RETRY_INTERVAL=${INNGEST_RETRY_INTERVAL:-1}
+      - INNGEST_TICK=${INNGEST_TICK:-150}
+      - INNGEST_LOG_LEVEL=${INNGEST_LOG_LEVEL:-info}
+      - INNGEST_JSON=${INNGEST_JSON:-false}
+      - INNGEST_VERBOSE=${INNGEST_VERBOSE:-false}
+    ports:
+      - 8288
+    depends_on:
+      inngest-postgres:
+        condition: service_healthy
+      inngest-redis:
+        condition: service_healthy
+    volumes:
+      - inngest-data:/home/inngest/.inngest
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8288/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  inngest-postgres:
+    image: ${INNGEST_POSTGRES_IMAGE}
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${INNGEST_POSTGRES_DB}
+      - POSTGRES_USER=${INNGEST_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${INNGEST_POSTGRES_PASSWORD}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+      - PGUSER=${INNGEST_POSTGRES_USER}
+    volumes:
+      - inngest-postgres-data:/var/lib/postgresql/data
+    ports:
+      - 5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${INNGEST_POSTGRES_USER} -d ${INNGEST_POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  inngest-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru --save 60 1000
+    sysctls:
+      - net.core.somaxconn=1024
+    volumes:
+      - inngest-redis-data:/data
+    ports:
+      - 6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  inngest-data:
+  inngest-postgres-data:
+  inngest-redis-data:

@@ -1,0 +1,32 @@
+services:
+  app-pgdog:
+    image: ${PGDOG_IMAGE}
+    restart: unless-stopped
+    ports:
+      - "6432:6432"
+    volumes:
+      - ./files/pgdog.toml:/pgdog/pgdog.toml
+      - ./files/users.toml:/pgdog/users.toml
+    environment:
+      - RUST_LOG=${PGDOG_RUST_LOG}
+    depends_on:
+      app-postgres:
+        condition: service_healthy
+
+  app-postgres:
+    image: ${APP_POSTGRES_IMAGE}
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${APP_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${APP_POSTGRES_PASSWORD}
+      - POSTGRES_DB=${APP_POSTGRES_DB}
+    volumes:
+      - app-postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${APP_POSTGRES_USER} -d ${APP_POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  app-postgres-data:

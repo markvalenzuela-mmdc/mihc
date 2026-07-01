@@ -1,0 +1,5 @@
+**/.env.*
+**/.env
+!**/.env.example
+!**/.env.*.example
+docker/services/pgdog-postgres/files/users.toml
