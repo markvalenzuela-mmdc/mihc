@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "playwright test",
-    "test:smoke": "playwright test --project=chromium",
+    "test:smoke": "playwright test tests/smoke --project=chromium --reporter=html",
     "report": "playwright show-report"
   },
   "keywords": [],

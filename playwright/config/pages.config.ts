@@ -167,3 +167,141 @@ export function certificationDescriptor(slug: string): PageDescriptor {
     ],
   };
 }
+
+/** Admissions overview — hosts the tuition calculator widget (slider + dropdown). */
+export const ADMISSIONS: PageDescriptor = {
+  id: 'smoke-admissions',
+  type: 'smoke',
+  path: '/admissions/',
+  ctas: [{ name: 'Enroll Now', expectedHrefPattern: ENROLLMATE }],
+};
+
+/** Quiz landing — the entry point is a "START QUIZ" button (asserted in the spec). */
+export const QUIZ: PageDescriptor = {
+  id: 'smoke-quiz',
+  type: 'smoke',
+  path: '/quiz/',
+  ctas: [{ name: 'Enroll Now', expectedHrefPattern: ENROLLMATE }],
+};
+
+/**
+ * BSIT lead-capture form page (form renders — asserted in the spec).
+ * This is a dedicated Unbounce landing page that intentionally hides the global
+ * site header and footer (both `display:none`) for a distraction-free form, so —
+ * unlike every other page — it carries no header "Enroll Now" CTA. The lead form
+ * itself is the only content asserted.
+ */
+export const BSIT_LEAD_FORM: PageDescriptor = {
+  id: 'smoke-bsit-lead-form',
+  type: 'smoke',
+  path: '/bsit-lead-form/',
+  ctas: [],
+};
+
+export const ABOUT: PageDescriptor = {
+  id: 'smoke-about',
+  type: 'smoke',
+  path: '/about-mmdc/',
+  ctas: [{ name: 'Enroll Now', expectedHrefPattern: ENROLLMATE }],
+};
+
+export const NEWS_OVERVIEW: PageDescriptor = {
+  id: 'smoke-news-overview',
+  type: 'smoke',
+  path: '/news-and-events/',
+  ctas: [{ name: 'Enroll Now', expectedHrefPattern: ENROLLMATE }],
+};
+
+/**
+ * Search page: its <main> holds only the search widget (an <h4>Search</h4> plus
+ * an input), so it falls well short of the default 200-char key-content
+ * threshold — pin keyContent to the widget heading.
+ */
+export const SEARCH: PageDescriptor = {
+  id: 'smoke-search',
+  type: 'smoke',
+  path: '/search/',
+  keyContent: 'main h4',
+  ctas: [{ name: 'Enroll Now', expectedHrefPattern: ENROLLMATE }],
+};
+
+export const STATE_OF_WORKING_STUDENTS: PageDescriptor = {
+  id: 'smoke-state-of-working-students',
+  type: 'smoke',
+  path: '/state-of-working-students/',
+  ctas: [{ name: 'Enroll Now', expectedHrefPattern: ENROLLMATE }],
+};
+
+/**
+ * Scholarship / discount pages plus the two financial tools that live under
+ * /admissions/ → /admissions/<slug>/. All share the same shape (standard
+ * content + a primary header Enroll Now CTA), so they use one factory + loop.
+ */
+export const admissionsAidSlugs = [
+  'abanse-negrense-scholarship',
+  'asenso',
+  'city-scholarships',
+  'continuing-education',
+  'family-discount',
+  'gadget-scholarship',
+  'next-gen',
+  'ygc-ayala-discount',
+  'financial-assistance',
+  'tuition-calculator',
+  'financial-wellness-checker',
+] as const;
+
+export function admissionsAidDescriptor(slug: string): PageDescriptor {
+  return {
+    id: `smoke-admissions-${slug}`,
+    type: 'smoke',
+    path: `/admissions/${slug}/`,
+    ctas: [
+      {
+        name: 'Enroll Now',
+        expectedHrefPattern: ENROLLMATE,
+        primary: true,
+        expectedDestination: ENROLLMATE,
+      },
+    ],
+  };
+}
+
+/** Financing programs that live at the site root (not under /admissions/). */
+export const financialLoanSlugs = ['study-now-pay-later', 'bukas'] as const;
+
+export function financialLoanDescriptor(slug: string): PageDescriptor {
+  return {
+    id: `smoke-financial-${slug}`,
+    type: 'smoke',
+    path: `/${slug}/`,
+    ctas: [
+      {
+        name: 'Enroll Now',
+        expectedHrefPattern: ENROLLMATE,
+        primary: true,
+        expectedDestination: ENROLLMATE,
+      },
+    ],
+  };
+}
+
+/**
+ * News & Events category landing pages → /news-and-events/<slug>/.
+ * These redirect to /page/1/ but still resolve HTTP 200. The overview links all
+ * of them (used for a coverage assertion).
+ */
+export const newsCategories = [
+  'lifestyle-career-tips',
+  'events-scholarships',
+  'mmdc-in-the-news',
+] as const;
+
+export function newsCategoryDescriptor(slug: string): PageDescriptor {
+  return {
+    id: `smoke-news-${slug}`,
+    type: 'smoke',
+    path: `/news-and-events/${slug}/`,
+    ctas: [{ name: 'Enroll Now', expectedHrefPattern: ENROLLMATE }],
+  };
+}
