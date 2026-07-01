@@ -47,6 +47,7 @@ import {
   type SmokeRunView,
 } from "@/lib/mock-testing-data";
 import { cn } from "@/lib/utils";
+import { MainShell } from "@/components/main-shell";
 
 type FilterValue = "all" | SmokeRunStatus;
 
@@ -128,126 +129,11 @@ export function SmokeTestingClient({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-7">
-      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-balance">
-            Smoke Testing
-          </h1>
-          <p className="max-w-2xl text-sm text-muted-foreground text-pretty">
-            Monitor the latest application state, compare recent runs, and
-            inspect individual test diagnostics.
-          </p>
-        </div>
-        <Badge variant="secondary" className="w-fit gap-1.5">
-          <CircleGaugeIcon className="size-3.5" aria-hidden="true" />
-          Schema-aligned fixtures
-        </Badge>
-      </header>
-
-      {apps.length ? (
-        <section
-          aria-label="Monitored applications"
-          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
-        >
-          {apps.map((app) => {
-            const summary = getSmokeAppSummary(app.id, runs);
-            const latestRun = summary.latestRun;
-            const isSelected = selectedAppId === app.id;
-
-            return (
-              <button
-                key={app.id}
-                type="button"
-                onClick={() => selectApp(app.id)}
-                className="rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <Card
-                  className={cn(
-                    "h-full transition-colors cursor-pointer",
-                    isSelected
-                      ? "border-primary/70 bg-card-foreground/10"
-                      : "bg-card/70 hover:border-primary/35",
-                  )}
-                >
-                  <CardHeader className="gap-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <CardTitle className="text-base">{app.name}</CardTitle>
-                      {latestRun ? (
-                        <StatusBadge status={latestRun.status} />
-                      ) : (
-                        <Badge variant="outline">No runs</Badge>
-                      )}
-                    </div>
-                    <p className="min-h-8 text-xs leading-4 text-muted-foreground">
-                      {app.description ?? "No description provided"}
-                    </p>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-end justify-between gap-3">
-                      <div>
-                        <p className="text-xl font-semibold tabular-nums">
-                          {latestRun
-                            ? `${latestRun.passed}/${latestRun.total}`
-                            : "—"}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Tests passed in latest run
-                        </p>
-                      </div>
-                      <ChevronRightIcon
-                        className="size-4 text-muted-foreground"
-                        aria-hidden="true"
-                      />
-                    </div>
-                    <div
-                      className="flex gap-1"
-                      aria-label="Five most recent run statuses"
-                    >
-                      {summary.recentRuns.length ? (
-                        summary.recentRuns.map((run) => (
-                          <span
-                            key={run.id}
-                            title={`Run ${run.runNumber}: ${run.status}`}
-                            className={cn(
-                              "h-1.5 flex-1 rounded-full",
-                              run.status === "success" && "bg-emerald-400",
-                              run.status === "degraded" && "bg-amber-400",
-                              run.status === "failure" && "bg-red-400",
-                            )}
-                          />
-                        ))
-                      ) : (
-                        <span className="h-1.5 flex-1 rounded-full bg-muted" />
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {latestRun
-                        ? `Checked ${formatTimestamp(latestRun.checkedAt)}`
-                        : "Waiting for the first run"}
-                    </p>
-                  </CardContent>
-                </Card>
-              </button>
-            );
-          })}
-        </section>
-      ) : (
-        <Card>
-          <Empty>
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <TestTube2Icon />
-              </EmptyMedia>
-              <EmptyTitle>No applications configured</EmptyTitle>
-              <EmptyDescription>
-                Applications will appear here when frontend fixtures or the
-                future backend provide them.
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        </Card>
-      )}
+    <MainShell
+      title="Smoke Testing"
+      subtitle="Monitor the latest application state, compare recent runs, and inspect individual test diagnostics."
+    >
+      {/* Apps Card here */}
 
       {selectedApp ? (
         <section className="space-y-3" aria-labelledby="run-history-title">
@@ -390,7 +276,7 @@ export function SmokeTestingClient({
           ) : null}
         </SheetContent>
       </Sheet>
-    </div>
+    </MainShell>
   );
 }
 
