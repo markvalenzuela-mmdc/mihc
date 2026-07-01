@@ -128,3 +128,10 @@
     @apply font-sans;
   }
 }
+
+@media (max-width: 639px) {
+  [data-slot="sheet-content"][data-side="right"],
+  [data-slot="sheet-content"][data-side="left"] {
+    width: 100%;
+  }
+}
