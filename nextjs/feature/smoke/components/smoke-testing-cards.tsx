@@ -1,19 +1,35 @@
+"use client";
 import { StatusBadge } from "@/components/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
-import { apps } from "@/lib/drizzle/schema";
-import { getSmokeAppSummary, formatTimestamp } from "@/lib/mock-testing-data";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+  EmptyDescription,
+} from "@/components/ui/empty";
+import { SmokeTestApp } from "@/feature/smoke/types/smoke-test-apps.types";
 import { cn } from "@/lib/utils";
-import { TestTube2Icon, Badge, ChevronRightIcon } from "lucide-react";
+import { format } from "date-fns/format";
+import { TestTube2Icon, ChevronRightIcon } from "lucide-react";
+import { useQueryStates } from "nuqs";
+import {
+  appParamKey,
+  appSearchParams,
+} from "../query/smoke-testing.query-state";
+import { useTransition } from "react";
 
-function SmokeTestingAppsCardQuery() {
-    const { data: apps } = useSuspenseQuery({
-        
-    })
-}
-
-export function SmokeTestingAppsCard() {
-    
+export function SmokeTestingAppsCard({ apps }: { apps: SmokeTestApp[] }) {
+  const [, startTransition] = useTransition();
+  const [selectedApp, setSelectedApp] = useQueryStates(appSearchParams, {
+    shallow: false,
+    startTransition,
+  });
+  
+  const handleSelectApp = (appId: string) => {
+    setSelectedApp({ [appParamKey]: appId });
+  };
 
   if (apps.length === 0) {
     return (
@@ -40,15 +56,14 @@ export function SmokeTestingAppsCard() {
       className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
     >
       {apps.map((app) => {
-        const summary = getSmokeAppSummary(app.id, runs);
-        const latestRun = summary.latestRun;
-        const isSelected = selectedAppId === app.id;
+        const latestRun = app.smokeRuns[0];
+        const isSelected = selectedApp[appParamKey] === app.id;
 
         return (
           <button
             key={app.id}
             type="button"
-            onClick={() => selectApp(app.id)}
+            onClick={() => handleSelectApp(app.id)}
             className="rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Card
@@ -93,8 +108,8 @@ export function SmokeTestingAppsCard() {
                   className="flex gap-1"
                   aria-label="Five most recent run statuses"
                 >
-                  {summary.recentRuns.length ? (
-                    summary.recentRuns.map((run) => (
+                  {app.smokeRuns.length ? (
+                    app.smokeRuns.map((run) => (
                       <span
                         key={run.id}
                         title={`Run ${run.runNumber}: ${run.status}`}
@@ -112,7 +127,7 @@ export function SmokeTestingAppsCard() {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {latestRun
-                    ? `Checked ${formatTimestamp(latestRun.checkedAt)}`
+                    ? `Checked ${format(latestRun.checkedAt, "MMM d, yyyy h:mm a")}`
                     : "Waiting for the first run"}
                 </p>
               </CardContent>
