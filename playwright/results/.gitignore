@@ -1,0 +1,3 @@
+# Generated per-run result files; keep the directory, ignore the contents.
+*.json
+!.gitignore

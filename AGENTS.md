@@ -12,7 +12,9 @@ That file contains Next.js-specific rules and version caveats.
 
 ### playwright/
 
-*(No agent instructions yet — create `playwright/AGENTS.md` when the project is set up.)*
+Read `playwright/AGENTS.md` before editing anything in `playwright/`.
+That file covers the smoke/e2e test layout, the JSON results schema, and how
+runs report automated vs. manual mode.
 
 ### docker/
 
