@@ -252,6 +252,83 @@ export const smokeApps: SmokeAppView[] = [
   { id: "n8n", name: "Self-hosted n8n", description: "Automation workflow instance" },
 ];
 
+const smokeRunBackfillConfig = {
+  website: {
+    runNumbers: [16, 15, 14, 13, 12, 11, 10, 9],
+    checkedAtBase: "2026-06-28T",
+    durationSeconds: 21,
+    testFile: "website/smoke.spec.ts",
+    testNames: ["Homepage loads", "Admissions navigation resolves", "Lead form renders", "Core assets respond"],
+  },
+  enrollmate: {
+    runNumbers: [30, 29, 28, 27, 26, 25, 24, 23, 22],
+    checkedAtBase: "2026-06-28T",
+    durationSeconds: 42,
+    testFile: "enrollmate/smoke.spec.ts",
+    testNames: ["Login page loads", "Enrollment summary responds", "Payment status responds"],
+  },
+  "enrollmate-clp": {
+    runNumbers: [9, 8, 7, 6, 5, 4, 3, 2, 1],
+    checkedAtBase: "2026-06-28T",
+    durationSeconds: 36,
+    testFile: "clp/smoke.spec.ts",
+    testNames: ["CLP dashboard loads", "Session endpoint responds", "Course list responds", "Support links resolve"],
+  },
+  n8n: {
+    runNumbers: [41, 40, 39, 38, 37, 36, 35, 34, 33],
+    checkedAtBase: "2026-06-28T",
+    durationSeconds: 17,
+    testFile: "n8n/smoke.spec.ts",
+    testNames: ["Webhook health responds", "Worker heartbeat is fresh"],
+  },
+} satisfies Record<string, {
+  runNumbers: number[];
+  checkedAtBase: string;
+  durationSeconds: number;
+  testFile: string;
+  testNames: string[];
+}>;
+
+function createSmokeRunHistory(appId: keyof typeof smokeRunBackfillConfig): SmokeRunView[] {
+  const config = smokeRunBackfillConfig[appId];
+
+  return config.runNumbers.map((runNumber, index) => {
+    const hasFailure = index % 4 === 1;
+    const hasSkipped = index % 5 === 2;
+    const status: SmokeRunStatus = hasFailure ? "degraded" : "success";
+    const passed = hasFailure ? config.testNames.length - 1 : config.testNames.length;
+    const failed = hasFailure ? 1 : 0;
+
+    return {
+      id: `00000000-0000-4000-8000-${String(index + 1).padStart(8, "0")}${String(runNumber).padStart(4, "0")}`,
+      runNumber,
+      appId,
+      status,
+      trigger: index % 3 === 0 ? "manual" : "scheduled",
+      total: config.testNames.length,
+      passed,
+      failed,
+      durationSeconds: config.durationSeconds + index * 2,
+      startedBy: index % 3 === 0 ? currentOperator : null,
+      checkedAt: `${config.checkedAtBase}${String(13 - index).padStart(2, "0")}:10:00+08:00`,
+      testResults: config.testNames.map((testName, testIndex) => {
+        const isFailure = hasFailure && testIndex === 1;
+        const isSkipped = hasSkipped && testIndex === config.testNames.length - 1;
+
+        return {
+          id: `${appId}-${runNumber}-${testIndex + 1}`,
+          testName,
+          testFile: testIndex === config.testNames.length - 1 ? null : config.testFile,
+          status: isFailure ? "failure" : isSkipped ? "skipped" : "success",
+          durationMs: isSkipped ? null : 3200 + testIndex * 850 + index * 120,
+          errorMessage: isFailure ? `${testName} did not complete successfully.` : null,
+          errorStack: isFailure ? "Error: expected response.ok() to be truthy" : null,
+        };
+      }),
+    };
+  });
+}
+
 export const smokeRuns: SmokeRunView[] = [
   {
     id: "a37acbf2-19c4-4fb1-b39f-d3abf5fd7121",
@@ -311,7 +388,7 @@ export const smokeRuns: SmokeRunView[] = [
   },
   {
     id: "ee4229a8-bd46-44c6-a6c3-67cc7dafee36",
-    runNumber: 9,
+    runNumber: 10,
     appId: "enrollmate-clp",
     status: "degraded",
     trigger: "scheduled",
@@ -345,6 +422,10 @@ export const smokeRuns: SmokeRunView[] = [
       { id: "5aa5ccb2-2", testName: "Worker heartbeat is fresh", testFile: "n8n/smoke.spec.ts", status: "success", durationMs: 7100, errorMessage: null, errorStack: null },
     ],
   },
+  ...createSmokeRunHistory("website"),
+  ...createSmokeRunHistory("enrollmate"),
+  ...createSmokeRunHistory("enrollmate-clp"),
+  ...createSmokeRunHistory("n8n"),
 ];
 
 const ariEnrollment: ProfileEnrollmentDataView = {

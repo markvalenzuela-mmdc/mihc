@@ -129,10 +129,7 @@ export function SmokeTestingClient({
   }
 
   return (
-    <MainShell
-      title="Smoke Testing"
-      subtitle="Monitor the latest application state, compare recent runs, and inspect individual test diagnostics."
-    >
+    <>
       {/* Apps Card here */}
 
       {selectedApp ? (
@@ -276,7 +273,7 @@ export function SmokeTestingClient({
           ) : null}
         </SheetContent>
       </Sheet>
-    </MainShell>
+    </>
   );
 }
 

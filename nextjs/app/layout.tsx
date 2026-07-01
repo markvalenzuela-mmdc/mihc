@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -39,9 +40,9 @@ export default function RootLayout({
       )}
     >
       <body className="h-full bg-background text-foreground">
-        <ScrollArea className="h-full">
-          {children}
-        </ScrollArea>
+        <NuqsAdapter>
+          <ScrollArea className="h-full">{children}</ScrollArea>
+        </NuqsAdapter>
       </body>
     </html>
   );
