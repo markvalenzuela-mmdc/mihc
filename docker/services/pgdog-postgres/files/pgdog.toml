@@ -1,0 +1,8 @@
+[general]
+host = "0.0.0.0"
+port = 6432
+
+[[databases]]
+name = "mihc"
+host = "app-postgres"
+port = 5432

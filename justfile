@@ -14,6 +14,7 @@ _default:
     @echo "    db-reset    DANGER: Drop, recreate, migrate, and seed the database"
     @echo ""
     @echo "  docker"
+    @echo "    docker-local up|down  Start or stop local Docker Compose services"
     @echo "    build-docker  Build Docker images"
     @echo ""
     @echo "  playwright"
@@ -64,6 +65,10 @@ db-reset:
     cd {{project_root}}/nextjs && pnpm run db:reset
 
 # ─────────────── docker ───────────────
+
+# Start or stop local Docker Compose services
+docker-local action="up":
+    @docker compose -f "{{project_root}}/docker/compose.local.yml" {{action}} {{if action == "up" { "-d" } else { "" }}}
 
 # Build Docker images
 build-docker:
