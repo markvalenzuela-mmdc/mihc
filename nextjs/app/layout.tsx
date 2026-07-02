@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { QueryProvider } from "@/lib/tanstack-query/query-provider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -42,7 +43,9 @@ export default function RootLayout({
     >
       <body className="h-full bg-background text-foreground">
         <NuqsAdapter>
-          <ScrollArea className="h-full">{children}</ScrollArea>
+          <QueryProvider>
+            <ScrollArea className="h-full">{children}</ScrollArea>
+          </QueryProvider>
         </NuqsAdapter>
         <Toaster />
       </body>

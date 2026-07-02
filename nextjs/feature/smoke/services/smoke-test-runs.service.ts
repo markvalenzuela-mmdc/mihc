@@ -1,6 +1,8 @@
 import { apps, getDb, smokeRuns } from "@/lib/drizzle/db";
 import { paginateByQuery } from "@/lib/drizzle/pagination";
-import { count, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
+import { SmokeTestRunStatus } from "../types/smoke-test-apps.types";
+import { smokeRunsStatusSchema } from "../schema/smoke-test-runs.schema";
 
 const db = getDb();
 
@@ -8,24 +10,27 @@ export async function getPaginatedSmokeTestRuns({
   appId,
   limit = 5,
   page = 1,
+  tab,
 }: {
   appId: string;
   limit?: number;
   page?: number;
+  tab?: SmokeTestRunStatus;
 }) {
+  const whereClause = tab
+    ? and(eq(smokeRuns.appId, appId), eq(smokeRuns.status, tab))
+    : eq(smokeRuns.appId, appId);
+
   const [data, meta] = await paginateByQuery({
     fetchPage: ({ limit, offset }) =>
       db.query.smokeRuns.findMany({
-        where: (smokeRuns, { eq }) => eq(smokeRuns.appId, appId),
+        where: () => whereClause,
         orderBy: (smokeRuns, { desc }) => [desc(smokeRuns.runNumber)],
         limit,
         offset,
       }),
     fetchTotalCount: () =>
-      db
-        .select({ total: count() })
-        .from(smokeRuns)
-        .where(eq(smokeRuns.appId, appId)),
+      db.select({ total: count() }).from(smokeRuns).where(whereClause),
   }).withPages({
     limit,
     page,

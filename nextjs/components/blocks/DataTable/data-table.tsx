@@ -262,38 +262,49 @@ function DataTableContent<TData, TValue>({
                     className="px-6 py-4"
                     style={{ width: `${header.getSize()}px` }}
                   >
-                    {header.isPlaceholder ? null : (() => {
-                      const renderedHeader = flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      );
+                    {header.isPlaceholder
+                      ? null
+                      : (() => {
+                          const renderedHeader = flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          );
 
-                      const sortKey = getSortKey(header);
-                      const isSortable = sortable && !!onSort && !!sortKey;
+                          const sortKey = getSortKey(header);
+                          const isSortable = sortable && !!onSort && !!sortKey;
 
-                      if (!isSortable || !sortKey) return renderedHeader;
+                          if (!isSortable || !sortKey) return renderedHeader;
 
-                      const isActive = sortBy === sortKey;
+                          const isActive = sortBy === sortKey;
 
-                      return (
-                        <button
-                          type="button"
-                          className="flex items-center cursor-pointer hover:text-foreground/80 transition-colors"
-                          onClick={() => onSort(sortKey)}
-                        >
-                          {renderedHeader}
-                          {!isActive && (
-                            <ArrowUpDown className="inline size-3.5 ms-2" strokeWidth={1.5} />
-                          )}
-                          {isActive && sortDirection === "asc" && (
-                            <ArrowUp className="inline size-3.5 ms-2 font-thin" strokeWidth={1.5} />
-                          )}
-                          {isActive && sortDirection === "desc" && (
-                            <ArrowDown className="inline size-3.5 ms-2 font-thin" strokeWidth={1.5} />
-                          )}
-                        </button>
-                      );
-                    })()}
+                          return (
+                            <button
+                              type="button"
+                              className="flex items-center cursor-pointer hover:text-foreground/80 transition-colors"
+                              onClick={() => onSort(sortKey)}
+                            >
+                              {renderedHeader}
+                              {!isActive && (
+                                <ArrowUpDown
+                                  className="inline size-3.5 ms-2"
+                                  strokeWidth={1.5}
+                                />
+                              )}
+                              {isActive && sortDirection === "asc" && (
+                                <ArrowUp
+                                  className="inline size-3.5 ms-2 font-thin"
+                                  strokeWidth={1.5}
+                                />
+                              )}
+                              {isActive && sortDirection === "desc" && (
+                                <ArrowDown
+                                  className="inline size-3.5 ms-2 font-thin"
+                                  strokeWidth={1.5}
+                                />
+                              )}
+                            </button>
+                          );
+                        })()}
                   </TableHead>
                 );
               })}
@@ -480,26 +491,32 @@ function DataTableTabFilter({
       value={value ? [value] : undefined}
       defaultValue={defaultValue ? [defaultValue] : undefined}
       onValueChange={(val) => handleSelect(val[0] ?? "")}
-      variant="outline"
-      className={cn(className)}
+      variant="default"
+      size="sm"
+      spacing={1}
+      aria-label="Filter table by tab"
+      className={cn(
+        "flex flex-wrap gap-1 rounded-lg border bg-muted/20 p-1",
+        className,
+      )}
     >
-      {tabs &&
-        tabs.map((tab) => {
-          const value = typeof tab === "object" ? tab.value : tab;
-          const label = typeof tab === "object" ? tab.label : tab;
-          return (
-            <ToggleGroupItem
-              key={value}
-              value={value}
-              className={cn(
-                "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground",
-                classNames?.item,
-              )}
-            >
-              {label}
-            </ToggleGroupItem>
-          );
-        })}
+      {tabs?.map((tab) => {
+        const value = typeof tab === "object" ? tab.value : tab;
+        const label = typeof tab === "object" ? tab.label : tab;
+
+        return (
+          <ToggleGroupItem
+            key={value}
+            value={value}
+            className={cn(
+              "capitalize data-[state=on]:bg-secondary data-[state=on]:text-secondary-foreground",
+              classNames?.item,
+            )}
+          >
+            {label}
+          </ToggleGroupItem>
+        );
+      })}
     </ToggleGroup>
   );
 }
@@ -735,7 +752,10 @@ function DataTablePagination({
       <PaginationContent className={cn(classNames?.content)}>
         <PaginationItem>
           <PaginationPrevious
-            className={cn(classNames?.previous, !canPrev && "pointer-events-none opacity-50")}
+            className={cn(
+              classNames?.previous,
+              !canPrev && "pointer-events-none opacity-50",
+            )}
             text=""
             onClick={handlePrev}
             aria-disabled={!canPrev}
@@ -769,7 +789,10 @@ function DataTablePagination({
         </PaginationItem>
         <PaginationItem>
           <PaginationNext
-            className={cn(classNames?.next, !canNext && "pointer-events-none opacity-50")}
+            className={cn(
+              classNames?.next,
+              !canNext && "pointer-events-none opacity-50",
+            )}
             text=""
             onClick={handleNext}
             aria-disabled={!canNext}

@@ -12,9 +12,12 @@ import { SmokeTestingTable } from "@/feature/smoke/components/smoke-testing-tabl
 import {
   loadLimitSearchParams,
   loadPaginationSearchParams,
+  loadTabFilterSearchParams,
 } from "@/components/blocks/DataTable/data-table-query-state";
 import { getPaginatedSmokeTestRuns } from "@/feature/smoke/services/smoke-test-runs.service";
-import { loadAppSearchParams } from "@/feature/smoke/query/smoke-testing.query-state";
+import { loadAppSearchParams } from "@/feature/smoke/components/smoke-testing.query-state";
+import SmokeRunDetailsSheet from "@/feature/smoke/components/smoke-run-details-sheet";
+import { SmokeTestRunStatus } from "@/feature/smoke/types/smoke-test-apps.types";
 
 interface PageProps {
   searchParams: Promise<SearchParams>;
@@ -22,6 +25,7 @@ interface PageProps {
 
 const getData = cache(async (searchParams: Promise<SearchParams>) => {
   const { limit: limitValue } = await loadLimitSearchParams(searchParams);
+  const { tab } = await loadTabFilterSearchParams(searchParams);
   const { page } = await loadPaginationSearchParams(searchParams);
   const { app } = await loadAppSearchParams(searchParams);
 
@@ -33,9 +37,13 @@ const getData = cache(async (searchParams: Promise<SearchParams>) => {
     appId: app,
     limit,
     page,
+    tab: SmokeTestRunStatus.includes(tab as SmokeTestRunStatus)
+      ? (tab as SmokeTestRunStatus)
+      : undefined,
   });
 
   return {
+    appName: apps.find((a) => a.id === app)?.name ?? null,
     apps,
     smokeRuns,
   };
@@ -58,13 +66,15 @@ export default async function SmokeTestingPage({ searchParams }: PageProps) {
             return (
               <>
                 <SmokeTestingAppsCard apps={data.apps} />
-                <SmokeTestingTable smokeRuns={data.smokeRuns} />
+                <SmokeTestingTable
+                  appName={data.appName}
+                  smokeRuns={data.smokeRuns}
+                />
+                <SmokeRunDetailsSheet />
               </>
             );
           }}
         </Suspenser>
-
-        <SmokeTestingClient apps={smokeApps} initialRuns={smokeRuns} />
       </MainShell>
     </AppShell>
   );

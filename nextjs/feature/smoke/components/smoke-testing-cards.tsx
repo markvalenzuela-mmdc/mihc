@@ -17,7 +17,7 @@ import { useQueryStates } from "nuqs";
 import {
   appParamKey,
   appSearchParams,
-} from "../query/smoke-testing.query-state";
+} from "./smoke-testing.query-state";
 import { useTransition } from "react";
 
 export function SmokeTestingAppsCard({ apps }: { apps: SmokeTestApp[] }) {
