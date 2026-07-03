@@ -8,7 +8,7 @@ export const profiles = pgTable("profiles", {
   email: text("email").notNull().unique(),
   program: text("program").notNull(),
   cohort: text("cohort").notNull(),
-  status: text("status").notNull().default("new").$type<
+  status: text("status").notNull().default("new").references(() => e2eSteps.id).$type<
     | "new" | "guidance_needed" | "validated"
     | "verification" | "enrollment_confirmation"
     | "for_payment" | "payment_verification" | "completed"

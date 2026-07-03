@@ -144,6 +144,18 @@ export async function seedDatabase() {
         successMessages.push(`Seeded smoke run: ${run.appId} #${run.runNumber}`);
       }
 
+      for (const step of e2eStepDefinitions) {
+        await tx.insert(e2eSteps).values(step).onConflictDoUpdate({
+          target: e2eSteps.id,
+          set: {
+            label: step.label,
+            description: step.description,
+            sortOrder: step.sortOrder,
+          },
+        });
+        successMessages.push(`Seeded E2E step: ${step.label}`);
+      }
+
       for (const profile of profileFixtures) {
         const profileValues = {
           id: profile.id,
@@ -278,18 +290,6 @@ export async function seedDatabase() {
         }
 
         successMessages.push(`Seeded profile: ${profile.email}`);
-      }
-
-      for (const step of e2eStepDefinitions) {
-        await tx.insert(e2eSteps).values(step).onConflictDoUpdate({
-          target: e2eSteps.id,
-          set: {
-            label: step.label,
-            description: step.description,
-            sortOrder: step.sortOrder,
-          },
-        });
-        successMessages.push(`Seeded E2E step: ${step.label}`);
       }
 
       for (const run of e2eRunFixtures) {

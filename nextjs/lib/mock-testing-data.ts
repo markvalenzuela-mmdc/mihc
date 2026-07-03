@@ -6,7 +6,7 @@ export type ProfileStatus =
   | "verification" | "enrollment_confirmation"
   | "for_payment" | "payment_verification" | "completed";
 export type E2eRunStatus = "running" | "completed" | "aborted";
-export type E2eStepStatus = "queued" | "running" | "success" | "failure";
+export type E2eRunStepStatus = "queued" | "running" | "success" | "failure";
 
 export interface OperatorSummary {
   id: string;
@@ -217,7 +217,7 @@ export interface E2eRunTestView {
 export interface E2eRunStepView {
   id: string;
   stepId: string;
-  status: E2eStepStatus;
+  status: E2eRunStepStatus;
   durationSeconds: number | null;
   note: string | null;
   tests: E2eRunTestView[];
@@ -468,10 +468,14 @@ export const profiles: ProfileView[] = [
 ];
 
 export const e2eStepDefinitions: E2eStepDefinitionView[] = [
-  { id: "stage-1", label: "Authenticate", description: "Sign in and load the student dashboard.", sortOrder: 1 },
-  { id: "stage-2", label: "Student information", description: "Populate identity, address, and enrollment prerequisites.", sortOrder: 2 },
-  { id: "stage-3", label: "Guardian information", description: "Validate parent or guardian details and consent fields.", sortOrder: 3 },
-  { id: "stage-4", label: "Submission", description: "Confirm the application and resulting enrollment state.", sortOrder: 4 },
+  { id: "new", label: "New", description: "Profile is newly created and awaiting initial guidance review.", sortOrder: 1 },
+  { id: "guidance_needed", label: "Guidance needed", description: "Profile requires guidance or admissions follow-up before validation.", sortOrder: 2 },
+  { id: "validated", label: "Validated", description: "Profile details have passed validation and can move into verification.", sortOrder: 3 },
+  { id: "verification", label: "Verification", description: "Profile is under enrollment or document verification.", sortOrder: 4 },
+  { id: "enrollment_confirmation", label: "Enrollment confirmation", description: "Profile is ready for enrollment confirmation checks.", sortOrder: 5 },
+  { id: "for_payment", label: "For payment", description: "Profile is ready for payment instructions or collection.", sortOrder: 6 },
+  { id: "payment_verification", label: "Payment verification", description: "Payment evidence is being verified.", sortOrder: 7 },
+  { id: "completed", label: "Completed", description: "Profile has completed the enrollment workflow.", sortOrder: 8 },
 ];
 
 const e2eRunHistoryConfig = [
@@ -511,7 +515,7 @@ function createE2eRunHistory({
       steps: e2eStepDefinitions.map((step, stepIndex) => {
         const didRunStep = !isAborted || stepIndex < 2;
         const didFailStep = hasFailure && stepIndex === 2;
-        const stepStatus: E2eStepStatus = !didRunStep ? "queued" : didFailStep ? "failure" : "success";
+        const stepStatus: E2eRunStepStatus = !didRunStep ? "queued" : didFailStep ? "failure" : "success";
 
         return {
           id: `history-${profileIndex + 1}-${runNumber}-${stepIndex + 1}`,
@@ -559,7 +563,7 @@ export const e2eRuns: E2eRunView[] = [
     startedBy: null,
     startedAt: "2026-06-28T16:07:00+08:00",
     completedAt: "2026-06-28T16:12:19+08:00",
-    steps: e2eStepDefinitions.map((step, index) => ({ id: `ea5002-${index}`, stepId: step.id, status: index === 2 ? "failure" : "success", durationSeconds: 52 + index * 8, note: index === 2 ? "Guardian email validation did not resolve." : `${step.label} completed.`, tests: [{ id: `ea5002-${index}-1`, testName: index === 2 ? "Guardian email validation clears" : `${step.label} assertions pass`, status: index === 2 ? "failure" : index === 3 ? "skipped" : "success", durationMs: index === 2 ? 10100 : 3100, errorMessage: index === 2 ? "Validation message remained visible after entering a valid email." : null }] })),
+    steps: e2eStepDefinitions.map((step, index) => ({ id: `ea5002-${index}`, stepId: step.id, status: index === 2 ? "failure" : "success", durationSeconds: 52 + index * 8, note: index === 2 ? "Profile status validation did not resolve." : `${step.label} completed.`, tests: [{ id: `ea5002-${index}-1`, testName: index === 2 ? "Profile status validation clears" : `${step.label} assertions pass`, status: index === 2 ? "failure" : index === 3 ? "skipped" : "success", durationMs: index === 2 ? 10100 : 3100, errorMessage: index === 2 ? "Validation message remained visible after entering valid profile data." : null }] })),
   },
   {
     id: "dd71418a-90e0-49ec-98ad-ff14a806f503",
@@ -569,7 +573,7 @@ export const e2eRuns: E2eRunView[] = [
     startedBy: currentOperator,
     startedAt: "2026-06-24T09:40:00+08:00",
     completedAt: "2026-06-24T09:41:12+08:00",
-    steps: e2eStepDefinitions.map((step, index) => ({ id: `ea5003-${index}`, stepId: step.id, status: index === 0 ? "success" : index === 1 ? "failure" : "queued", durationSeconds: index < 2 ? 34 : null, note: index === 1 ? "Required mobile number was missing from profile data." : index > 1 ? "Run aborted before this step started." : "Authentication completed.", tests: index < 2 ? [{ id: `ea5003-${index}-1`, testName: index === 1 ? "Student mobile is populated" : "Student dashboard loads", status: index === 1 ? "failure" : "success", durationMs: 2100, errorMessage: index === 1 ? "Profile mobile value is empty." : null }] : [] })),
+    steps: e2eStepDefinitions.map((step, index) => ({ id: `ea5003-${index}`, stepId: step.id, status: index === 0 ? "success" : index === 1 ? "failure" : "queued", durationSeconds: index < 2 ? 34 : null, note: index === 1 ? "Required mobile number was missing from profile data." : index > 1 ? "Run aborted before this status step started." : `${step.label} completed.`, tests: index < 2 ? [{ id: `ea5003-${index}-1`, testName: index === 1 ? "Student mobile is populated" : `${step.label} status checks pass`, status: index === 1 ? "failure" : "success", durationMs: 2100, errorMessage: index === 1 ? "Profile mobile value is empty." : null }] : [] })),
   },
   {
     id: "dd71418a-90e0-49ec-98ad-ff14a806f504",
@@ -579,7 +583,7 @@ export const e2eRuns: E2eRunView[] = [
     startedBy: currentOperator,
     startedAt: "2026-06-29T14:18:00+08:00",
     completedAt: null,
-    steps: e2eStepDefinitions.map((step, index) => ({ id: `ea5004-${index}`, stepId: step.id, status: index === 0 ? "success" : index === 1 ? "running" : "queued", durationSeconds: index === 0 ? 38 : null, note: index === 0 ? "Authentication completed." : index === 1 ? "Entering profile fields." : "Waiting for the preceding step.", tests: index === 0 ? [{ id: "ea5004-0-1", testName: "Student dashboard loads", status: "success", durationMs: 2400, errorMessage: null }] : [] })),
+    steps: e2eStepDefinitions.map((step, index) => ({ id: `ea5004-${index}`, stepId: step.id, status: index === 0 ? "success" : index === 1 ? "running" : "queued", durationSeconds: index === 0 ? 38 : null, note: index === 0 ? `${step.label} completed.` : index === 1 ? "Running profile status checks." : "Waiting for the preceding status step.", tests: index === 0 ? [{ id: "ea5004-0-1", testName: `${step.label} status checks pass`, status: "success", durationMs: 2400, errorMessage: null }] : [] })),
   },
   ...e2eRunHistoryConfig.flatMap(createE2eRunHistory),
 ];

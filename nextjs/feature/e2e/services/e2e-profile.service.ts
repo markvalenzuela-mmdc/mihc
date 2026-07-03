@@ -74,7 +74,7 @@ export async function getE2eProfileById(
                 e2eStep: true,
                 tests: true,
               },
-              orderBy: (runSteps, { asc }) => [asc(runSteps.stepId)],
+              orderBy: (e2eStep, { asc }) => [asc(e2eStep.createdAt)],
             },
           },
         },

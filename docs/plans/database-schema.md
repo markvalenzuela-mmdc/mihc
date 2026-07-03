@@ -19,6 +19,8 @@ apps ──── smoke_runs ──── smoke_runs_test_results
 
 profiles ──── profile_enrollment_data (1:1)
 
+e2e_steps (status lookup) ──── profiles (status)
+
 e2e_steps (lookup) ──── e2e_runs ──── e2e_run_steps ──── e2e_run_tests
 ```
 
@@ -103,7 +105,7 @@ Student test personas. Core identity used for display and management in the dash
 | email | `text` | NOT NULL, UNIQUE |
 | program | `text` | NOT NULL — e.g. `"BS Information Technology"` |
 | cohort | `text` | NOT NULL — e.g. `"2026-A"` |
-| status | `text` | NOT NULL, default `'ready'` — `'ready' \| 'needs review'` |
+| status | `text` | NOT NULL, default `'new'`, FK → e2e_steps.id |
 | created_by | `uuid` | FK → users.id |
 | updated_by | `uuid` | FK → users.id |
 | created_at | `timestamptz` | default `now()` |
@@ -176,12 +178,12 @@ Detailed enrollment form data (1:1 with profile). Stores all fields from the Enr
 
 ### `e2e_steps`
 
-Preconfigured step definitions. Uniform across all profiles, extensible later.
+Preconfigured profile-status workflow definitions. Uniform across all profiles, extensible later.
 
 | Column | Type | Constraints |
 |---|---|---|
-| id | `text` | PK — `'stage-1'` through `'stage-4'` |
-| label | `text` | NOT NULL — e.g. `"Stage 1 — Authenticate"` |
+| id | `text` | PK — `'new'`, `'guidance_needed'`, `'validated'`, `'verification'`, `'enrollment_confirmation'`, `'for_payment'`, `'payment_verification'`, `'completed'` |
+| label | `text` | NOT NULL — e.g. `"Guidance needed"` |
 | description | `text` | nullable |
 | sort_order | `integer` | NOT NULL |
 | created_at | `timestamptz` | default `now()` |
@@ -278,7 +280,8 @@ The following changes will be needed after the schema is in place:
 | 3-way smoke_runs.status (`success`/`degraded`/`failure`) | Degraded captures "some tests failed but majority passed" |
 | `smoke_runs_test_results` naming | Clearer scope than generic `test_results` — explicitly belongs to smoke runs |
 | Separate `profile_enrollment_data` table | Keeps profile list queries lean; enrollment data only loaded when running E2E tests |
-| `e2e_steps` lookup table | Preconfigured, uniform across profiles, extensible |
+| `e2e_steps` lookup table | Preconfigured profile-status workflow, uniform across profiles, extensible |
+| `profiles.status` FK → `e2e_steps.id` | Keeps profile status stored for simple list queries while constraining it to the canonical workflow |
 | 3-level E2E hierarchy (run → step → test) | Matches real test execution: one run session, N steps, each with M assertions |
 | `started_by` nullable on smoke_runs | Scheduled runs have no user; manual runs have FK to users |
 | No `scenarios` table | Replaced by `e2e_steps` (preconfigured) + `e2e_run_steps` (execution records) |
