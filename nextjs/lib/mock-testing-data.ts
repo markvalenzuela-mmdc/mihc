@@ -474,6 +474,72 @@ export const e2eStepDefinitions: E2eStepDefinitionView[] = [
   { id: "stage-4", label: "Submission", description: "Confirm the application and resulting enrollment state.", sortOrder: 4 },
 ];
 
+const e2eRunHistoryConfig = [
+  { profileIndex: 0, runNumbers: [11, 10, 9, 8, 7, 6, 5, 4, 3, 2], dayStart: 19 },
+  { profileIndex: 1, runNumbers: [17, 16, 15, 14, 13, 12, 11, 10, 9, 8], dayStart: 18 },
+  { profileIndex: 2, runNumbers: [13, 12, 11, 10, 9, 8, 7, 6, 5, 4], dayStart: 14 },
+  { profileIndex: 3, runNumbers: [14, 13, 12, 11, 10, 9, 8, 7, 6, 5], dayStart: 18 },
+] satisfies {
+  profileIndex: number;
+  runNumbers: number[];
+  dayStart: number;
+}[];
+
+function createE2eRunHistory({
+  profileIndex,
+  runNumbers,
+  dayStart,
+}: (typeof e2eRunHistoryConfig)[number]): E2eRunView[] {
+  const profile = profiles[profileIndex];
+  const profileToken = String(profileIndex + 1).padStart(4, "0");
+
+  return runNumbers.map((runNumber, index) => {
+    const hasFailure = index % 4 === 1;
+    const isAborted = index % 7 === 3;
+    const status: E2eRunStatus = isAborted ? "aborted" : "completed";
+    const day = String(dayStart + index).padStart(2, "0");
+    const hour = String(9 + (index % 6)).padStart(2, "0");
+
+    return {
+      id: `00000000-0000-4000-8000-${profileToken}${String(runNumber).padStart(8, "0")}`,
+      runNumber,
+      profileId: profile.id,
+      status,
+      startedBy: index % 3 === 0 ? currentOperator : null,
+      startedAt: `2026-06-${day}T${hour}:05:00+08:00`,
+      completedAt: `2026-06-${day}T${hour}:10:${String(20 + index).padStart(2, "0")}+08:00`,
+      steps: e2eStepDefinitions.map((step, stepIndex) => {
+        const didRunStep = !isAborted || stepIndex < 2;
+        const didFailStep = hasFailure && stepIndex === 2;
+        const stepStatus: E2eStepStatus = !didRunStep ? "queued" : didFailStep ? "failure" : "success";
+
+        return {
+          id: `history-${profileIndex + 1}-${runNumber}-${stepIndex + 1}`,
+          stepId: step.id,
+          status: stepStatus,
+          durationSeconds: didRunStep ? 42 + stepIndex * 9 + index : null,
+          note: !didRunStep
+            ? "Run ended before this step started."
+            : didFailStep
+              ? `${step.label} produced a validation mismatch.`
+              : `${step.label} completed against the seeded profile.`,
+          tests: didRunStep
+            ? [
+                {
+                  id: `history-${profileIndex + 1}-${runNumber}-${stepIndex + 1}-1`,
+                  testName: didFailStep ? `${step.label} validation recovers` : `${step.label} assertions pass`,
+                  status: didFailStep ? "failure" : "success",
+                  durationMs: 2600 + stepIndex * 380 + index * 90,
+                  errorMessage: didFailStep ? "Expected validation state did not clear before timeout." : null,
+                },
+              ]
+            : [],
+        };
+      }),
+    };
+  });
+}
+
 export const e2eRuns: E2eRunView[] = [
   {
     id: "dd71418a-90e0-49ec-98ad-ff14a806f501",
@@ -515,6 +581,7 @@ export const e2eRuns: E2eRunView[] = [
     completedAt: null,
     steps: e2eStepDefinitions.map((step, index) => ({ id: `ea5004-${index}`, stepId: step.id, status: index === 0 ? "success" : index === 1 ? "running" : "queued", durationSeconds: index === 0 ? 38 : null, note: index === 0 ? "Authentication completed." : index === 1 ? "Entering profile fields." : "Waiting for the preceding step.", tests: index === 0 ? [{ id: "ea5004-0-1", testName: "Student dashboard loads", status: "success", durationMs: 2400, errorMessage: null }] : [] })),
   },
+  ...e2eRunHistoryConfig.flatMap(createE2eRunHistory),
 ];
 
 export function getSmokeRunsForApp(appId: string, runs: SmokeRunView[]) {

@@ -1,6 +1,4 @@
 import { AppShell } from "@/components/app-shell";
-import { smokeApps, smokeRuns } from "@/lib/mock-testing-data";
-import { SmokeTestingClient } from "./_components/smoke-testing-client";
 import { MainShell } from "@/components/main-shell";
 import { getSmokeTestApps } from "@/feature/smoke/services/smoke-test-apps.service";
 import { SmokeTestingAppsCard } from "@/feature/smoke/components/smoke-testing-cards";
