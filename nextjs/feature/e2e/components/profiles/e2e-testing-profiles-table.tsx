@@ -16,7 +16,7 @@ import { E2eProfileSummary } from "../../types/e2e-testing.types";
 import {
   profileParamKey,
   profileSearchParams,
-} from "./e2e-testing.query-state";
+} from "../e2e-testing.query-state";
 
 const columnHelper = createColumnHelper<E2eProfileSummary>();
 
