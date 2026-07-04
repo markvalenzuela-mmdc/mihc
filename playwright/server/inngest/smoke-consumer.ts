@@ -65,7 +65,6 @@ export const smokeConsumer = inngest.createFunction(
       }),
     );
 
-    logger.info("run_done", { runId: persisted.runId, runNumber: persisted.runNumber, status: run.status });
     return { runId: persisted.runId, runNumber: persisted.runNumber, status: run.status };
   },
 );
