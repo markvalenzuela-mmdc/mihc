@@ -6,7 +6,11 @@
   "scripts": {
     "test": "playwright test",
     "test:smoke": "playwright test tests/smoke --project=chromium --reporter=html",
-    "report": "playwright show-report"
+    "test:unit": "node --import tsx --test 'server/**/*.test.ts'",
+    "typecheck": "tsc --noEmit",
+    "report": "playwright show-report",
+    "serve": "tsx watch server/index.ts",
+    "serve:start": "tsx server/index.ts"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +25,17 @@
   "type": "module",
   "devDependencies": {
     "@playwright/test": "^1.61.1",
-    "@types/node": "^26.0.0"
+    "@types/node": "^22.10.0",
+    "@types/pg": "^8.20.0",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.0.6",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.12.27",
+    "inngest": "^4.11.0",
+    "pg": "^8.22.0",
+    "zod": "^4.4.3"
   }
 }
