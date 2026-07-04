@@ -4,6 +4,7 @@ _default:
     @echo ""
     @echo "  nextjs"
     @echo "    dev         Start dev server"
+    @echo "    dev-local   Start Docker services, reset database, and run dev server"
     @echo "    build       Build for production"
     @echo "    lint        Lint check"
     @echo "    typecheck   TypeScript check"
@@ -30,6 +31,9 @@ _default:
 # Start dev server
 dev:
     cd {{project_root}}/nextjs && pnpm run dev
+
+# Start local Docker services, reset the database, and run the Next.js dev server
+dev-local: (docker-local "up") db-reset dev
 
 # Build for production
 build:
