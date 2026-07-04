@@ -9,8 +9,8 @@
     "test:unit": "node --import tsx --test 'server/**/*.test.ts'",
     "typecheck": "tsc --noEmit",
     "report": "playwright show-report",
-    "serve": "tsx watch server/index.ts",
-    "serve:start": "tsx server/index.ts"
+    "serve": "tsx watch --env-file=.env server/index.ts",
+    "serve:start": "tsx --env-file=.env server/index.ts"
   },
   "keywords": [],
   "author": "",
