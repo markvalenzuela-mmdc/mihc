@@ -34,7 +34,7 @@ function createColumns(openRun: (runId: string) => void) {
           <button
             type="button"
             aria-label={`Open run ${row.original.runNumber}`}
-            className="absolute inset-0 z-10 block text-left"
+            className="absolute inset-0 z-10 block text-left cursor-pointer"
             onClick={() => openRun(row.original.id)}
           />
 

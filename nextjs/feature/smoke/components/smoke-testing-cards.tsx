@@ -71,7 +71,7 @@ export function SmokeTestingAppsCard({ apps }: { apps: SmokeTestApp[] }) {
                 "h-full transition-colors cursor-pointer",
                 isSelected
                   ? "border-primary/70 bg-card-foreground/10"
-                  : "bg-card/70 hover:border-primary/35",
+                  : "bg-card/70 hover:bg-card-foreground/15",
               )}
             >
               <CardHeader className="gap-3">
@@ -105,7 +105,7 @@ export function SmokeTestingAppsCard({ apps }: { apps: SmokeTestApp[] }) {
                   />
                 </div>
                 <div
-                  className="flex gap-1"
+                  className="flex flex-row-reverse gap-1"
                   aria-label="Five most recent run statuses"
                 >
                   {app.smokeRuns.length ? (
