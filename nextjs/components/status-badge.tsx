@@ -105,6 +105,10 @@ export function StatusBadge({
   const config = statusConfig[status];
   const Icon = config.icon;
 
+  const formatStatusLabel = (status: string) => {
+    return status.replaceAll("_", " ");
+  };
+
   return (
     <Badge
       variant="outline"
@@ -115,7 +119,7 @@ export function StatusBadge({
       )}
     >
       <Icon className="size-3" aria-hidden="true" />
-      {status}
+      {formatStatusLabel(status)}
     </Badge>
   );
 }
