@@ -1,5 +1,8 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { E2eProfileWorkspaceData } from "../types/e2e-testing.types";
+import {
+  E2eProfileWorkspaceData,
+  E2eSelectedRun,
+} from "../types/e2e-testing.types";
 
 type E2eProfileWorkspaceApiResult =
   | {
@@ -15,6 +18,8 @@ export const E2eProfileWorkspaceQueryKey = [
   "e2e-profiles",
   "workspace",
 ] as const;
+
+export const E2eRunDetailsQueryKey = ["e2e-profiles", "runs"] as const;
 
 export const e2eProfileWorkspaceOptions = (profileId: string) =>
   queryOptions({
@@ -34,6 +39,38 @@ export const e2eProfileWorkspaceOptions = (profileId: string) =>
     enabled: profileId.length > 0,
   });
 
+export const e2eRunDetailsOptions = (profileId: string, runId: string) =>
+  queryOptions({
+    queryKey: [...E2eRunDetailsQueryKey, profileId, runId],
+    queryFn: async (): Promise<E2eSelectedRun> => {
+      const response = await fetch(
+        `/api/e2e-profiles/${profileId}/runs/${runId}`,
+      );
+      const payload = (await response.json()) as
+        | {
+            ok: true;
+            data: E2eSelectedRun;
+          }
+        | {
+            ok: false;
+            error: string;
+          };
+
+      if (!response.ok || !payload.ok) {
+        throw new Error(
+          payload.ok ? "Failed to load e2e run details" : payload.error,
+        );
+      }
+
+      return payload.data;
+    },
+    enabled: profileId.length > 0 && runId.length > 0,
+  });
+
 export function useQueryE2eProfileWorkspace(profileId: string) {
   return useQuery(e2eProfileWorkspaceOptions(profileId));
+}
+
+export function useQueryE2eRunDetails(profileId: string, runId: string) {
+  return useQuery(e2eRunDetailsOptions(profileId, runId));
 }

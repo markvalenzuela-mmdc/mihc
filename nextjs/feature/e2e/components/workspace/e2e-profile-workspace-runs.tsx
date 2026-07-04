@@ -15,29 +15,18 @@ import {
   formatTimestamp,
 } from "@/lib/mock-testing-data";
 import {
-  E2eRun,
+  E2eSelectedRun,
   E2eRunStep,
   E2eRunTest,
 } from "../../types/e2e-testing.types";
 
 export default function E2eRunDetails({
   run,
-  stepDefinitions,
   onBack,
 }: {
-  run: E2eRun;
-  stepDefinitions: { length: number };
+  run: E2eSelectedRun;
   onBack: () => void;
 }) {
-  const duration = run.completedAt
-    ? Math.max(
-        0,
-        Math.round(
-          (Date.parse(run.completedAt) - Date.parse(run.startedAt)) / 1000,
-        ),
-      )
-    : null;
-
   return (
     <>
       <SheetHeader className="border-b pb-4">
@@ -64,19 +53,20 @@ export default function E2eRunDetails({
         <dl className="grid grid-cols-2 gap-3 rounded-lg border bg-muted/15 p-4 sm:grid-cols-5">
           <Metric
             label="Included"
-            value={`${run.steps.length}/${stepDefinitions.length}`}
+            value={`${run.summary.includedSteps}/${run.summary.totalSteps}`}
           />
           <Metric
             label="Passed"
-            value={`${run.steps.filter((step) => step.status === "success").length}/${run.steps.length}`}
+            value={`${run.summary.passedSteps}/${run.summary.includedSteps}`}
           />
           <Metric
             label="Failures"
-            value={String(
-              run.steps.filter((step) => step.status === "failure").length,
-            )}
+            value={String(run.summary.failedSteps)}
           />
-          <Metric label="Duration" value={formatDurationSeconds(duration)} />
+          <Metric
+            label="Duration"
+            value={formatDurationSeconds(run.summary.durationSeconds)}
+          />
           <Metric label="Completed" value={formatTimestamp(run.completedAt)} />
         </dl>
         <section className="space-y-3" aria-labelledby="run-steps-heading">
@@ -85,9 +75,9 @@ export default function E2eRunDetails({
               Step results
             </h3>
             <p className="text-sm text-muted-foreground">
-              {run.steps.length} of {stepDefinitions.length} configured steps
-              included. A completed session may still contain failed or skipped
-              assertions.
+              {run.summary.includedSteps} of {run.summary.totalSteps} configured
+              steps included. A completed session may still contain failed or
+              skipped assertions.
             </p>
           </div>
           <div className="space-y-3">

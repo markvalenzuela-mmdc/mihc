@@ -68,9 +68,22 @@ export interface E2eRun {
   steps: E2eRunStep[];
 }
 
+export interface E2eRunSummary {
+  includedSteps: number;
+  totalSteps: number;
+  passedSteps: number;
+  failedSteps: number;
+  durationSeconds: number | null;
+}
+
+export interface E2eSelectedRun extends E2eRun {
+  summary: E2eRunSummary;
+}
+
 export interface E2eProfileWorkspaceData {
   profile: E2eProfileWorkspaceProfile;
   runs: E2eRun[];
+  activeRun: E2eRun | null;
   stepDefinitions: E2eStepDefinition[];
 }
 

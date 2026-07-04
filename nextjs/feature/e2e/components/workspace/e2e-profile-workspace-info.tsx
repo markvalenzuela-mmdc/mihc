@@ -115,6 +115,7 @@ export default function ProfileWorkspaceInfo({
   profile,
   steps,
   runs,
+  activeRun,
   selectedStepCount,
   selectionLocked,
   onSelectedStepCountChange,
@@ -125,14 +126,14 @@ export default function ProfileWorkspaceInfo({
   profile: E2eProfileWorkspaceProfile;
   steps: E2eStepDefinition[];
   runs: E2eRun[];
+  activeRun: E2eRun | null;
   selectedStepCount: number;
   selectionLocked: boolean;
   onSelectedStepCountChange: (count: number) => void;
   onAutomated: () => void;
   onManual: () => void;
-  onSelectRun: (id: string) => void;
+  onSelectRun: (run: E2eRun) => void;
 }) {
-  const activeRun = runs.find((run) => run.status === "running");
   const groups = getEnrollmentGroups(profile.enrollmentData);
   const selectedRange =
     selectedStepCount === 1 ? "Step 1" : `Steps 1-${selectedStepCount}`;
@@ -252,7 +253,7 @@ export default function ProfileWorkspaceInfo({
                 <button
                   key={run.id}
                   type="button"
-                  onClick={() => onSelectRun(run.id)}
+                  onClick={() => onSelectRun(run)}
                   className="flex w-full items-center justify-between gap-4 p-3 text-left hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                 >
                   <div>
@@ -263,7 +264,6 @@ export default function ProfileWorkspaceInfo({
                       <StatusBadge status={run.status} />
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {run.steps.length} of {steps.length} steps |{" "}
                       {formatTimestamp(run.startedAt)} |{" "}
                       {run.startedBy?.name ?? "System schedule"}
                     </p>

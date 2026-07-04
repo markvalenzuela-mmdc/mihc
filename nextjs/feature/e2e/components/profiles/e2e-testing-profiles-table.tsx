@@ -16,6 +16,8 @@ import { E2eProfileSummary } from "../../types/e2e-testing.types";
 import {
   profileParamKey,
   profileSearchParams,
+  runParamKey,
+  runSearchParams,
 } from "../e2e-testing.query-state";
 
 const columnHelper = createColumnHelper<E2eProfileSummary>();
@@ -120,11 +122,14 @@ export function E2eTestingProfilesTable({
   profiles: Paginated<E2eProfileSummary>;
 }) {
   const [, startTransition] = useTransition();
-  const [, setSelectedProfile] = useQueryStates(profileSearchParams, {
-    shallow: false,
-    history: "push",
-    startTransition,
-  });
+  const [, setSelectedProfile] = useQueryStates(
+    { ...profileSearchParams, ...runSearchParams },
+    {
+      shallow: false,
+      history: "push",
+      startTransition,
+    },
+  );
 
   const limit = useDataTableLimit(
     { rowsPerPageOptions: [5, 10, 20] },
@@ -139,7 +144,10 @@ export function E2eTestingProfilesTable({
   const columns = useMemo(
     () =>
       createColumns((profileId) => {
-        setSelectedProfile({ [profileParamKey]: profileId });
+        setSelectedProfile({
+          [profileParamKey]: profileId,
+          [runParamKey]: null,
+        });
       }),
     [setSelectedProfile],
   );
