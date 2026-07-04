@@ -12,6 +12,7 @@ services:
       --redis-uri ${INNGEST_REDIS_URI}
       --poll-interval ${INNGEST_POLL_INTERVAL:-60}
       --queue-workers ${INNGEST_QUEUE_WORKERS:-100}
+      ${INNGEST_SDK_URL:+--sdk-url} ${INNGEST_SDK_URL}
     environment:
       - INNGEST_PORT=8288
       - INNGEST_HOST=0.0.0.0
@@ -27,7 +28,7 @@ services:
       - INNGEST_JSON=${INNGEST_JSON:-false}
       - INNGEST_VERBOSE=${INNGEST_VERBOSE:-false}
     ports:
-      - 8288
+      - "8288:8288"
     depends_on:
       inngest-postgres:
         condition: service_healthy

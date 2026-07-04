@@ -1,8 +1,10 @@
 "use client";
 
-import { type KeyboardEvent, useMemo, useState } from "react";
+import { type KeyboardEvent, useMemo, useState, useTransition } from "react";
 import { ChevronRightIcon, CircleGaugeIcon, PlayIcon, TestTube2Icon } from "lucide-react";
+import { toast } from "sonner";
 
+import { requestSmokeTest } from "@/app/smoke-testing/_actions/request-smoke-test";
 import { StatusBadge } from "@/components/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,11 +13,9 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  currentOperator,
   formatDurationMs,
   formatDurationSeconds,
   formatTimestamp,
-  getNextSmokeRunNumber,
   getSmokeAppSummary,
   getSmokeRunsForApp,
   type SmokeAppView,
@@ -32,7 +32,8 @@ export function SmokeTestingClient({ apps, initialRuns }: { apps: SmokeAppView[]
   const [selectedAppId, setSelectedAppId] = useState(apps[0]?.id ?? "");
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterValue>("all");
-  const [runs, setRuns] = useState(initialRuns);
+  const [runs] = useState(initialRuns);
+  const [isRequesting, startRequest] = useTransition();
 
   const selectedApp = apps.find((app) => app.id === selectedAppId) ?? apps[0] ?? null;
   const selectedRun = runs.find((run) => run.id === selectedRunId) ?? null;
@@ -59,32 +60,16 @@ export function SmokeTestingClient({ apps, initialRuns }: { apps: SmokeAppView[]
   function runManualSmokeTest() {
     if (!selectedApp) return;
 
-    const now = new Date().toISOString();
-    const nextRun: SmokeRunView = {
-      id: crypto.randomUUID(),
-      runNumber: getNextSmokeRunNumber(selectedApp.id, runs),
-      appId: selectedApp.id,
-      status: "success",
-      trigger: "manual",
-      total: 3,
-      passed: 3,
-      failed: 0,
-      durationSeconds: 8,
-      startedBy: currentOperator,
-      checkedAt: now,
-      testResults: ["Application responds", "Primary route loads", "Critical asset resolves"].map((testName, index) => ({
-        id: crypto.randomUUID(),
-        testName,
-        testFile: `${selectedApp.id}/smoke.spec.ts`,
-        status: "success",
-        durationMs: 1800 + index * 450,
-        errorMessage: null,
-        errorStack: null,
-      })),
-    };
-
-    setRuns((currentRuns) => [nextRun, ...currentRuns]);
-    setSelectedRunId(nextRun.id);
+    startRequest(async () => {
+      const result = await requestSmokeTest();
+      if (result.ok) {
+        toast.success("Smoke test enqueued", {
+          description: "The website smoke run was requested. Results are recorded by the test runner.",
+        });
+      } else {
+        toast.error("Could not start smoke test", { description: result.error });
+      }
+    });
   }
 
   return (
@@ -156,7 +141,7 @@ export function SmokeTestingClient({ apps, initialRuns }: { apps: SmokeAppView[]
                   <Button key={value} type="button" variant={filter === value ? "secondary" : "ghost"} size="sm" onClick={() => setFilter(value)} className="capitalize">{value}</Button>
                 ))}
               </div>
-              <Button type="button" size="sm" onClick={runManualSmokeTest}><PlayIcon className="size-4" />Run local smoke test</Button>
+              <Button type="button" size="sm" onClick={runManualSmokeTest} disabled={isRequesting}><PlayIcon className="size-4" />{isRequesting ? "Requesting…" : "Run smoke test"}</Button>
             </div>
           </div>
 

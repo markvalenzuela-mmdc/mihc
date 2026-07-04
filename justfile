@@ -19,7 +19,9 @@ _default:
     @echo "    build-docker  Build Docker images"
     @echo ""
     @echo "  playwright"
-    @echo "    test-playwright  Run Playwright tests"
+    @echo "    test-playwright       Run smoke tests (live MMDC website)"
+    @echo "    test-playwright-unit  Run consumer unit tests"
+    @echo "    serve-playwright      Start the Inngest consumer server"
     @echo ""
     @echo "  all"
     @echo "    lint-all    Run all linters"
@@ -80,9 +82,17 @@ build-docker:
 
 # ─────────────── playwright ───────────────
 
-# Run Playwright tests
+# Run the smoke suite against the live MMDC website (chromium)
 test-playwright:
-    echo "Playwright not configured yet"
+    cd {{project_root}}/playwright && pnpm run test:smoke
+
+# Run the consumer unit tests (pure result mapping)
+test-playwright-unit:
+    cd {{project_root}}/playwright && pnpm run test:unit
+
+# Start the Inngest consumer server (Hono; spawns the suite on request)
+serve-playwright:
+    cd {{project_root}}/playwright && pnpm run serve
 
 # ─────────────── all ───────────────
 
@@ -90,5 +100,4 @@ test-playwright:
 lint-all: lint
 
 # Run all tests
-test-all:
-    echo "No tests configured yet"
+test-all: test-playwright-unit test-playwright
