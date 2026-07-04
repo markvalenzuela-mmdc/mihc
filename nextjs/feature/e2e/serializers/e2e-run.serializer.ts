@@ -1,6 +1,6 @@
-import { E2eRun } from "../types/e2e-testing.types";
+import { E2eRun, E2eRunHistoryItem } from "../types/e2e-testing.types";
 
-export function serializeE2eRun(run: {
+type E2eRunBase = {
   id: string;
   runNumber: number;
   profileId: string;
@@ -8,8 +8,11 @@ export function serializeE2eRun(run: {
   startedByUser: E2eRun["startedBy"];
   startedAt: Date;
   completedAt: Date | null;
-  runSteps: E2eRun["steps"];
-}): E2eRun {
+};
+
+export function serializeE2eRunHistoryItem(
+  run: E2eRunBase,
+): E2eRunHistoryItem {
   return {
     id: run.id,
     runNumber: run.runNumber,
@@ -18,6 +21,14 @@ export function serializeE2eRun(run: {
     startedBy: run.startedByUser,
     startedAt: run.startedAt.toISOString(),
     completedAt: run.completedAt?.toISOString() ?? null,
+  };
+}
+
+export function serializeE2eRun(
+  run: E2eRunBase & { runSteps: E2eRun["steps"] },
+): E2eRun {
+  return {
+    ...serializeE2eRunHistoryItem(run),
     steps: run.runSteps,
   };
 }

@@ -1,29 +1,49 @@
 "use client";
 
 import { useState } from "react";
-import { useQueryState } from "nuqs";
+import { useQueryState, useQueryStates } from "nuqs";
+import { Paginated } from "@/lib/drizzle/pagination";
 import {
-  currentE2eOperator,
   E2eProfileWorkspaceData,
-  E2eRun,
+  E2eRunHistoryItem,
   E2eSelectedRun,
-  E2eRunStep,
-  E2eStepDefinition,
 } from "../../types/e2e-testing.types";
-import { runParamKey } from "../e2e-testing.query-state";
+import {
+  runPageParamKey,
+  runPaginationSearchParams,
+  runParamKey,
+} from "../e2e-testing.query-state";
 import E2eRunDetails from "./e2e-profile-workspace-runs";
-import ProfileWorkspaceInfo from "./e2e-profile-workspace-info";
+import {
+  ProfileWorkspaceControls,
+  ProfileWorkspaceEnrollmentData,
+  ProfileWorkspaceHeader,
+  ProfileWorkspaceRunHistory,
+} from "./e2e-profile-workspace-info";
+import { Separator } from "react-resizable-panels";
 
 export default function E2eProfileWorkspace({
   data,
+  runs,
+  isRunHistoryLoading,
+  isRunHistoryFetching,
+  isRunHistoryError,
   selectedRun,
 }: {
   data: E2eProfileWorkspaceData;
+  runs: Paginated<E2eRunHistoryItem> | null;
+  isRunHistoryLoading: boolean;
+  isRunHistoryFetching: boolean;
+  isRunHistoryError: boolean;
   selectedRun: E2eSelectedRun | null;
 }) {
-  const { profile, stepDefinitions, runs, activeRun } = data;
+  const { profile, stepDefinitions, activeRun } = data;
   const [, setSelectedRunId] = useQueryState(runParamKey, {
     history: "push",
+  });
+  const [, setRunPagination] = useQueryStates(runPaginationSearchParams, {
+    history: "push",
+    shallow: true,
   });
 
   const [selectedStepCount, setSelectedStepCount] = useState(
@@ -34,15 +54,21 @@ export default function E2eProfileWorkspace({
     activeRun?.steps.length ??
     Math.min(selectedStepCount, stepDefinitions.length);
 
-  function runAutomated() {}
+  function onAutomated() {}
 
-  function runNextManualStep() {}
+  function onManual() {}
 
-  function openRun(run: E2eRun) {
+  function onSelectRun(run: E2eRunHistoryItem) {
     setSelectedRunId(run.id);
   }
 
+  function onSelectRunPage(page: number) {
+    setRunPagination({ [runPageParamKey]: page });
+  }
+
   const runDetails = selectedRun;
+  const selectionLocked = Boolean(activeRun);
+  const runPagination = runs?.meta ?? null;
 
   if (runDetails) {
     return (
@@ -56,17 +82,36 @@ export default function E2eProfileWorkspace({
   }
 
   return (
-    <ProfileWorkspaceInfo
-      profile={profile}
-      steps={stepDefinitions}
-      runs={runs}
-      activeRun={activeRun}
-      selectedStepCount={effectiveStepCount}
-      selectionLocked={Boolean(activeRun)}
-      onSelectedStepCountChange={setSelectedStepCount}
-      onAutomated={runAutomated}
-      onManual={runNextManualStep}
-      onSelectRun={openRun}
-    />
+    <>
+      <ProfileWorkspaceHeader profile={profile} />
+
+      <div className="space-y-7 px-4 pb-6">
+        <ProfileWorkspaceControls
+          steps={stepDefinitions}
+          activeRun={activeRun}
+          selectedStepCount={effectiveStepCount}
+          selectionLocked={selectionLocked}
+          onSelectedStepCountChange={setSelectedStepCount}
+          onAutomated={onAutomated}
+          onManual={onManual}
+        />
+
+        <Separator />
+
+        <ProfileWorkspaceRunHistory
+          runs={runs?.data ?? []}
+          runPagination={runPagination}
+          isRunHistoryLoading={isRunHistoryLoading}
+          isRunHistoryFetching={isRunHistoryFetching}
+          isRunHistoryError={isRunHistoryError}
+          onSelectRun={onSelectRun}
+          onSelectRunPage={onSelectRunPage}
+        />
+
+        <Separator />
+
+        <ProfileWorkspaceEnrollmentData profile={profile} />
+      </div>
+    </>
   );
 }

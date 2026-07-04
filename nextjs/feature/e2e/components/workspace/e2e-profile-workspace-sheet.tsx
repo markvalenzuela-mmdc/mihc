@@ -1,18 +1,28 @@
 "use client";
 
-import { useQueryState, useQueryStates } from "nuqs";
+import { useQueryStates } from "nuqs";
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
+  useQueryE2eProfileRuns,
   useQueryE2eProfileWorkspace,
   useQueryE2eRunDetails,
 } from "../../query/e2e-profile-workspace.query";
 import {
   profileParamKey,
   profileSearchParams,
+  runLimitParamKey,
+  runLimitSearchParams,
+  runPageParamKey,
+  runPaginationSearchParams,
   runParamKey,
   runSearchParams,
 } from "../e2e-testing.query-state";
+import { Paginated } from "@/lib/drizzle/pagination";
+import {
+  E2eProfileWorkspaceData,
+  E2eRunHistoryItem,
+} from "../../types/e2e-testing.types";
 import E2eProfileWorkspace from "./e2e-profile-workspace";
 import E2eProfileWorkspaceSheetSkeleton from "./e2e-profile-workspace-sheet-skeleton";
 import { useTransition } from "react";
@@ -23,6 +33,8 @@ export default function E2eProfileWorkspaceSheet() {
     {
       ...profileSearchParams,
       ...runSearchParams,
+      ...runPaginationSearchParams,
+      ...runLimitSearchParams,
     },
     {
       shallow: false,
@@ -32,16 +44,28 @@ export default function E2eProfileWorkspaceSheet() {
   );
   const profileId = params[profileParamKey] ?? "";
   const runId = params[runParamKey] ?? "";
-  
+  const runPage = params[runPageParamKey] ?? 1;
+  const runLimit = Math.max(params[runLimitParamKey] ?? 5, 5);
+
   const workspaceQuery = useQueryE2eProfileWorkspace(profileId);
+  const runsQuery = useQueryE2eProfileRuns({
+    profileId,
+    page: runPage,
+    limit: runLimit,
+  });
   const runQuery = useQueryE2eRunDetails(profileId, runId);
+  const runs = runsQuery.data ?? null;
 
   return (
     <Sheet
       open={profileId.length > 0}
       onOpenChange={(open) => {
         if (!open) {
-          setParams({ [profileParamKey]: null, [runParamKey]: null });
+          setParams({
+            [profileParamKey]: null,
+            [runParamKey]: null,
+            [runPageParamKey]: null,
+          });
         }
       }}
     >
@@ -50,7 +74,19 @@ export default function E2eProfileWorkspaceSheet() {
           runId={runId}
           workspaceQuery={workspaceQuery}
           runQuery={runQuery}
-        />
+        >
+          {(workspaceQueryData) => (
+            <E2eProfileWorkspace
+              key={workspaceQueryData.profile.id}
+              data={workspaceQueryData}
+              runs={runs}
+              isRunHistoryLoading={runsQuery.isLoading}
+              isRunHistoryFetching={runsQuery.isFetching}
+              isRunHistoryError={runsQuery.isError}
+              selectedRun={runQuery.data ?? null}
+            />
+          )}
+        </E2eProfileWorkspaceSheetContent>
       </SheetContent>
     </Sheet>
   );
@@ -60,10 +96,12 @@ function E2eProfileWorkspaceSheetContent({
   runId,
   workspaceQuery,
   runQuery,
+  children,
 }: {
   runId: string;
   workspaceQuery: ReturnType<typeof useQueryE2eProfileWorkspace>;
   runQuery: ReturnType<typeof useQueryE2eRunDetails>;
+  children: (workspaceQueryData: E2eProfileWorkspaceData) => React.ReactNode;
 }) {
   if (workspaceQuery.isLoading || (runId && runQuery.isLoading)) {
     return <E2eProfileWorkspaceSheetSkeleton />;
@@ -86,13 +124,7 @@ function E2eProfileWorkspaceSheetContent({
   }
 
   if (workspaceQuery.data) {
-    return (
-      <E2eProfileWorkspace
-        key={workspaceQuery.data.profile.id}
-        data={workspaceQuery.data}
-        selectedRun={runQuery.data ?? null}
-      />
-    );
+    return children(workspaceQuery.data);
   }
 
   return null;

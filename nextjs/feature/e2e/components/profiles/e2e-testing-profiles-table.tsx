@@ -16,6 +16,8 @@ import { E2eProfileSummary } from "../../types/e2e-testing.types";
 import {
   profileParamKey,
   profileSearchParams,
+  runPageParamKey,
+  runPaginationSearchParams,
   runParamKey,
   runSearchParams,
 } from "../e2e-testing.query-state";
@@ -68,7 +70,7 @@ function createColumns(openProfile: (profileId: string) => void) {
     }),
 
     columnHelper.accessor("status", {
-      header: "Status",
+      header: "Step",
       size: 180,
       cell: ({ getValue }) => <StatusBadge status={getValue()} />,
       meta: {
@@ -123,7 +125,11 @@ export function E2eTestingProfilesTable({
 }) {
   const [, startTransition] = useTransition();
   const [, setSelectedProfile] = useQueryStates(
-    { ...profileSearchParams, ...runSearchParams },
+    {
+      ...profileSearchParams,
+      ...runSearchParams,
+      ...runPaginationSearchParams,
+    },
     {
       shallow: false,
       history: "push",
@@ -147,6 +153,7 @@ export function E2eTestingProfilesTable({
         setSelectedProfile({
           [profileParamKey]: profileId,
           [runParamKey]: null,
+          [runPageParamKey]: 1,
         });
       }),
     [setSelectedProfile],

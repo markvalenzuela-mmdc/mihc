@@ -68,6 +68,8 @@ export interface E2eRun {
   steps: E2eRunStep[];
 }
 
+export type E2eRunHistoryItem = Omit<E2eRun, "steps">;
+
 export interface E2eRunSummary {
   includedSteps: number;
   totalSteps: number;
@@ -82,7 +84,6 @@ export interface E2eSelectedRun extends E2eRun {
 
 export interface E2eProfileWorkspaceData {
   profile: E2eProfileWorkspaceProfile;
-  runs: E2eRun[];
   activeRun: E2eRun | null;
   stepDefinitions: E2eStepDefinition[];
 }

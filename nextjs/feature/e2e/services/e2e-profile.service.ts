@@ -1,14 +1,22 @@
-import { e2eRunSteps, e2eSteps, getDb, profiles } from "@/lib/drizzle/db";
+import {
+  e2eRuns,
+  e2eRunSteps,
+  e2eSteps,
+  getDb,
+  profiles,
+} from "@/lib/drizzle/db";
 import { paginateByQuery } from "@/lib/drizzle/pagination";
 import { count, eq, sql } from "drizzle-orm";
 import {
   E2eProfileSummary,
   E2eProfileWorkspaceData,
-  E2eRun,
-  E2eRunSummary,
+  E2eRunHistoryItem,
   E2eSelectedRun,
 } from "../types/e2e-testing.types";
-import { serializeE2eRun } from "../serializers/e2e-run.serializer";
+import {
+  serializeE2eRun,
+  serializeE2eRunHistoryItem,
+} from "../serializers/e2e-run.serializer";
 
 const db = getDb();
 
@@ -63,24 +71,11 @@ export async function getE2eProfileById(
     throw new Error("Profile ID is required");
   }
 
-  const [profile, stepDefinitions, activeRun] = await Promise.all([
+  const [profile, stepDefinitions, activeRun, latestRun] = await Promise.all([
     db.query.profiles.findFirst({
       where: (profiles, { eq }) => eq(profiles.id, profileId),
       with: {
         enrollmentData: true,
-        e2eRuns: {
-          orderBy: (e2eRuns, { desc }) => [desc(e2eRuns.runNumber)],
-          with: {
-            startedByUser: true,
-            runSteps: {
-              with: {
-                e2eStep: true,
-                tests: true,
-              },
-              orderBy: (e2eRunSteps, { asc }) => [asc(e2eRunSteps.createdAt)],
-            },
-          },
-        },
       },
     }),
     db.query.e2eSteps.findMany({
@@ -101,25 +96,63 @@ export async function getE2eProfileById(
         },
       },
     }),
+    db.query.e2eRuns.findFirst({
+      where: (e2eRuns, { eq }) => eq(e2eRuns.profileId, profileId),
+      orderBy: (e2eRuns, { desc }) => [desc(e2eRuns.runNumber)],
+    }),
   ]);
 
   if (!profile || !profile.enrollmentData) return null;
-
-  const runs: E2eRun[] = profile.e2eRuns.map(serializeE2eRun);
-
-  const latestRun = runs[0] ?? null;
 
   const activeRunSerialized = activeRun ? serializeE2eRun(activeRun) : null;
 
   return {
     profile: {
       ...profile,
-      latestRun,
+      latestRun: latestRun ?? null,
       enrollmentData: profile.enrollmentData,
     },
-    runs,
     activeRun: activeRunSerialized,
     stepDefinitions,
+  };
+}
+
+export async function getPaginatedE2eRunsForProfile({
+  profileId,
+  limit = 5,
+  page = 1,
+}: {
+  profileId: string;
+  limit?: number;
+  page?: number;
+}) {
+  if (!profileId) {
+    throw new Error("Profile ID is required");
+  }
+
+  const whereClause = eq(e2eRuns.profileId, profileId);
+
+  const [data, meta] = await paginateByQuery({
+    fetchPage: ({ limit, offset }) =>
+      db.query.e2eRuns.findMany({
+        where: () => whereClause,
+        orderBy: (e2eRuns, { desc }) => [desc(e2eRuns.runNumber)],
+        limit,
+        offset,
+        with: {
+          startedByUser: true,
+        },
+      }),
+    fetchTotalCount: () =>
+      db.select({ total: count() }).from(e2eRuns).where(whereClause),
+  }).withPages({
+    limit,
+    page,
+  });
+
+  return {
+    data: data.map((run): E2eRunHistoryItem => serializeE2eRunHistoryItem(run)),
+    meta,
   };
 }
 
