@@ -20,7 +20,7 @@ import {
   ProfileWorkspaceHeader,
   ProfileWorkspaceRunHistory,
 } from "./e2e-profile-workspace-info";
-import { Separator } from "react-resizable-panels";
+import { Separator } from "@/components/ui/separator";
 
 export default function E2eProfileWorkspace({
   data,
