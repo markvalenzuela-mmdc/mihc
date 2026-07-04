@@ -9,6 +9,7 @@ export async function getSmokeTestApps(): Promise<SmokeTestApp[]> {
     with: {
       smokeRuns: {
         orderBy: (smokeRuns, { desc }) => [desc(smokeRuns.runNumber)],
+        limit: 10,
       },
     },
   });

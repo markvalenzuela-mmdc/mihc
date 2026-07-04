@@ -10,7 +10,7 @@
  */
 import { spawn } from "node:child_process";
 import { readFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { tmpdir, platform } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Logger } from "../logger";
@@ -18,7 +18,7 @@ import type { PlaywrightJsonReport } from "./map-results";
 
 // server/runner/run-smoke.ts -> up two dirs is the playwright/ package root.
 const PACKAGE_ROOT = resolve(fileURLToPath(import.meta.url), "../../..");
-const PLAYWRIGHT_BIN = join(PACKAGE_ROOT, "node_modules", ".bin", "playwright");
+const PLAYWRIGHT_BIN = join(PACKAGE_ROOT, "node_modules", ".bin", `playwright${platform() === "win32" ? ".CMD" : ""}`);
 
 export interface RunSmokeOptions {
   correlationId: string;
@@ -51,7 +51,7 @@ export async function runSmoke(opts: RunSmokeOptions): Promise<RunSmokeResult> {
     const child = spawn(
       PLAYWRIGHT_BIN,
       ["test", "tests/smoke", "--project=chromium", "--reporter=json"],
-      { cwd: PACKAGE_ROOT, env },
+      { cwd: PACKAGE_ROOT, env, shell: platform() === "win32" },
     );
 
     // Surface child output through the structured logger (browser noise stays

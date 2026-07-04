@@ -1,8 +1,15 @@
 "use server";
 
-import { inngest, SMOKE_TEST_REQUESTED, type SmokeTestRequestedData } from "@/lib/inngest/client";
+import {
+  inngest,
+  SMOKE_TEST_REQUESTED,
+  type SmokeTestRequestedData,
+} from "@/lib/inngest/client";
+import { err, ok } from "@/utils/server-action-return";
 
-export type RequestSmokeTestResult = { ok: true; correlationId: string } | { ok: false; error: string };
+export type RequestSmokeTestResult =
+  | ReturnType<typeof ok<{ correlationId: string }>>
+  | ReturnType<typeof err<string>>;
 
 /**
  * Enqueues a manual website smoke-test request. Publishes `smoke-test/requested`
@@ -25,7 +32,7 @@ export async function requestSmokeTest(): Promise<RequestSmokeTestResult> {
 
   try {
     await inngest.send({ name: SMOKE_TEST_REQUESTED, data });
-    return { ok: true, correlationId };
+    return ok({ correlationId });
   } catch (error) {
     console.error(
       JSON.stringify({
@@ -34,6 +41,6 @@ export async function requestSmokeTest(): Promise<RequestSmokeTestResult> {
         message: error instanceof Error ? error.message : String(error),
       }),
     );
-    return { ok: false, error: "Failed to enqueue smoke test. Please try again." };
+    return err("Failed to enqueue smoke test. Please try again.");
   }
 }

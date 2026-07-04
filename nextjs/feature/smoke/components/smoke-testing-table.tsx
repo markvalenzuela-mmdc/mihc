@@ -21,6 +21,8 @@ import { Paginated } from "@/lib/drizzle/pagination";
 import { Button } from "@/components/ui/button";
 import { useQueryState } from "nuqs";
 import { runParamKey } from "./smoke-testing.query-state";
+import { requestSmokeTest } from "../actions/request-smoke-test.action";
+import { toast } from "sonner";
 
 const columnHelper = createColumnHelper<SmokeTestRun>();
 
@@ -191,6 +193,22 @@ export function SmokeTestingTable({
 
   const columns = useMemo(() => createColumns(openRun), [openRun]);
 
+  function runManualSmokeTest() {
+    startTransition(async () => {
+      const result = await requestSmokeTest();
+      if (result.ok) {
+        toast.success("Smoke test enqueued", {
+          description:
+            "The website smoke run was requested. Results are recorded by the test runner.",
+        });
+      } else {
+        toast.error("Could not start smoke test", {
+          description: result.error,
+        });
+      }
+    });
+  }
+
   if (!appName) {
     return null;
   }
@@ -227,7 +245,7 @@ export function SmokeTestingTable({
       >
         <div className="flex items-center justify-between">
           <DataTable.TabFilter />
-          <Button>
+          <Button onClick={runManualSmokeTest}>
             <PlayIcon className="size-4" />
             Run smoke test
           </Button>
