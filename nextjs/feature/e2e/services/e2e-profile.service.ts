@@ -1,5 +1,4 @@
 import {
-  Db,
   e2eRuns,
   e2eRunSteps,
   e2eSteps,
@@ -18,6 +17,7 @@ import {
   serializeE2eRun,
   serializeE2eRunHistoryItem,
 } from "../serializers/e2e-run.serializer";
+import { DbExecutor } from "@/types/db-transaction";
 
 export async function getPaginatedE2eProfiles(
   {
@@ -27,7 +27,7 @@ export async function getPaginatedE2eProfiles(
     limit?: number;
     page?: number;
   },
-  db: Db = getDb(),
+  db: DbExecutor = getDb(),
 ) {
   const [data, meta] = await paginateByQuery({
     fetchPage: ({ limit, offset }) =>
@@ -68,7 +68,7 @@ export async function getPaginatedE2eProfiles(
 
 export async function getE2eProfileById(
   profileId: string,
-  db: Db = getDb(),
+  db: DbExecutor = getDb(),
 ): Promise<E2eProfileWorkspaceData | null> {
   if (!profileId) {
     throw new Error("Profile ID is required");
@@ -130,7 +130,7 @@ export async function getPaginatedE2eRunsForProfile(
     limit?: number;
     page?: number;
   },
-  db: Db = getDb(),
+  db: DbExecutor = getDb(),
 ) {
   if (!profileId) {
     throw new Error("Profile ID is required");
@@ -170,7 +170,7 @@ export async function getE2eRunById(
     profileId: string;
     runId: string;
   },
-  db: Db = getDb(),
+  db: DbExecutor = getDb(),
 ): Promise<E2eSelectedRun | null> {
   if (!profileId) {
     throw new Error("Profile ID is required");

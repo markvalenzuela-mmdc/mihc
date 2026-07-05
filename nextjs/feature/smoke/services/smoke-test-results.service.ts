@@ -1,8 +1,9 @@
-import { Db, getDb } from "@/lib/drizzle/db";
+import { getDb } from "@/lib/drizzle/db";
+import { DbExecutor } from "@/types/db-transaction";
 
 export async function getSmokeTestResultsByRunId(
   runId: string,
-  db: Db = getDb(),
+  db: DbExecutor = getDb(),
 ) {
   if (!runId) {
     throw new Error("Run ID is required");
