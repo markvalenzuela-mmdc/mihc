@@ -30,4 +30,6 @@ export function getDb() {
   return cachedConnection.db;
 }
 
+export type Db = ReturnType<typeof getDb>;
+
 export * from "./schema";

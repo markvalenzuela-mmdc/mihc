@@ -1,9 +1,9 @@
-import { getDb } from "@/lib/drizzle/db";
+import { Db, getDb } from "@/lib/drizzle/db";
 import { SmokeTestApp } from "../types/smoke-test-apps.types";
 
-const db = getDb();
-
-export async function getSmokeTestApps(): Promise<SmokeTestApp[]> {
+export async function getSmokeTestApps(
+  db: Db = getDb(),
+): Promise<SmokeTestApp[]> {
   const apps = await db.query.apps.findMany({
     orderBy: (apps, { asc }) => [asc(apps.name)],
     with: {

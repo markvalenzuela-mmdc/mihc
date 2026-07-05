@@ -1,22 +1,23 @@
-import { apps, getDb, smokeRuns } from "@/lib/drizzle/db";
+import { apps, Db, getDb, smokeRuns } from "@/lib/drizzle/db";
 import { paginateByQuery } from "@/lib/drizzle/pagination";
 import { and, count, eq } from "drizzle-orm";
 import { SmokeTestRunStatus } from "../types/smoke-test-apps.types";
 import { smokeRunsStatusSchema } from "../schema/smoke-test-runs.schema";
 
-const db = getDb();
-
-export async function getPaginatedSmokeTestRuns({
-  appId,
-  limit = 5,
-  page = 1,
-  tab,
-}: {
-  appId: string;
-  limit?: number;
-  page?: number;
-  tab?: SmokeTestRunStatus;
-}) {
+export async function getPaginatedSmokeTestRuns(
+  {
+    appId,
+    limit = 5,
+    page = 1,
+    tab,
+  }: {
+    appId: string;
+    limit?: number;
+    page?: number;
+    tab?: SmokeTestRunStatus;
+  },
+  db: Db = getDb(),
+) {
   const whereClause = tab
     ? and(eq(smokeRuns.appId, appId), eq(smokeRuns.status, tab))
     : eq(smokeRuns.appId, appId);

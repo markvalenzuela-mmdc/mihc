@@ -1,8 +1,9 @@
-import { getDb } from "@/lib/drizzle/db";
+import { Db, getDb } from "@/lib/drizzle/db";
 
-const db = getDb();
-
-export async function getSmokeTestResultsByRunId(runId: string) {
+export async function getSmokeTestResultsByRunId(
+  runId: string,
+  db: Db = getDb(),
+) {
   if (!runId) {
     throw new Error("Run ID is required");
   }
