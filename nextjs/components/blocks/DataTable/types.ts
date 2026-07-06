@@ -2,7 +2,7 @@ import { ClassProps, StyleProps } from "@/types/generic.props";
 import { ColumnDef } from "@tanstack/react-table";
 import React, { CSSProperties } from "react";
 
-interface DataTableState<TData = any, TValue = any> {
+interface DataTableState<TData = unknown, TValue = unknown> {
   table: {
     columns: ColumnDef<TData, TValue>[];
     data: TData[];

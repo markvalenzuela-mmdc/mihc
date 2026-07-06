@@ -5,7 +5,7 @@ import {
   type InferSelectModel,
   type SQL,
 } from "drizzle-orm";
-import type { AnyPgTable } from "drizzle-orm/pg-core";
+import type { AnyPgTable, SelectedFields } from "drizzle-orm/pg-core";
 import { DbExecutor } from "@/types/db-transaction";
 
 const DEFAULT_PAGE_SIZE = 10;
@@ -206,32 +206,27 @@ export function paginateTable<TTable extends AnyPgTable>(
               : [query.orderBy]
             : [];
 
-          const resolvedSelect = resolveTableSelect(table, query.select);
+          const resolvedSelect =
+            resolveTableSelect(table, query.select) as SelectedFields;
 
-          let dataQuery: any = tx
-            .select(resolvedSelect as any)
-            .from(table as any);
+          const baseQuery = tx.select(resolvedSelect).from(table);
+          const withWhere = query.where
+            ? baseQuery.where(query.where)
+            : baseQuery;
+          const withOrderBy =
+            orderByColumns.length > 0
+              ? withWhere.orderBy(...orderByColumns)
+              : withWhere;
 
-          if (query.where) {
-            dataQuery = dataQuery.where(query.where);
-          }
-
-          if (orderByColumns.length > 0) {
-            dataQuery = dataQuery.orderBy(...orderByColumns);
-          }
-
-          return dataQuery.limit(limit).offset(offset);
+          return withOrderBy.limit(limit).offset(offset);
         },
         fetchTotalCount: () => {
-          let totalQuery: any = tx
-            .select({ total: count() })
-            .from(table as any);
+          const baseQuery = tx.select({ total: count() }).from(table);
+          const withWhere = query.where
+            ? baseQuery.where(query.where)
+            : baseQuery;
 
-          if (query.where) {
-            totalQuery = totalQuery.where(query.where);
-          }
-
-          return totalQuery;
+          return withWhere;
         },
       });
     },
