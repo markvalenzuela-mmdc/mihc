@@ -17,6 +17,7 @@ const eslintConfig = defineConfig([
     rules: {
       "react-hooks/set-state-in-effect": "warn",
       "react/no-children-prop": "off",
+      "@typescript-eslint/no-empty-object-type": "off",
     },
   },
 ]);
