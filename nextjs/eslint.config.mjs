@@ -16,6 +16,7 @@ const eslintConfig = defineConfig([
   {
     rules: {
       "react-hooks/set-state-in-effect": "warn",
+      "react/no-children-prop": "off",
     },
   },
 ]);
