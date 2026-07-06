@@ -33,7 +33,7 @@ Build a comprehensive test suite for the Next.js backend and frontend using Vite
 
 ```sh
 cd nextjs
-pnpm add -D vitest @vitejs/plugin-react @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom
+pnpm add -D vitest @vitejs/plugin-react @testing-library/react @testing-library/jest-dom jsdom @vitest/coverage-v8
 ```
 
 ### 1.2 vitest.config.ts
@@ -116,13 +116,12 @@ nextjs/
 
 ### 2.1 Service Tests
 
-Pattern: services accept `db: DbExecutor = getDb()`. Mock via `vi.mock`.
+Pattern: services accept `db: DbExecutor = getDb()`. For service unit tests, pass a fake executor object directly and make its methods `vi.fn()` mocks. Reserve `vi.mock()` for modules that cannot be injected, such as imported hooks or singleton modules.
 
 ```ts
 // __tests__/unit/services/smoke/smoke-test-runs.service.test.ts
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// Mock the DB module
 const mockDb = {
   query: {
     smokeRuns: {
@@ -134,13 +133,19 @@ const mockDb = {
   where: vi.fn().mockReturnThis(),
 }
 
-vi.mock('@/lib/drizzle/db', () => ({
-  getDb: () => mockDb,
-}))
-
 describe('getPaginatedSmokeTestRuns', () => {
   it('returns paginated runs for an app', async () => {
-    // ...
+    mockDb.query.smokeRuns.findMany.mockResolvedValue([{ id: 'run-1' }])
+
+    const result = await getPaginatedSmokeTestRuns(
+      { appId: 'website', limit: 5, page: 1 },
+      mockDb as never,
+    )
+
+    expect(mockDb.query.smokeRuns.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ limit: 5, offset: 0 }),
+    )
+    expect(result.data).toEqual([{ id: 'run-1' }])
   })
 })
 ```
@@ -164,14 +169,14 @@ Test Zod validators with valid and invalid inputs. No mocking needed — pure da
 ```ts
 describe('smokeRunsStatusSchema', () => {
   it('accepts valid status values', () => {
-    expect(smokeRunsStatusSchema.parse('success')).toBe('success')
-    expect(smokeRunsStatusSchema.parse('degraded')).toBe('degraded')
-    expect(smokeRunsStatusSchema.parse('failure')).toBe('failure')
+    expect(smokeRunsStatusSchema.parse({ status: 'success' })).toEqual({ status: 'success' })
+    expect(smokeRunsStatusSchema.parse({ status: 'degraded' })).toEqual({ status: 'degraded' })
+    expect(smokeRunsStatusSchema.parse({ status: 'failure' })).toEqual({ status: 'failure' })
   })
 
   it('rejects invalid status values', () => {
-    expect(() => smokeRunsStatusSchema.parse('unknown')).toThrow()
-    expect(() => smokeRunsStatusSchema.parse('')).toThrow()
+    expect(() => smokeRunsStatusSchema.parse({ status: 'unknown' })).toThrow()
+    expect(() => smokeRunsStatusSchema.parse({ status: '' })).toThrow()
   })
 })
 ```
@@ -407,9 +412,16 @@ docs/
 |----------|-----------|
 | Vitest for unit/integration, Playwright for E2E | Services and schemas don't need a browser; user flows do |
 | `DbExecutor` injection for unit tests | Already exists in services — no refactor needed for testability |
-| `vi.mock` on `@/lib/drizzle/db` for unit tests | Avoids real DB connections; keeps unit tests fast and isolated |
+| Inject fake `DbExecutor` objects built with `vi.fn()` | Avoids real DB connections, keeps service tests explicit, and avoids `vi.mock` hoisting issues |
+| Use `vi.mock` only for non-injectable imports | Still useful for component hooks, singleton modules, and dependencies loaded internally |
 | Separate test database for integration | Catches real SQL bugs, constraint violations, transaction behavior |
 | Extend `playwright/` not duplicate | Reuses custom reporter, TestResult schema, run-mode tracking |
 | `NextRequest` constructor for route handler tests | Tests the handler function directly — no need to spin up a server |
 | jsdom environment for component tests | Lightweight — no browser needed for component rendering tests |
 | Mock TanStack Query hooks for component tests | Isolates UI behavior from data fetching; precise state control |
+
+## Current Ticket Slice Notes
+
+For ClickUp task `86d3k505q`, the implemented slice is limited to Vitest setup plus backend service/schema/utility unit tests. It intentionally does not add route-handler integration tests, component tests, Playwright Next.js tests, or root `justfile` orchestration yet.
+
+The implemented service tests use injected fake DB executors with `vi.fn()` methods instead of globally mocking `@/lib/drizzle/db`. This is the preferred pattern when a service exposes a `db` parameter. `pnpm test` and `pnpm test:coverage` are the acceptance commands for this slice; lint/typecheck/build may still report unrelated pre-existing app issues unless those are handled in a separate task.

@@ -25,7 +25,7 @@ Goal: build a test suite covering the Next.js backend and frontend.
 
 ### Backend Unit Tests → Vitest
 
-Services already accept optional `DbExecutor` injection (`db: DbExecutor = getDb()`). This makes mocking trivial — no DI framework needed. `vi.mock` the db module, provide a stubbed executor, test service logic in isolation.
+Services already accept optional `DbExecutor` injection (`db: DbExecutor = getDb()`). This makes mocking trivial — no DI framework needed. Prefer passing a fake executor object whose methods are `vi.fn()` mocks. Use `vi.mock` only when the code under test imports a dependency directly and cannot receive it as an argument.
 
 ### Backend Integration Tests → Vitest
 
@@ -43,7 +43,8 @@ Add a Next.js-specific project to the existing `playwright/playwright.config.ts`
 
 | Approach | Use Case |
 |----------|----------|
-| `vi.mock` on `@/lib/drizzle/db` | Unit tests for services/repos — inject mocked DbExecutor |
+| Injected fake `DbExecutor` with `vi.fn()` methods | Unit tests for services/repos — explicit, local mocks with no real database connection |
+| `vi.mock` on imported modules | Component hooks or non-injectable dependencies that must be replaced at module load time |
 | Real test PostgreSQL with migrations | Integration tests for route handlers — catch actual query bugs, transaction behavior, constraint violations |
 
 ### Playwright Location: Extend existing playwright/
@@ -62,11 +63,12 @@ Add new project entries to `playwright/playwright.config.ts`. Benefits:
 - **Jest instead of Vitest** — Vitest is faster, natively understands ESM/TypeScript, and integrates with Vite (which Next.js uses under the hood).
 - **New separate Playwright config in nextjs/** — Would duplicate the reporter, TestResult schema, and run-mode infrastructure already in `playwright/`.
 - **Single test database with fixtures** — Mixed approach is better: mock for fast unit tests, real DB for integration to catch real query issues.
+- **Use `vi.mock` for every service DB dependency** — Unnecessary where services already accept `DbExecutor`; direct `vi.fn()` injection is simpler, avoids hoisting pitfalls, and keeps test setup scoped to each test file.
 
 ## Open / Future
 
 - Visual regression testing (Playwright screenshot comparisons)
 - Performance testing (Lighthouse CI integration)
-- Test coverage reporting
+- Broader service edge-case coverage beyond the first backend unit-test slice
 - CI pipeline integration (GitHub Actions workflow that runs both `pnpm test` in nextjs/ and `pnpm test:nextjs` in playwright/)
 - Component story / screenshot tests with Chromatic or similar
