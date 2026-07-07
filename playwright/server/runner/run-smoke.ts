@@ -15,6 +15,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Logger } from "../logger";
 import type { PlaywrightJsonReport } from "./map-results";
+import type { SmokeTarget } from "./smoke-targets";
 
 // server/runner/run-smoke.ts -> up two dirs is the playwright/ package root.
 const PACKAGE_ROOT = resolve(fileURLToPath(import.meta.url), "../../..");
@@ -25,6 +26,7 @@ export interface RunSmokeOptions {
   trigger: "manual" | "scheduled";
   /** Operator identity threaded to the suite via TRIGGERED_BY (null in v1). */
   requestedBy?: string | null;
+  target: SmokeTarget;
   logger: Logger;
 }
 
@@ -34,23 +36,24 @@ export interface RunSmokeResult {
 }
 
 export async function runSmoke(opts: RunSmokeOptions): Promise<RunSmokeResult> {
-  const { correlationId, trigger, requestedBy, logger } = opts;
+  const { correlationId, trigger, requestedBy, target, logger } = opts;
   const reportPath = join(tmpdir(), `smoke-report-${correlationId}.json`);
 
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     TEST_MODE: trigger === "manual" ? "manual" : "automated",
     TRIGGERED_BY: requestedBy ?? (trigger === "manual" ? "manual-dashboard" : "scheduler"),
-    TEST_TARGET: "mmdc-website",
+    TEST_TARGET: target.testTarget,
+    PLAYWRIGHT_BASE_URL: target.baseUrl,
     PLAYWRIGHT_JSON_OUTPUT_FILE: reportPath,
   };
 
-  logger.info("suite_spawn", { reportPath });
+  logger.info("suite_spawn", { reportPath, appId: target.appId, testPath: target.testPath });
 
   const exitCode = await new Promise<number | null>((resolvePromise) => {
     const child = spawn(
       PLAYWRIGHT_BIN,
-      ["test", "tests/smoke", "--project=chromium", "--reporter=json"],
+      ["test", target.testPath, `--project=${target.project}`, "--reporter=json"],
       { cwd: PACKAGE_ROOT, env, shell: platform() === "win32" },
     );
 

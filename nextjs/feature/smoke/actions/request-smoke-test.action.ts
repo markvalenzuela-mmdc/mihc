@@ -6,24 +6,30 @@ import {
   type SmokeTestRequestedData,
 } from "@/lib/inngest/client";
 import { err, ok } from "@/utils/server-action-return";
+import { getSmokeTestTarget } from "../config/smoke-test-targets.config";
 
 export type RequestSmokeTestResult =
   | ReturnType<typeof ok<{ correlationId: string }>>
   | ReturnType<typeof err<string>>;
 
 /**
- * Enqueues a manual website smoke-test request. Publishes `smoke-test/requested`
+ * Enqueues a manual smoke-test request. Publishes `smoke-test/requested`
  * to Inngest with a fresh correlationId; the Playwright consumer runs the suite
  * and persists results. This action only enqueues — it does not wait for or read
  * the run.
  *
  * v1: website suite only, `requestedBy` is null (operator attribution deferred).
  */
-export async function requestSmokeTest(): Promise<RequestSmokeTestResult> {
+export async function requestSmokeTest(appId: string): Promise<RequestSmokeTestResult> {
+  const target = getSmokeTestTarget(appId);
+  if (!target) {
+    return err("Smoke tests are not configured for this app yet.");
+  }
+
   const correlationId = crypto.randomUUID();
   const data: SmokeTestRequestedData = {
-    appId: "website",
-    suite: "smoke",
+    appId: target.appId,
+    suite: target.suite,
     trigger: "manual",
     correlationId,
     requestedBy: null,

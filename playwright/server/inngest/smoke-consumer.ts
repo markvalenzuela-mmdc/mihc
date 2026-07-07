@@ -12,9 +12,10 @@
 import { createLogger } from "../logger";
 import { mapResults } from "../runner/map-results";
 import { runSmoke } from "../runner/run-smoke";
+import { getSmokeTarget } from "../runner/smoke-targets";
 import { persistRun } from "../db/persist-run";
 import { inngest } from "./client";
-import { SMOKE_TEST_REQUESTED, SUPPORTED_APP_ID, SUPPORTED_SUITE, smokeTestRequestedSchema } from "./events";
+import { SMOKE_TEST_REQUESTED, SUPPORTED_SUITE, smokeTestRequestedSchema } from "./events";
 
 export const smokeConsumer = inngest.createFunction(
   {
@@ -37,7 +38,8 @@ export const smokeConsumer = inngest.createFunction(
     const data = parsed.data;
     logger.info("event_received", { appId: data.appId, suite: data.suite, trigger: data.trigger });
 
-    if (data.appId !== SUPPORTED_APP_ID || data.suite !== SUPPORTED_SUITE) {
+    const target = getSmokeTarget(data.appId);
+    if (!target || data.suite !== SUPPORTED_SUITE || data.suite !== target.suite) {
       logger.warn("unsupported_payload", { appId: data.appId, suite: data.suite });
       return { skipped: "unsupported_payload" as const };
     }
@@ -49,6 +51,7 @@ export const smokeConsumer = inngest.createFunction(
         correlationId: data.correlationId,
         trigger: data.trigger,
         requestedBy: data.requestedBy ?? null,
+        target,
         logger,
       });
       return mapResults(report);

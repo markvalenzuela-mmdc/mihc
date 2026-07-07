@@ -11,11 +11,12 @@ import { Inngest } from "inngest";
 
 export const SMOKE_TEST_REQUESTED = "smoke-test/requested";
 
+export type SmokeTestRequestedAppId = "website";
 export type SmokeTestTrigger = "manual" | "scheduled";
 
 /** Payload v1 for `smoke-test/requested`. */
 export interface SmokeTestRequestedData {
-  appId: "website";
+  appId: SmokeTestRequestedAppId;
   suite: "smoke";
   trigger: SmokeTestTrigger;
   correlationId: string;

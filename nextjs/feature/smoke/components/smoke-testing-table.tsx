@@ -195,11 +195,13 @@ export function SmokeTestingTable({
 
   function runManualSmokeTest() {
     startTransition(async () => {
-      const result = await requestSmokeTest();
+      if (!appName) return;
+
+      const result = await requestSmokeTest(appName);
       if (result.ok) {
         toast.success("Smoke test enqueued", {
           description:
-            "The website smoke run was requested. Results are recorded by the test runner.",
+            `${appName} smoke run was requested. Results are recorded by the test runner.`,
         });
       } else {
         toast.error("Could not start smoke test", {
