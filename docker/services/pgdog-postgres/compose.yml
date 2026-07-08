@@ -1,6 +1,6 @@
 services:
   app-pgdog:
-    image: ${PGDOG_IMAGE}
+    image: ghcr.io/pgdogdev/pgdog:v0.1.26
     restart: unless-stopped
     ports:
       - "6432:6432"
@@ -14,7 +14,7 @@ services:
         condition: service_healthy
 
   app-postgres:
-    image: ${APP_POSTGRES_IMAGE}
+    image: postgres:18-alpine
     restart: unless-stopped
     environment:
       - POSTGRES_USER=${APP_POSTGRES_USER}

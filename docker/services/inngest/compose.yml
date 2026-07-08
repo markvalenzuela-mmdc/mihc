@@ -44,7 +44,7 @@ services:
       start_period: 30s
 
   inngest-postgres:
-    image: ${INNGEST_POSTGRES_IMAGE}
+    image: postgres:16-alpine
     restart: unless-stopped
     environment:
       - POSTGRES_DB=${INNGEST_POSTGRES_DB}
