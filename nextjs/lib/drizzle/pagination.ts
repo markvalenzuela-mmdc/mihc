@@ -209,19 +209,21 @@ export function paginateTable<TTable extends AnyPgTable>(
           const resolvedSelect =
             resolveTableSelect(table, query.select) as SelectedFields;
 
-          const baseQuery = tx.select(resolvedSelect).from(table);
+          const baseQuery = tx.select(resolvedSelect).from(table as AnyPgTable);
           const withWhere = query.where
             ? baseQuery.where(query.where)
             : baseQuery;
           const withOrderBy =
             orderByColumns.length > 0
-              ? withWhere.orderBy(...orderByColumns)
+              ? withWhere.orderBy(...(orderByColumns as [SQL, ...SQL[]]))
               : withWhere;
 
-          return withOrderBy.limit(limit).offset(offset);
+          return withOrderBy
+            .limit(limit)
+            .offset(offset) as unknown as Promise<PaginateTableResult<TTable, TSelect>[]>;
         },
         fetchTotalCount: () => {
-          const baseQuery = tx.select({ total: count() }).from(table);
+          const baseQuery = tx.select({ total: count() }).from(table as AnyPgTable);
           const withWhere = query.where
             ? baseQuery.where(query.where)
             : baseQuery;
