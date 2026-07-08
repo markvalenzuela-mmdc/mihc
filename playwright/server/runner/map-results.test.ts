@@ -2,9 +2,21 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { mapResults, type PlaywrightJsonReport } from "./map-results";
 
+type Annotation = { type: string; description?: string };
+
 /** Minimal report builder mirroring the real @playwright/test 1.61.1 JSON shape. */
 function report(
-  specs: Array<{ title: string; file?: string; status?: string; duration?: number; error?: { message?: string; stack?: string } }>,
+  specs: Array<{
+    title: string;
+    file?: string;
+    status?: string;
+    duration?: number;
+    error?: { message?: string; stack?: string };
+    /** Test-level annotations (where runtime annotations normally land). */
+    annotations?: Annotation[];
+    /** Result-level annotations, to exercise the fallback path. */
+    resultAnnotations?: Annotation[];
+  }>,
   opts: { duration?: number; errors?: Array<{ message?: string }> } = {},
 ): PlaywrightJsonReport {
   const unexpected = specs.filter((s) => s.status && s.status !== "passed" && s.status !== "skipped").length;
@@ -19,6 +31,7 @@ function report(
           file: s.file ?? "smoke/landing.spec.ts",
           tests: [
             {
+              annotations: s.annotations,
               results: [
                 {
                   status: (s.status ?? "passed") as never,
@@ -26,6 +39,7 @@ function report(
                   error: s.error,
                   errors: s.error ? [s.error] : [],
                   retry: 0,
+                  annotations: s.resultAnnotations,
                 },
               ],
             },
@@ -38,6 +52,11 @@ function report(
   };
 }
 
+/** Build a `check` annotation as `lib/smoke.ts` serializes it. */
+function check(name: string, status: "pass" | "fail"): Annotation {
+  return { type: "check", description: JSON.stringify({ name, status }) };
+}
+
 test("all tests pass => success", () => {
   const r = mapResults(report([{ title: "a", status: "passed" }, { title: "b", status: "passed" }], { duration: 6356 }));
   assert.equal(r.status, "success");
@@ -48,11 +67,19 @@ test("all tests pass => success", () => {
   assert.equal(r.testResults[0].testFile, "smoke/landing.spec.ts");
 });
 
-test("suite ran with a failing test => degraded", () => {
+test("suite ran with a failing test => degraded, clean message, no raw stack", () => {
   const r = mapResults(
     report([
       { title: "a", status: "passed" },
-      { title: "b", status: "failed", error: { message: "boom", stack: "at b" } },
+      {
+        title: "b",
+        status: "failed",
+        error: { message: "visible=false\n\nexpect(received).toBeTruthy()", stack: "at b" },
+        annotations: [
+          { type: "url", description: "https://example.com/b" },
+          check("key-content", "fail"),
+        ],
+      },
     ]),
   );
   assert.equal(r.status, "degraded");
@@ -60,8 +87,39 @@ test("suite ran with a failing test => degraded", () => {
   assert.equal(r.passed, 1);
   assert.equal(r.failed, 1);
   const failing = r.testResults.find((t) => t.status === "failure");
-  assert.equal(failing?.errorMessage, "boom");
-  assert.equal(failing?.errorStack, "at b");
+  assert.equal(
+    failing?.errorMessage,
+    "1 check failed on https://example.com/b:\n• Expected page content did not render",
+  );
+  // Raw stack and `expect` internals are dropped, not persisted.
+  assert.equal(failing?.errorStack, null);
+  assert.equal(failing?.errorMessage?.includes("toBeTruthy"), false);
+});
+
+test("passing test carries no error message or stack", () => {
+  const r = mapResults(report([{ title: "a", status: "passed" }]));
+  assert.equal(r.testResults[0].errorMessage, null);
+  assert.equal(r.testResults[0].errorStack, null);
+});
+
+test("result-level annotations are used when test-level are absent", () => {
+  const r = mapResults(
+    report([
+      {
+        title: "b",
+        status: "failed",
+        resultAnnotations: [
+          { type: "url", description: "https://example.com/b" },
+          check("page-loads", "fail"),
+        ],
+      },
+    ]),
+  );
+  const failing = r.testResults.find((t) => t.status === "failure");
+  assert.equal(
+    failing?.errorMessage,
+    "1 check failed on https://example.com/b:\n• Page did not return a successful response",
+  );
 });
 
 test("timedOut and interrupted count as failure", () => {

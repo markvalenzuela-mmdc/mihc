@@ -11,6 +11,8 @@
  * typed here; the reporter emits more.
  */
 
+import { formatFailure, type PwAnnotation } from "./format-failure";
+
 /** Raw per-attempt status from the JSON reporter (`results[].status`). */
 type PwResultStatus = "passed" | "failed" | "timedOut" | "skipped" | "interrupted";
 
@@ -25,10 +27,12 @@ interface PwTestResult {
   error?: PwError;
   errors?: PwError[];
   retry?: number;
+  annotations?: PwAnnotation[];
 }
 
 interface PwTest {
   results?: PwTestResult[];
+  annotations?: PwAnnotation[];
 }
 
 interface PwSpec {
@@ -122,13 +126,20 @@ export function mapResults(report: PlaywrightJsonReport | null): MappedRun {
       const last = attempts[attempts.length - 1];
       const status = mapTestStatus(last?.status);
       const error = last?.error ?? last?.errors?.[0];
+      // Runtime annotations land on the test in the JSON report; fall back to the
+      // final attempt's annotations for Playwright versions that place them there.
+      const annotations = test.annotations ?? last?.annotations ?? [];
       testResults.push({
         testName: spec.title,
         testFile: spec.file ?? null,
         status,
         durationMs: last?.duration ?? null,
-        errorMessage: error?.message ?? null,
-        errorStack: error?.stack ?? null,
+        // Concise, human-readable failure — raw stack/`expect` internals dropped.
+        errorMessage:
+          status === "failure"
+            ? formatFailure({ status: last?.status, annotations, rawMessage: error?.message })
+            : null,
+        errorStack: null,
       });
     }
   }

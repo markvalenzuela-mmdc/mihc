@@ -321,8 +321,10 @@ function createSmokeRunHistory(appId: keyof typeof smokeRunBackfillConfig): Smok
           testFile: testIndex === config.testNames.length - 1 ? null : config.testFile,
           status: isFailure ? "failure" : isSkipped ? "skipped" : "success",
           durationMs: isSkipped ? null : 3200 + testIndex * 850 + index * 120,
-          errorMessage: isFailure ? `${testName} did not complete successfully.` : null,
-          errorStack: isFailure ? "Error: expected response.ok() to be truthy" : null,
+          errorMessage: isFailure
+            ? "1 check failed on https://mmdc.mcl.edu.ph/certifications/meta-front-end-developer:\n• Expected page content did not render"
+            : null,
+          errorStack: null,
         };
       }),
     };

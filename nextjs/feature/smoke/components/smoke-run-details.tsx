@@ -81,16 +81,7 @@ export default function SmokeRunDetails({
                 </div>
                 {test.errorMessage ? (
                   <div className="mt-3 rounded-md bg-red-500/10 p-3 text-sm text-red-200">
-                    <p>{test.errorMessage}</p>
-                    {test.errorStack ? (
-                      <pre className="mt-2 overflow-x-auto whitespace-pre-wrap font-mono text-xs text-red-200/75">
-                        {test.errorStack}
-                      </pre>
-                    ) : (
-                      <p className="mt-1 text-xs text-red-200/70">
-                        Stack trace unavailable
-                      </p>
-                    )}
+                    <p className="whitespace-pre-wrap">{test.errorMessage}</p>
                   </div>
                 ) : null}
               </article>
