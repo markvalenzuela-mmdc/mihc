@@ -16,14 +16,14 @@ import { useDebouncedCallback } from "use-debounce";
 
 const DataTableContext = createContext<DataTableContextValue | null>(null);
 
-function DataTableProvider({
+function DataTableProvider<TData, TValue>({
   children,
   state,
   actions,
   meta,
-}: DataTableProviderProps) {
+}: DataTableProviderProps<TData, TValue>) {
   return (
-    <DataTableContext.Provider value={{ state, actions, meta }}>
+      <DataTableContext.Provider value={{ state, actions, meta } as DataTableContextValue}>
       {children}
     </DataTableContext.Provider>
   );

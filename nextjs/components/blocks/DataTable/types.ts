@@ -65,9 +65,9 @@ interface DataTableContextValue {
   meta?: DataTableMeta;
 }
 
-interface DataTableProviderProps {
+interface DataTableProviderProps<TData = unknown, TValue = unknown> {
   children: React.ReactNode;
-  state: DataTableState;
+  state: DataTableState<TData, TValue>;
   actions: DataTableActions;
   meta?: DataTableMeta;
 }
