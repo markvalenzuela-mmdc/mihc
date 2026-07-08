@@ -1,0 +1,1024 @@
+{
+  "_metadata": {
+    "application": "MMDC EnrollMate",
+    "version": "1.8.3",
+    "reference_date": "2026-07-08",
+    "source": "Live UAT form extraction at https://uat.enrollmate.mmdc.mcl.edu.ph/apply-now",
+    "total_steps": 4,
+    "dependencies": {
+      "specialization_depends_on_major": true,
+      "city_municipality_depends_on_province": true,
+      "barangay_depends_on_city_municipality": true,
+      "scholarship_depends_on_scholarship_interest": true,
+      "guardian_fields_depend_on_guardian_selection": true
+    },
+    "notes": [
+      "All native select controls use identical label and submitted value (placeholder 'Please Select' submits empty string)",
+      "City/Municipality and Barangay are dependency-driven cascading selects; captured values are examples only, not complete national data",
+      "Specialization values change dynamically based on Major selection"
+    ]
+  },
+
+  "steps": [
+    {
+      "step": 1,
+      "title": "Student's Information",
+      "sections": [
+        {
+          "section": "Applicant Information",
+          "fields": [
+            {
+              "name": "email",
+              "id": "email",
+              "type": "email",
+              "required": true,
+              "input_type": "text",
+              "label": "Email"
+            },
+            {
+              "name": "termApplied",
+              "id": "termApplied",
+              "type": "select",
+              "required": true,
+              "label": "Term Applied",
+              "placeholder_value": "",
+              "options": [
+                { "label": "August 2026 | First Term", "value": "August 2026 | First Term" },
+                { "label": "December 2026 | Second Term", "value": "December 2026 | Second Term" },
+                { "label": "April 2027 | Third Term", "value": "April 2027 | Third Term" }
+              ]
+            },
+            {
+              "name": "programFocus",
+              "id": "programFocus",
+              "type": "select",
+              "required": true,
+              "label": "Major",
+              "placeholder_value": "",
+              "description": "Selecting a Major triggers dependent Specialization options",
+              "options": [
+                { "label": "BS Information Technology", "value": "BS Information Technology" },
+                { "label": "BS Business Administration", "value": "BS Business Administration" }
+              ]
+            },
+            {
+              "name": "programApplied",
+              "id": "programApplied",
+              "type": "select",
+              "required": true,
+              "label": "Specialization",
+              "placeholder_value": "",
+              "description": "DYNAMIC: Options depend on Major selection. Standalone scrape returns only 'Please Select'.",
+              "conditional_on": { "field": "programFocus", "values": ["BS Information Technology", "BS Business Administration"] },
+              "options_by_dependency": {
+                "BS Information Technology": [
+                  { "label": "BS IT Data Analytics Specialization", "value": "BS IT Data Analytics Specialization" },
+                  { "label": "BS IT Software Development Specialization", "value": "BS IT Software Development Specialization" },
+                  { "label": "BS IT Network & Cybersecurity Specialization", "value": "BS IT Network & Cybersecurity Specialization" },
+                  { "label": "BS IT AI-Powered Product Development", "value": "BS IT AI-Powered Product Development" }
+                ],
+                "BS Business Administration": [
+                  { "label": "BS BA HR Management Specialization", "value": "BS BA HR Management Specialization" },
+                  { "label": "BS BA Operations Management Specialization", "value": "BS BA Operations Management Specialization" },
+                  { "label": "BS BA Marketing Management Specialization", "value": "BS BA Marketing Management Specialization" },
+                  { "label": "BS BA AI for Business Strategy and Operations", "value": "BS BA AI for Business Strategy and Operations" }
+                ]
+              }
+            },
+            {
+              "name": "givenName",
+              "id": "givenName",
+              "type": "text",
+              "required": true,
+              "label": "First name"
+            },
+            {
+              "name": "middleName",
+              "id": "middleName",
+              "type": "text",
+              "required": false,
+              "label": "Middle name"
+            },
+            {
+              "name": "familyName",
+              "id": "familyName",
+              "type": "text",
+              "required": true,
+              "label": "Last name"
+            },
+            {
+              "name": "suffix",
+              "id": "suffix",
+              "type": "select",
+              "required": false,
+              "label": "Suffix",
+              "placeholder_value": "",
+              "options": [
+                { "label": "Jr", "value": "Jr" },
+                { "label": "Sr", "value": "Sr" },
+                { "label": "I", "value": "I" },
+                { "label": "II", "value": "II" },
+                { "label": "III", "value": "III" },
+                { "label": "IV", "value": "IV" },
+                { "label": "V", "value": "V" },
+                { "label": "VI", "value": "VI" },
+                { "label": "VII", "value": "VII" },
+                { "label": "VIII", "value": "VIII" }
+              ]
+            },
+            {
+              "name": "nickname",
+              "id": "nickname",
+              "type": "text",
+              "required": false,
+              "label": "Nickname"
+            },
+            {
+              "name": "birthplace",
+              "id": "birthplace",
+              "type": "text",
+              "required": true,
+              "label": "Place of Birth"
+            },
+            {
+              "name": "birthdate",
+              "id": "birthdate",
+              "type": "date",
+              "required": true,
+              "label": "Birthdate"
+            },
+            {
+              "name": "gender",
+              "id": "gender",
+              "type": "select",
+              "required": true,
+              "label": "Gender",
+              "placeholder_value": "",
+              "options": [
+                { "label": "Female", "value": "Female" },
+                { "label": "Male", "value": "Male" }
+              ]
+            },
+            {
+              "name": "nationality",
+              "id": "nationality",
+              "type": "select",
+              "required": true,
+              "label": "Nationality",
+              "placeholder_value": "",
+              "default_value": "Filipino",
+              "options_ref": "see nationality_options below"
+            },
+            {
+              "name": "civilStatus",
+              "id": "civilStatus",
+              "type": "select",
+              "required": true,
+              "label": "Civil Status",
+              "placeholder_value": "",
+              "options": [
+                { "label": "Single", "value": "Single" },
+                { "label": "Married", "value": "Married" },
+                { "label": "Divorced", "value": "Divorced" },
+                { "label": "Legally Separated", "value": "Legally Separated" },
+                { "label": "Widowed", "value": "Widowed" },
+                { "label": "Religious/Clergy", "value": "Religious/Clergy" },
+                { "label": "Marriage Annulled", "value": "Marriage Annulled" },
+                { "label": "Separated Unofficial", "value": "Separated Unofficial" }
+              ]
+            },
+            {
+              "name": "monthlyIncome",
+              "id": "monthlyIncome",
+              "type": "select",
+              "required": true,
+              "label": "Combined Household Monthly Income (Php)",
+              "placeholder_value": "",
+              "options": [
+                { "label": "Less than 10,000", "value": "Less than 10,000" },
+                { "label": "10,000 - 24,999", "value": "10,000 - 24,999" },
+                { "label": "25,000 - 49,999", "value": "25,000 - 49,999" },
+                { "label": "50,000 - 79,999", "value": "50,000 - 79,999" },
+                { "label": "80,000 - 134,999", "value": "80,000 - 134,999" },
+                { "label": "More than 135,000", "value": "More than 135,000" }
+              ]
+            },
+            {
+              "name": "mobile",
+              "id": "mobile",
+              "type": "tel",
+              "required": true,
+              "label": "Mobile",
+              "placeholder": "+63 9XX XXXXXXX"
+            },
+            {
+              "name": "landline",
+              "id": "landline",
+              "type": "tel",
+              "required": false,
+              "label": "Landline"
+            },
+            {
+              "name": "prefLearningHub",
+              "id": "prefLearningHub",
+              "type": "select",
+              "required": true,
+              "label": "Preferred Learning Hub",
+              "placeholder_value": "",
+              "options": [
+                { "label": "Mapua University Makati", "value": "Mapua University Makati" },
+                { "label": "Ayala Malls Capitol Central Bacolod", "value": "Ayala Malls Capitol Central Bacolod" },
+                { "label": "No Preference At This Time", "value": "No Preference At This Time" }
+              ]
+            },
+            {
+              "name": "studentType",
+              "id": "studentType",
+              "type": "select",
+              "required": true,
+              "label": "Student Type",
+              "placeholder_value": "",
+              "options": [
+                { "label": "Freshman", "value": "Freshman" },
+                { "label": "Transferee", "value": "Transferee" }
+              ]
+            },
+            {
+              "name": "subStudentType",
+              "id": "subStudentType",
+              "type": "select",
+              "required": true,
+              "label": "Sub Student Type",
+              "placeholder_value": "",
+              "options": [
+                { "label": "Recent Grade 12 graduate", "value": "Recent Grade 12 graduate" },
+                { "label": "Returning student or Returning from Leave of Absence (LOA)", "value": "Returning student or Returning from Leave of Absence (LOA)" }
+              ]
+            },
+            {
+              "name": "studentStatus",
+              "id": "studentStatus",
+              "type": "select",
+              "required": true,
+              "label": "Student Status",
+              "placeholder_value": "",
+              "options": [
+                { "label": "Full-Time Student", "value": "Full-Time Student" },
+                { "label": "Working Student", "value": "Working Student" }
+              ]
+            },
+            {
+              "name": "religion",
+              "id": "religion",
+              "type": "select",
+              "required": true,
+              "label": "Religion",
+              "placeholder_value": "",
+              "options_ref": "see religion_options below"
+            },
+            {
+              "name": "strand",
+              "id": "strand",
+              "type": "select",
+              "required": true,
+              "label": "Current/Completed Strand/Program",
+              "placeholder_value": "",
+              "options": [
+                { "label": "Accountancy, Business and Management (ABM)", "value": "Accountancy, Business and Management (ABM)" },
+                { "label": "Humanities and Social Sciences (HUMSS)", "value": "Humanities and Social Sciences (HUMSS)" },
+                { "label": "General Academic (GA)", "value": "General Academic (GA)" },
+                { "label": "Science, Technology, Engineering and Mathematics (STEM)", "value": "Science, Technology, Engineering and Mathematics (STEM)" },
+                { "label": "Others", "value": "Others" }
+              ]
+            },
+            {
+              "name": "lastSchoolAttended",
+              "id": "combobox",
+              "type": "combobox",
+              "required": true,
+              "label": "Last School Attended",
+              "description": "Typeahead combobox. Includes 'Tick this checkbox if the school is not found' checkbox which reveals a manual entry text input.",
+              "conditional_fields": [
+                {
+                  "name": "schoolNotFound",
+                  "id": "schoolNotFound",
+                  "type": "checkbox",
+                  "label": "Tick this checkbox if the school is not found",
+                  "triggers": "lastschOther"
+                },
+                {
+                  "name": "lastschOther",
+                  "id": "lastschOther",
+                  "type": "text",
+                  "required": false,
+                  "label": "Last School Attended (Other)",
+                  "placeholder": "Please Specify Your Last School",
+                  "conditional_on": { "field": "schoolNotFound", "value": true }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "section": "Current Address",
+          "prefix": "curraddr",
+          "fields": [
+            {
+              "name": "curraddrCountry",
+              "id": "curraddrCountry",
+              "type": "select",
+              "required": true,
+              "label": "Current Country",
+              "default_value": "Philippines",
+              "options_ref": "see country_options below",
+              "cascade_parent": true
+            },
+            {
+              "name": "curraddrAddrline1",
+              "id": "curraddrAddrline1",
+              "type": "text",
+              "required": true,
+              "label": "Current Floor no., Bldg. no., House no."
+            },
+            {
+              "name": "curraddrAddrline2",
+              "id": "curraddrAddrline2",
+              "type": "text",
+              "required": true,
+              "label": "Current Street, Bldg, Subdivision, Village"
+            },
+            {
+              "name": "curraddrProvince",
+              "id": "curraddrProvince",
+              "type": "select",
+              "required": true,
+              "label": "Current Province",
+              "placeholder_value": "",
+              "cascade_triggers": "curraddrCitymun",
+              "options_ref": "see philippine_provinces below"
+            },
+            {
+              "name": "curraddrCitymun",
+              "id": "curraddrCitymun",
+              "type": "select",
+              "required": true,
+              "label": "Current City/Municipality",
+              "placeholder_value": "",
+              "description": "DYNAMIC: Options depend on selected Province. Captured Rizal cities shown in example.",
+              "cascade_depends_on": "curraddrProvince",
+              "cascade_triggers": "curraddrBarangay",
+              "example_options_for_rizal": [
+                "Angono", "Antipolo City", "Baras", "Binangonan", "Cainta",
+                "Cardona", "Jala-Jala", "Morong", "Pililla", "Rodriguez",
+                "San Mateo", "Tanay", "Taytay", "Teresa"
+              ]
+            },
+            {
+              "name": "curraddrBarangay",
+              "id": "curraddrBarangay",
+              "type": "select",
+              "required": true,
+              "label": "Current Barangay",
+              "placeholder_value": "",
+              "description": "DYNAMIC: Options depend on selected City/Municipality.",
+              "cascade_depends_on": "curraddrCitymun",
+              "example_options_for_antipolo": [
+                "Bagong Nayon", "Beverly Hills", "Calawis", "Cupang", "Dalig",
+                "Dela Paz (Pob.)", "Inarawan", "Mambugan", "Mayamot",
+                "Muntingdilaw", "San Isidro (Pob.)", "San Jose (Pob.)",
+                "San Juan", "San Luis", "San Roque (Pob.)", "Santa Cruz"
+              ]
+            },
+            {
+              "name": "curraddrZipcode",
+              "id": "curraddrZipcode",
+              "type": "text",
+              "required": true,
+              "label": "Current Zipcode"
+            }
+          ]
+        },
+        {
+          "section": "Permanent Address",
+          "prefix": "permaddr",
+          "fields": [
+            {
+              "name": "permaddrCountry",
+              "id": "permaddrCountry",
+              "type": "select",
+              "required": true,
+              "label": "Permanent Country",
+              "default_value": "Philippines",
+              "options_ref": "see country_options below"
+            },
+            {
+              "name": "permaddrAddrline1",
+              "id": "permaddrAddrline1",
+              "type": "text",
+              "required": true,
+              "label": "Permanent Floor no., Bldg. no., House no."
+            },
+            {
+              "name": "permaddrAddrline2",
+              "id": "permaddrAddrline2",
+              "type": "text",
+              "required": true,
+              "label": "Permanent Street, Bldg, Subdivision, Village"
+            },
+            {
+              "name": "permaddrProvince",
+              "id": "permaddrProvince",
+              "type": "select",
+              "required": true,
+              "label": "Permanent Province",
+              "placeholder_value": "",
+              "options_ref": "see philippine_provinces below"
+            },
+            {
+              "name": "permaddrCitymun",
+              "id": "permaddrCitymun",
+              "type": "select",
+              "required": true,
+              "label": "Permanent City/Municipality",
+              "placeholder_value": "",
+              "description": "DYNAMIC: Options depend on selected Province."
+            },
+            {
+              "name": "permaddrBarangay",
+              "id": "permaddrBarangay",
+              "type": "select",
+              "required": true,
+              "label": "Permanent Barangay",
+              "placeholder_value": "",
+              "description": "DYNAMIC: Options depend on selected City/Municipality."
+            },
+            {
+              "name": "permaddrZipcode",
+              "id": "permaddrZipcode",
+              "type": "text",
+              "required": true,
+              "label": "Permanent Zipcode"
+            }
+          ]
+        },
+        {
+          "section": "Referral Program",
+          "fields": [
+            {
+              "name": "referrerFirstName",
+              "id": "referrerFirstName",
+              "type": "text",
+              "required": false,
+              "label": "Referrer's First name"
+            },
+            {
+              "name": "referrerLastName",
+              "id": "referrerLastName",
+              "type": "text",
+              "required": false,
+              "label": "Referrer's Last name"
+            },
+            {
+              "name": "referrerEmail",
+              "id": "referrerEmail",
+              "type": "email",
+              "required": false,
+              "label": "Referrer's Email"
+            }
+          ]
+        },
+        {
+          "section": "Scholarship",
+          "fields": [
+            {
+              "name": "interestedForAScholarship",
+              "id": "interestedForAScholarship",
+              "type": "select",
+              "required": true,
+              "label": "Interested to apply for a Scholarship?",
+              "placeholder_value": "",
+              "options": [
+                { "label": "Yes", "value": "Yes" },
+                { "label": "No", "value": "No" }
+              ]
+            },
+            {
+              "name": "scholarship",
+              "id": "scholarship",
+              "type": "select",
+              "required": false,
+              "label": "Scholarship",
+              "placeholder_value": "",
+              "description": "CONDITIONAL: Only visible when 'Interested to apply for a Scholarship?' is set to Yes.",
+              "conditional_on": { "field": "interestedForAScholarship", "values": ["Yes"] },
+              "options": [
+                { "label": "MMDC Asenso Scholarship", "value": "MMDC Asenso Scholarship" },
+                { "label": "Continuing Education Scholarship", "value": "Continuing Education Scholarship" },
+                { "label": "MMDC YGC-Ayala Employees Promotional Discount", "value": "MMDC YGC-Ayala Employees Promotional Discount" },
+                { "label": "Abanse Negrense Scholarship", "value": "Abanse Negrense Scholarship" },
+                { "label": "Victorias City Scholarship", "value": "Victorias City Scholarship" },
+                { "label": "NextGen-Working Youth", "value": "NextGen-Working Youth" },
+                { "label": "NextGen-Solo Parent", "value": "NextGen-Solo Parent" },
+                { "label": "MMDC Early Enrollment Discount Program", "value": "MMDC Early Enrollment Discount Program" }
+              ]
+            }
+          ]
+        },
+        {
+          "section": "Medical Condition",
+          "fields": [
+            {
+              "name": "withMedicalCondition",
+              "id": "withMedicalCondition",
+              "type": "select",
+              "required": true,
+              "label": "Have you ever been diagnosed with any medical, psychological, or learning difficulty?",
+              "placeholder_value": "",
+              "options": [
+                { "label": "Yes", "value": "Yes" },
+                { "label": "No", "value": "No" }
+              ]
+            }
+          ]
+        },
+        {
+          "section": "Initial Documents",
+          "fields": [
+            {
+              "name": "PID",
+              "id": "PID",
+              "type": "file",
+              "required": false,
+              "label": "Applicant's Personal Id",
+              "accepted_formats": ".pdf, .jpg, .jpeg, .png, .xlsx, .xls, .docx",
+              "max_size": "3MB"
+            },
+            {
+              "name": "PHSC",
+              "id": "PHSC",
+              "type": "file",
+              "required": false,
+              "label": "Proof of HS Completion",
+              "accepted_formats": ".pdf, .jpg, .jpeg, .png, .xlsx, .xls, .docx",
+              "max_size": "3MB"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "step": 2,
+      "title": "Parent/Guardian Information",
+      "sections": [
+        {
+          "section": "Father Information",
+          "prefix": "fthr",
+          "fields": [
+            { "name": "fthrDeceased", "id": "fthrDeceased", "type": "select", "required": true, "label": "Living Status", "placeholder_value": "", "options": [{ "label": "Living", "value": "Living" }, { "label": "Deceased", "value": "Deceased" }, { "label": "Unknown", "value": "Unknown" }] },
+            { "name": "fthrGivenName", "id": "fthrGivenName", "type": "text", "required": true, "label": "Father First name" },
+            { "name": "fthrMiddleName", "id": "fthrMiddleName", "type": "text", "required": false, "label": "Father Middle name" },
+            { "name": "fthrFamilyName", "id": "fthrFamilyName", "type": "text", "required": true, "label": "Father Last name" },
+            { "name": "fthrSuffix", "id": "fthrSuffix", "type": "select", "required": false, "label": "Father Suffix", "placeholder_value": "", "options_ref": "see suffix_options_below" },
+            { "name": "fthrBirthdate", "id": "fthrBirthdate", "type": "date", "required": true, "label": "Father Birthdate" },
+            { "name": "fthrLandline", "id": "fthrLandline", "type": "tel", "required": false, "label": "Father Landline" },
+            { "name": "fthrMobile", "id": "fthrMobile", "type": "tel", "required": true, "label": "Father Mobile" },
+            { "name": "fthrEmail", "id": "fthrEmail", "type": "email", "required": false, "label": "Father Email" },
+            { "name": "fthrOccupation", "id": "fthrOccupation", "type": "text", "required": true, "label": "Father Occupation" }
+          ],
+          "address_sections": {
+            "current": {
+              "prefix": "fthrCurrAddr",
+              "same_as_applicant_checkbox": { "id": "copyfatherAddressCheckbox", "label": "Same with applicant current address?" },
+              "fields_ref": "see address_fields_pattern (same structure as applicant current address)"
+            },
+            "permanent": {
+              "prefix": "fthrPermAddr",
+              "same_as_applicant_checkbox": { "id": "copyPermafatherAddressCheckbox", "label": "Same with applicant permanent address?" },
+              "fields_ref": "see address_fields_pattern (same structure as applicant permanent address)"
+            }
+          }
+        },
+        {
+          "section": "Mother Information",
+          "prefix": "mthr",
+          "notes": "Mother has no Suffix field (confirmed live).",
+          "fields": [
+            { "name": "mthrDeceased", "id": "mthrDeceased", "type": "select", "required": true, "label": "Living Status", "placeholder_value": "", "options": [{ "label": "Living", "value": "Living" }, { "label": "Deceased", "value": "Deceased" }, { "label": "Unknown", "value": "Unknown" }] },
+            { "name": "mthrGivenName", "id": "mthrGivenName", "type": "text", "required": true, "label": "Mother First name" },
+            { "name": "mthrMiddleName", "id": "mthrMiddleName", "type": "text", "required": false, "label": "Mother Middle name" },
+            { "name": "mthrFamilyName", "id": "mthrFamilyName", "type": "text", "required": true, "label": "Mother Last name" },
+            { "name": "mthrBirthdate", "id": "mthrBirthdate", "type": "date", "required": true, "label": "Mother Birthdate" },
+            { "name": "mthrLandline", "id": "mthrLandline", "type": "tel", "required": false, "label": "Mother Landline" },
+            { "name": "mthrMobile", "id": "mthrMobile", "type": "tel", "required": true, "label": "Mother Mobile" },
+            { "name": "mthrEmail", "id": "mthrEmail", "type": "email", "required": false, "label": "Mother Email" },
+            { "name": "mthrOccupation", "id": "mthrOccupation", "type": "text", "required": true, "label": "Mother Occupation" }
+          ],
+          "address_sections": {
+            "current": { "same_as_applicant_checkbox": { "id": "copyMotherAddressCheckbox", "label": "Same with applicant current address?" }, "fields_ref": "see address_fields_pattern" },
+            "permanent": { "same_as_applicant_checkbox": { "id": "copyPermaMotherAddressCheckbox", "label": "Same with applicant permanent address?" }, "fields_ref": "see address_fields_pattern" }
+          }
+        },
+        {
+          "section": "Guardian Assignment",
+          "fields": [
+            {
+              "name": "guardian",
+              "id": "guardian",
+              "type": "select",
+              "required": true,
+              "label": "Who do you want to assign as your guardian?",
+              "placeholder_value": "",
+              "description": "Selecting 'Father' or 'Mother' reuses corresponding parent context. Selecting 'Others' exposes guardian-specific details.",
+              "options": [
+                { "label": "Father", "value": "Father" },
+                { "label": "Mother", "value": "Mother" },
+                { "label": "Others", "value": "Others" }
+              ]
+            }
+          ]
+        },
+        {
+          "section": "Guardian Information",
+          "prefix": "grdn",
+          "description": "Dynamic; fields may vary based on whether Father, Mother, or Others is selected.",
+          "conditional_on": { "field": "guardian", "values": ["Others"] },
+          "fields": [
+            { "name": "grdnGivenName", "id": "grdnGivenName", "type": "text", "required": false, "label": "Guardian First name" },
+            { "name": "grdnMiddleName", "id": "grdnMiddleName", "type": "text", "required": false, "label": "Guardian Middle name" },
+            { "name": "grdnFamilyName", "id": "grdnFamilyName", "type": "text", "required": false, "label": "Guardian Last name" },
+            { "name": "grdnSuffix", "id": "grdnSuffix", "type": "select", "required": false, "label": "Guardian Suffix", "placeholder_value": "", "options_ref": "see suffix_options_below" },
+            { "name": "grdnBirthdate", "id": "grdnBirthdate", "type": "date", "required": false, "label": "Guardian Birthdate" },
+            { "name": "grdnLandline", "id": "grdnLandline", "type": "tel", "required": false, "label": "Guardian Landline" },
+            { "name": "grdnMobile", "id": "grdnMobile", "type": "tel", "required": false, "label": "Guardian Mobile" },
+            { "name": "grdnEmail", "id": "grdnEmail", "type": "email", "required": false, "label": "Guardian Email" },
+            { "name": "grdnOccupation", "id": "grdnOccupation", "type": "text", "required": false, "label": "Guardian Occupation" },
+            {
+              "name": "grdnApplRelationship",
+              "id": "grdnApplRelationship",
+              "type": "select",
+              "required": false,
+              "label": "Relationship to Applicant",
+              "placeholder_value": "",
+              "options": [
+                { "label": "Grandparent", "value": "Grandparent" },
+                { "label": "Sibling", "value": "Sibling" },
+                { "label": "Aunt", "value": "Aunt" },
+                { "label": "Uncle", "value": "Uncle" },
+                { "label": "Cousin", "value": "Cousin" },
+                { "label": "Neighbor", "value": "Neighbor" },
+                { "label": "Others", "value": "Others" }
+              ]
+            },
+            {
+              "name": "grdnSpecifyApplRelationship",
+              "id": "grdnSpecifyApplRelationship",
+              "type": "text",
+              "required": false,
+              "label": "Specify Guardian Relationship",
+              "description": "CONDITIONAL: Only visible when 'Relationship to Applicant' is set to 'Others'.",
+              "conditional_on": { "field": "grdnApplRelationship", "values": ["Others"] }
+            }
+          ],
+          "address_sections": {
+            "current": {
+              "prefix": "grdnCurrAddr",
+              "same_as_applicant_checkbox": { "id": "copyGuardianAddressCheckbox", "label": "Same with applicant current address?" },
+              "fields_ref": "see address_fields_pattern"
+            },
+            "permanent": {
+              "prefix": "grdnPermAddr",
+              "same_as_applicant_checkbox": { "id": "copyPermaGuardianAddressCheckbox", "label": "Same with applicant permanent address?" },
+              "fields_ref": "see address_fields_pattern"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "step": 3,
+      "title": "Additional Information",
+      "source": "Live verified via browser navigation",
+      "sections": [
+        {
+          "section": "How did you find out about MMDC?",
+          "description": "Checkbox group (multi-select). Each checkbox uses its label as both name and id.",
+          "type": "checkbox_group",
+          "required": true,
+          "fields": [
+            { "name": "Facebook", "id": "Facebook", "type": "checkbox", "label": "Facebook" },
+            { "name": "Instagram", "id": "Instagram", "type": "checkbox", "label": "Instagram" },
+            { "name": "Youtube", "id": "Youtube", "type": "checkbox", "label": "Youtube" },
+            { "name": "Tiktok", "id": "Tiktok", "type": "checkbox", "label": "Tiktok" },
+            { "name": "Online News Platform", "id": "Online News Platform", "type": "checkbox", "label": "Online News Platform" },
+            { "name": "Referred by Family/Relatives", "id": "Referred by Family/Relatives", "type": "checkbox", "label": "Referred by Family/Relatives" },
+            { "name": "Referred by someone from Map\u00faa or Malayan", "id": "Referred by someone from Map\u00faa or Malayan", "type": "checkbox", "label": "Referred by someone from Map\u00faa or Malayan" },
+            { "name": "Referred by Friends", "id": "Referred by Friends", "type": "checkbox", "label": "Referred by Friends" },
+            { "name": "Saw a Billboard/Poster Near Me", "id": "Saw a Billboard/Poster Near Me", "type": "checkbox", "label": "Saw a Billboard/Poster Near Me" },
+            { "name": "Visited the Learning Hub", "id": "Visited the Learning Hub", "type": "checkbox", "label": "Visited the Learning Hub" },
+            { "name": "Others", "id": "Others", "type": "checkbox", "label": "Others" }
+          ]
+        },
+        {
+          "section": "Why do you want to study in MMDC?",
+          "description": "Checkbox group (multi-select). Each checkbox uses its label as both name and id.",
+          "type": "checkbox_group",
+          "required": true,
+          "fields": [
+            { "name": "Accessibility and Location", "id": "Accessibility and Location", "type": "checkbox", "label": "Accessibility and Location" },
+            { "name": "Affordable Tuition Fees", "id": "Affordable Tuition Fees", "type": "checkbox", "label": "Affordable Tuition Fees" },
+            { "name": "Learning Hub Facilities and Security", "id": "Learning Hub Facilities and Security", "type": "checkbox", "label": "Learning Hub Facilities and Security" },
+            { "name": "Recommended by parents/relatives/friends", "id": "Recommended by parents/relatives/friends", "type": "checkbox", "label": "Recommended by parents/relatives/friends" },
+            { "name": "Learning Modality (Online and Face to Face)", "id": "Learning Modality (Online and Face to Face)", "type": "checkbox", "label": "Learning Modality (Online and Face to Face)" },
+            { "name": "Quality of education", "id": "Quality of education", "type": "checkbox", "label": "Quality of education" },
+            { "name": "Competence of Teachers", "id": "Competence of Teachers", "type": "checkbox", "label": "Competence of Teachers" },
+            { "name": "School Reputation and Legacy", "id": "School Reputation and Legacy", "type": "checkbox", "label": "School Reputation and Legacy" }
+          ]
+        }
+      ]
+    },
+    {
+      "step": 4,
+      "title": "Confirmation",
+      "description": "Review/summary page. All entered data shown as read-only. Shows file uploads for PID and PHSC. SUBMIT button (id: not assigned, button text: 'SUBMIT'). BACK button to return to Step 3.",
+      "fields": [
+        {
+          "name": "SUBMIT",
+          "type": "button",
+          "action": "submit",
+          "label": "SUBMIT"
+        },
+        {
+          "name": "BACK",
+          "type": "button",
+          "action": "back",
+          "label": "BACK"
+        }
+      ]
+    }
+  ],
+
+  "reusable_option_sets": {
+    "nationality_options": [
+      { "label": "African", "value": "African" },
+      { "label": "Alaskan", "value": "Alaskan" },
+      { "label": "Albanian", "value": "Albanian" },
+      { "label": "Algerian", "value": "Algerian" },
+      { "label": "Alkhobarian", "value": "Alkhobarian" },
+      { "label": "American", "value": "American" },
+      { "label": "Angolan", "value": "Angolan" },
+      { "label": "Arabian", "value": "Arabian" },
+      { "label": "Argentinian", "value": "Argentinian" },
+      { "label": "Australian", "value": "Australian" },
+      { "label": "Austrian", "value": "Austrian" },
+      { "label": "Bahranian", "value": "Bahranian" },
+      { "label": "Bangladeshi", "value": "Bangladeshi" },
+      { "label": "Barbadian", "value": "Barbadian" },
+      { "label": "Batswana", "value": "Batswana" },
+      { "label": "Belgian", "value": "Belgian" },
+      { "label": "Bhutanese", "value": "Bhutanese" },
+      { "label": "Bolivian", "value": "Bolivian" },
+      { "label": "Brazilian", "value": "Brazilian" },
+      { "label": "British", "value": "British" },
+      { "label": "Brunei", "value": "Brunei" },
+      { "label": "Bulgarian", "value": "Bulgarian" },
+      { "label": "Burundian", "value": "Burundian" },
+      { "label": "Cameroonian", "value": "Cameroonian" },
+      { "label": "Canadian", "value": "Canadian" },
+      { "label": "Chadian", "value": "Chadian" },
+      { "label": "Chilean", "value": "Chilean" },
+      { "label": "Chinese", "value": "Chinese" },
+      { "label": "Colombian", "value": "Colombian" },
+      { "label": "Congolese", "value": "Congolese" },
+      { "label": "Costa Rican", "value": "Costa Rican" },
+      { "label": "Cuban", "value": "Cuban" },
+      { "label": "Cypriot", "value": "Cypriot" },
+      { "label": "Czech", "value": "Czech" },
+      { "label": "Czechoslovak", "value": "Czechoslovak" },
+      { "label": "Dahomeyan", "value": "Dahomeyan" },
+      { "label": "Dane", "value": "Dane" },
+      { "label": "Dominican", "value": "Dominican" },
+      { "label": "Dubaian", "value": "Dubaian" },
+      { "label": "Dutch", "value": "Dutch" },
+      { "label": "Ecuadorian", "value": "Ecuadorian" },
+      { "label": "Egyptian", "value": "Egyptian" },
+      { "label": "Eritrean", "value": "Eritrean" },
+      { "label": "Ethiopian", "value": "Ethiopian" },
+      { "label": "Fijian", "value": "Fijian" },
+      { "label": "Filipino", "value": "Filipino" },
+      { "label": "Finn", "value": "Finn" },
+      { "label": "French", "value": "French" },
+      { "label": "Gabonese", "value": "Gabonese" },
+      { "label": "Gambian", "value": "Gambian" },
+      { "label": "German", "value": "German" },
+      { "label": "Ghanaian", "value": "Ghanaian" },
+      { "label": "Greek", "value": "Greek" },
+      { "label": "Guatemalan", "value": "Guatemalan" },
+      { "label": "Guinean", "value": "Guinean" },
+      { "label": "Guyanese", "value": "Guyanese" },
+      { "label": "Haitian", "value": "Haitian" },
+      { "label": "Honduran", "value": "Honduran" },
+      { "label": "Hungarian", "value": "Hungarian" },
+      { "label": "Icelander", "value": "Icelander" },
+      { "label": "Indian", "value": "Indian" },
+      { "label": "Indonesian", "value": "Indonesian" },
+      { "label": "Iranian", "value": "Iranian" },
+      { "label": "Iraqi", "value": "Iraqi" },
+      { "label": "Irish", "value": "Irish" },
+      { "label": "Israeli", "value": "Israeli" },
+      { "label": "Italian", "value": "Italian" },
+      { "label": "Ivory", "value": "Ivory" },
+      { "label": "Jamaican", "value": "Jamaican" },
+      { "label": "Japanese", "value": "Japanese" },
+      { "label": "Jordanian", "value": "Jordanian" },
+      { "label": "Kampuchean", "value": "Kampuchean" },
+      { "label": "Kenyan", "value": "Kenyan" },
+      { "label": "Korean", "value": "Korean" },
+      { "label": "Kuwaiti", "value": "Kuwaiti" },
+      { "label": "Laotian", "value": "Laotian" },
+      { "label": "Lebanese", "value": "Lebanese" },
+      { "label": "Libyan", "value": "Libyan" },
+      { "label": "Luxembourger", "value": "Luxembourger" },
+      { "label": "Madagascan", "value": "Madagascan" },
+      { "label": "Malawian", "value": "Malawian" },
+      { "label": "Malaysian", "value": "Malaysian" },
+      { "label": "Maldivian", "value": "Maldivian" },
+      { "label": "Malian", "value": "Malian" },
+      { "label": "Maltan", "value": "Maltan" },
+      { "label": "Marianese", "value": "Marianese" },
+      { "label": "Mauritanian", "value": "Mauritanian" },
+      { "label": "Mexican", "value": "Mexican" },
+      { "label": "Micronesian", "value": "Micronesian" },
+      { "label": "Mongolian", "value": "Mongolian" },
+      { "label": "Moroccan", "value": "Moroccan" },
+      { "label": "Myanman", "value": "Myanman" },
+      { "label": "Nepalese", "value": "Nepalese" },
+      { "label": "New Zealander", "value": "New Zealander" },
+      { "label": "Nigerian", "value": "Nigerian" },
+      { "label": "Norwegian", "value": "Norwegian" },
+      { "label": "Nuruian", "value": "Nuruian" },
+      { "label": "Omani", "value": "Omani" },
+      { "label": "Pakistani", "value": "Pakistani" },
+      { "label": "Panamanian", "value": "Panamanian" },
+      { "label": "Papua New Guinean", "value": "Papua New Guinean" },
+      { "label": "Paraguayan", "value": "Paraguayan" },
+      { "label": "Peruvian", "value": "Peruvian" },
+      { "label": "Polish", "value": "Polish" },
+      { "label": "Portuguese", "value": "Portuguese" },
+      { "label": "Qatari", "value": "Qatari" },
+      { "label": "Romanian", "value": "Romanian" },
+      { "label": "Rwandan", "value": "Rwandan" },
+      { "label": "Salvadoran", "value": "Salvadoran" },
+      { "label": "Samoan", "value": "Samoan" },
+      { "label": "Saudi Arabian", "value": "Saudi Arabian" },
+      { "label": "Senegalese", "value": "Senegalese" },
+      { "label": "Sierra Leonean", "value": "Sierra Leonean" },
+      { "label": "Singaporean", "value": "Singaporean" },
+      { "label": "Somalian", "value": "Somalian" },
+      { "label": "Spanish", "value": "Spanish" },
+      { "label": "Sri Lankan", "value": "Sri Lankan" },
+      { "label": "Sudanese", "value": "Sudanese" },
+      { "label": "Swedish", "value": "Swedish" },
+      { "label": "Swiss", "value": "Swiss" },
+      { "label": "Syrian", "value": "Syrian" },
+      { "label": "Taiwanese", "value": "Taiwanese" },
+      { "label": "Tanzanian", "value": "Tanzanian" },
+      { "label": "Thai", "value": "Thai" },
+      { "label": "Timorese", "value": "Timorese" },
+      { "label": "Togolese", "value": "Togolese" },
+      { "label": "Trinidadian", "value": "Trinidadian" },
+      { "label": "Tunisian", "value": "Tunisian" },
+      { "label": "Turkish", "value": "Turkish" },
+      { "label": "Ugandan", "value": "Ugandan" },
+      { "label": "Uruguayan", "value": "Uruguayan" },
+      { "label": "Venezuelan", "value": "Venezuelan" },
+      { "label": "Vietnamese", "value": "Vietnamese" },
+      { "label": "Yemenite", "value": "Yemenite" },
+      { "label": "Yugoslav", "value": "Yugoslav" },
+      { "label": "Zambian", "value": "Zambian" }
+    ],
+    "religion_options": [
+      { "label": "Aglipay", "value": "Aglipay" },
+      { "label": "Alliance of Bible Christian Communities of the Philippines", "value": "Alliance of Bible Christian Communities of the Philippines" },
+      { "label": "Assemblies of God", "value": "Assemblies of God" },
+      { "label": "Association of Baptist Churches in Luzon, Visayas, and Mindanao", "value": "Association of Baptist Churches in Luzon, Visayas, and Mindanao" },
+      { "label": "Association of Fundamental Baptist Churches in the Philippines", "value": "Association of Fundamental Baptist Churches in the Philippines" },
+      { "label": "Baptist Conference of the Philippines", "value": "Baptist Conference of the Philippines" },
+      { "label": "Bible Baptist Church", "value": "Bible Baptist Church" },
+      { "label": "Bread of Life Ministries", "value": "Bread of Life Ministries" },
+      { "label": "Buddhist", "value": "Buddhist" },
+      { "label": "Cathedral of Praise, Incorporated", "value": "Cathedral of Praise, Incorporated" },
+      { "label": "Charismatic Full Gospel Ministries", "value": "Charismatic Full Gospel Ministries" },
+      { "label": "Christ the Living Stone Fellowship", "value": "Christ the Living Stone Fellowship" },
+      { "label": "Christian and Missionary Alliance Church of the Philippines", "value": "Christian and Missionary Alliance Church of the Philippines" },
+      { "label": "Christian Missions in the Philippines", "value": "Christian Missions in the Philippines" },
+      { "label": "Church of Christ", "value": "Church of Christ" },
+      { "label": "Church of God World Mission in the Philippines", "value": "Church of God World Mission in the Philippines" },
+      { "label": "Church of Jesus Christ of the Latter Day Saints", "value": "Church of Jesus Christ of the Latter Day Saints" },
+      { "label": "Church of the Nazarene", "value": "Church of the Nazarene" },
+      { "label": "Christian Reformed Church in the Philippines, Incorporated", "value": "Christian Reformed Church in the Philippines, Incorporated" },
+      { "label": "Conservative of the Philippine Baptist Church", "value": "Conservative of the Philippine Baptist Church" },
+      { "label": "Convention of the Philippine Baptist Church", "value": "Convention of the Philippine Baptist Church" },
+      { "label": "Crusaders of the Divine Church of Christ, Incorporated", "value": "Crusaders of the Divine Church of Christ, Incorporated" },
+      { "label": "Door of Faith", "value": "Door of Faith" },
+      { "label": "Evangelical Christian Outreach Foundation", "value": "Evangelical Christian Outreach Foundation" },
+      { "label": "Evangelical Free Church of the Philippines", "value": "Evangelical Free Church of the Philippines" },
+      { "label": "Evangelical Presbyterian Church", "value": "Evangelical Presbyterian Church" },
+      { "label": "Faith Tabernacle Church (Living Rock Ministries)", "value": "Faith Tabernacle Church (Living Rock Ministries)" },
+      { "label": "Filipino Assemblies of the First Born, Incorporated", "value": "Filipino Assemblies of the First Born, Incorporated" },
+      { "label": "Foursquare Gospel Church in the Philippines", "value": "Foursquare Gospel Church in the Philippines" },
+      { "label": "Free Believers in Christ Fellowship", "value": "Free Believers in Christ Fellowship" },
+      { "label": "Free Methodist Church", "value": "Free Methodist Church" },
+      { "label": "Free Mission in the Philippines, Incorporated", "value": "Free Mission in the Philippines, Incorporated" },
+      { "label": "General Baptist Churches of the Philippines", "value": "General Baptist Churches of the Philippines" },
+      { "label": "Good News Christian Churches", "value": "Good News Christian Churches" },
+      { "label": "Higher Ground Baptist Mission", "value": "Higher Ground Baptist Mission" },
+      { "label": "IEMELIF Reform Movement", "value": "IEMELIF Reform Movement" },
+      { "label": "Iglesia Evangelica Unida de Cristo", "value": "Iglesia Evangelica Unida de Cristo" },
+      { "label": "Iglesia Evangelista Methodista en Las Islas Filipinas (IEMELIF)", "value": "Iglesia Evangelista Methodista en Las Islas Filipinas (IEMELIF)" },
+      { "label": "Iglesia Filipina Independiente", "value": "Iglesia Filipina Independiente" },
+      { "label": "Iglesia ni Cristo", "value": "Iglesia ni Cristo" },
+      { "label": "Iglesia sa Dios Espiritu Santo, Incorporated", "value": "Iglesia sa Dios Espiritu Santo, Incorporated" },
+      { "label": "Independent Baptist Churches of the Philippines", "value": "Independent Baptist Churches of the Philippines" },
+      { "label": "Independent Baptist Missionary Fellowship", "value": "Independent Baptist Missionary Fellowship" },
+      { "label": "International One Way Outreach", "value": "International One Way Outreach" },
+      { "label": "Islam", "value": "Islam" },
+      { "label": "Jehovah's Witness", "value": "Jehovah's Witness" },
+      { "label": "Jesus Christ Saves Global Outreach", "value": "Jesus Christ Saves Global Outreach" },
+      { "label": "Jesus is Alive Community, Incorporated", "value": "Jesus is Alive Community, Incorporated" },
+      { "label": "Jesus is Lord Church", "value": "Jesus is Lord Church" },
+      { "label": "Jesus Reigns Ministries", "value": "Jesus Reigns Ministries" },
+      { "label": "Love of Christ International Ministries", "value": "Love of Christ International Ministries" },
+      { "label": "Lutheran Church of the Philippines", "value": "Lutheran Church of the Philippines" },
+      { "label": "Miracle Life Fellowship International", "value": "Miracle Life Fellowship International" },
+      { "label": "Miracle Revival Church of the Philippines", "value": "Miracle Revival Church of the Philippines" },
+      { "label": "Missionary Baptist Churches of the Philippines", "value": "Missionary Baptist Churches of the Philippines" },
+      { "label": "Pentecostal Church of God Asia Mission", "value": "Pentecostal Church of God Asia Mission" },
+      { "label": "Philippine Benevolent Missionaries Association", "value": "Philippine Benevolent Missionaries Association" },
+      { "label": "Philippine Ecumenical Christian Church", "value": "Philippine Ecumenical Christian Church" },
+      { "label": "Philippine Episcopal Church", "value": "Philippine Episcopal Church" },
+      { "label": "Philippine Evangelical Mission", "value": "Philippine Evangelical Mission" },
+      { "label": "Philippine General Council of the Assemblies of God", "value": "Philippine General Council of the Assemblies of God" },
+      { "label": "Philippine Good News Ministries", "value": "Philippine Good News Ministries" },
+      { "label": "Philippine Grace Gospel", "value": "Philippine Grace Gospel" },
+      { "label": "Philippine Independent Catholic Church", "value": "Philippine Independent Catholic Church" },
+      { "label": "Philippine Missionary Fellowship", "value": "Philippine Missionary Fellowship" },
+      { "label": "Philippine Pentecostal Holiness Church", "value": "Philippine Pentecostal Holiness Church" },
+      { "label": "Potter's House Christian Center", "value": "Potter's House Christian Center" },
+      { "label": "Presbyterian Church in the Philippines", "value": "Presbyterian Church in the Philippines" },
+      { "label": "Roman Catholic, including Catholic Charismatic", "value": "Roman Catholic, including Catholic Charismatic" },
+      { "label": "Salvation Army, Philippines", "value": "Salvation Army, Philippines" },
+      { "label": "Seventh Day Adventist", "value": "Seventh Day Adventist" },
+      { "label": "Southern Baptist Church", "value": "Southern Baptist Church" },
+      { "label": "Take the Nation for Jesus Global Ministries (Corpus Christi)", "value": "Take the Nation for Jesus Global Ministries (Corpus Christi)" },
+      { "label": "Things to Come", "value": "Things to Come" },
+      { "label": "UNIDA Evangelical Church", "value": "UNIDA Evangelical Church" },
+      { "label": "United Church of Christ in the Philippines", "value": "United Church of Christ in the Philippines" },
+      { "label": "United Evangelical Church of the Philippines (Chinese)", "value": "United Evangelical Church of the Philippines (Chinese)" },
+      { "label": "Union Espiritista Cristiana de Filipinas, Incorporated", "value": "Union Espiritista Cristiana de Filipinas, Incorporated" },
+      { "label": "United Methodists Church", "value": "United Methodists Church" },
+      { "label": "United Pentecostal Church (Philippines), Incorporated", "value": "United Pentecostal Church (Philippines), Incorporated" },
+      { "label": "Universal Pentecostal Church", "value": "Universal Pentecostal Church" },
+      { "label": "Victory Chapel Christian Fellowship", "value": "Victory Chapel Christian Fellowship" },
+      { "label": "Watch Tower Bible and Tract Society of the Philippines, Incorporated (Jehovah's Witnesses)", "value": "Watch Tower Bible and Tract Society of the Philippines, Incorporated (Jehovah's Witnesses)" },
+      { "label": "Way of Salvation", "value": "Way of Salvation" },
+      { "label": "Way of Salvation Church Incorporated, The", "value": "Way of Salvation Church Incorporated, The" },
+      { "label": "Wesleyan Church, The", "value": "Wesleyan Church, The" },
+      { "label": "Word for the World", "value": "Word for the World" },
+      { "label": "Word International Ministries, Incorporated", "value": "Word International Ministries, Incorporated" },
+      { "label": "World Missionary Evangelism", "value": "World Missionary Evangelism" },
+      { "label": "Worldwide Church of God", "value": "Worldwide Church of God" },
+      { "label": "Zion Christian Community Church", "value": "Zion Christian Community Church" },
+      { "label": "Others", "value": "Others" }
+    ],
+    "suffix_options": [
+      { "label": "Jr", "value": "Jr" },
+      { "label": "Sr", "value": "Sr" },
+      { "label": "I", "value": "I" },
+      { "label": "II", "value": "II" },
+      { "label": "III", "value": "III" },
+      { "label": "IV", "value": "IV" },
+      { "label": "V", "value": "V" },
+      { "label": "VI", "value": "VI" },
+      { "label": "VII", "value": "VII" },
+      { "label": "VIII", "value": "VIII" }
+    ],
+    "country_options": [
+      { "label": "Afghanistan", "value": "Afghanistan" }, { "label": "Albania", "value": "Albania" }, { "label": "Algeria", "value": "Algeria" }, { "label": "Andorra", "value": "Andorra" }, { "label": "Angola", "value": "Angola" }, { "label": "Antigua and Barbuda", "value": "Antigua and Barbuda" }, { "label": "Argentina", "value": "Argentina" }, { "label": "Armenia", "value": "Armenia" }, { "label": "Australia", "value": "Australia" }, { "label": "Austria", "value": "Austria" }, { "label": "Azerbaijan", "value": "Azerbaijan" }, { "label": "Bahamas", "value": "Bahamas" }, { "label": "Bahrain", "value": "Bahrain" }, { "label": "Bangladesh", "value": "Bangladesh" }, { "label": "Barbados", "value": "Barbados" }, { "label": "Belarus", "value": "Belarus" }, { "label": "Belgium", "value": "Belgium" }, { "label": "Belize", "value": "Belize" }, { "label": "Benin", "value": "Benin" }, { "label": "Bhutan", "value": "Bhutan" }, { "label": "Bolivia", "value": "Bolivia" }, { "label": "Bosnia and Herzegovina", "value": "Bosnia and Herzegovina" }, { "label": "Botswana", "value": "Botswana" }, { "label": "Brazil", "value": "Brazil" }, { "label": "Brunei", "value": "Brunei" }, { "label": "Bulgaria", "value": "Bulgaria" }, { "label": "Burkina Faso", "value": "Burkina Faso" }, { "label": "Burundi", "value": "Burundi" }, { "label": "C\u00f4te d'Ivoire", "value": "C\u00f4te d'Ivoire" }, { "label": "Cabo Verde", "value": "Cabo Verde" }, { "label": "Cambodia", "value": "Cambodia" }, { "label": "Cameroon", "value": "Cameroon" }, { "label": "Canada", "value": "Canada" }, { "label": "Central African Republic", "value": "Central African Republic" }, { "label": "Chad", "value": "Chad" }, { "label": "Chile", "value": "Chile" }, { "label": "China", "value": "China" }, { "label": "Colombia", "value": "Colombia" }, { "label": "Comoros", "value": "Comoros" }, { "label": "Congo (Congo-Brazzaville)", "value": "Congo (Congo-Brazzaville)" }, { "label": "Costa Rica", "value": "Costa Rica" }, { "label": "Croatia", "value": "Croatia" }, { "label": "Cuba", "value": "Cuba" }, { "label": "Cyprus", "value": "Cyprus" }, { "label": "Czech Republic", "value": "Czech Republic" }, { "label": "Democratic Republic of the Congo", "value": "Democratic Republic of the Congo" }, { "label": "Denmark", "value": "Denmark" }, { "label": "Djibouti", "value": "Djibouti" }, { "label": "Dominica", "value": "Dominica" }, { "label": "Dominican Republic", "value": "Dominican Republic" }, { "label": "Ecuador", "value": "Ecuador" }, { "label": "Egypt", "value": "Egypt" }, { "label": "El Salvador", "value": "El Salvador" }, { "label": "Equatorial Guinea", "value": "Equatorial Guinea" }, { "label": "Eritrea", "value": "Eritrea" }, { "label": "Estonia", "value": "Estonia" }, { "label": "Eswatini (fmr. \"Swaziland\")", "value": "Eswatini (fmr. \"Swaziland\")" }, { "label": "Ethiopia", "value": "Ethiopia" }, { "label": "Fiji", "value": "Fiji" }, { "label": "Finland", "value": "Finland" }, { "label": "France", "value": "France" }, { "label": "Gabon", "value": "Gabon" }, { "label": "Gambia", "value": "Gambia" }, { "label": "Georgia", "value": "Georgia" }, { "label": "Germany", "value": "Germany" }, { "label": "Ghana", "value": "Ghana" }, { "label": "Greece", "value": "Greece" }, { "label": "Grenada", "value": "Grenada" }, { "label": "Guatemala", "value": "Guatemala" }, { "label": "Guinea", "value": "Guinea" }, { "label": "Guinea-Bissau", "value": "Guinea-Bissau" }, { "label": "Guyana", "value": "Guyana" }, { "label": "Haiti", "value": "Haiti" }, { "label": "Holy See", "value": "Holy See" }, { "label": "Honduras", "value": "Honduras" }, { "label": "Hungary", "value": "Hungary" }, { "label": "Iceland", "value": "Iceland" }, { "label": "India", "value": "India" }, { "label": "Indonesia", "value": "Indonesia" }, { "label": "Iran", "value": "Iran" }, { "label": "Iraq", "value": "Iraq" }, { "label": "Ireland", "value": "Ireland" }, { "label": "Israel", "value": "Israel" }, { "label": "Italy", "value": "Italy" }, { "label": "Jamaica", "value": "Jamaica" }, { "label": "Japan", "value": "Japan" }, { "label": "Jordan", "value": "Jordan" }, { "label": "Kazakhstan", "value": "Kazakhstan" }, { "label": "Kenya", "value": "Kenya" }, { "label": "Kiribati", "value": "Kiribati" }, { "label": "Kuwait", "value": "Kuwait" }, { "label": "Kyrgyzstan", "value": "Kyrgyzstan" }, { "label": "Laos", "value": "Laos" }, { "label": "Latvia", "value": "Latvia" }, { "label": "Lebanon", "value": "Lebanon" }, { "label": "Lesotho", "value": "Lesotho" }, { "label": "Liberia", "value": "Liberia" }, { "label": "Libya", "value": "Libya" }, { "label": "Liechtenstein", "value": "Liechtenstein" }, { "label": "Lithuania", "value": "Lithuania" }, { "label": "Luxembourg", "value": "Luxembourg" }, { "label": "Madagascar", "value": "Madagascar" }, { "label": "Malawi", "value": "Malawi" }, { "label": "Malaysia", "value": "Malaysia" }, { "label": "Maldives", "value": "Maldives" }, { "label": "Mali", "value": "Mali" }, { "label": "Malta", "value": "Malta" }, { "label": "Marshall Islands", "value": "Marshall Islands" }, { "label": "Mauritania", "value": "Mauritania" }, { "label": "Mauritius", "value": "Mauritius" }, { "label": "Mexico", "value": "Mexico" }, { "label": "Micronesia", "value": "Micronesia" }, { "label": "Moldova", "value": "Moldova" }, { "label": "Monaco", "value": "Monaco" }, { "label": "Mongolia", "value": "Mongolia" }, { "label": "Montenegro", "value": "Montenegro" }, { "label": "Morocco", "value": "Morocco" }, { "label": "Mozambique", "value": "Mozambique" }, { "label": "Myanmar", "value": "Myanmar" }, { "label": "Namibia", "value": "Namibia" }, { "label": "Nauru", "value": "Nauru" }, { "label": "Nepal", "value": "Nepal" }, { "label": "Netherlands", "value": "Netherlands" }, { "label": "New Zealand", "value": "New Zealand" }, { "label": "Nicaragua", "value": "Nicaragua" }, { "label": "Niger", "value": "Niger" }, { "label": "Nigeria", "value": "Nigeria" }, { "label": "North Korea", "value": "North Korea" }, { "label": "North Macedonia", "value": "North Macedonia" }, { "label": "Norway", "value": "Norway" }, { "label": "Oman", "value": "Oman" }, { "label": "Pakistan", "value": "Pakistan" }, { "label": "Palau", "value": "Palau" }, { "label": "Palestine State", "value": "Palestine State" }, { "label": "Panama", "value": "Panama" }, { "label": "Papua New Guinea", "value": "Papua New Guinea" }, { "label": "Paraguay", "value": "Paraguay" }, { "label": "Peru", "value": "Peru" }, { "label": "Philippines", "value": "Philippines" }, { "label": "Poland", "value": "Poland" }, { "label": "Portugal", "value": "Portugal" }, { "label": "Qatar", "value": "Qatar" }, { "label": "Romania", "value": "Romania" }, { "label": "Russia", "value": "Russia" }, { "label": "Rwanda", "value": "Rwanda" }, { "label": "Saint Kitts and Nevis", "value": "Saint Kitts and Nevis" }, { "label": "Saint Lucia", "value": "Saint Lucia" }, { "label": "Saint Vincent and the Grenadines", "value": "Saint Vincent and the Grenadines" }, { "label": "Samoa", "value": "Samoa" }, { "label": "San Marino", "value": "San Marino" }, { "label": "Sao Tome and Principe", "value": "Sao Tome and Principe" }, { "label": "Saudi Arabia", "value": "Saudi Arabia" }, { "label": "Senegal", "value": "Senegal" }, { "label": "Serbia", "value": "Serbia" }, { "label": "Seychelles", "value": "Seychelles" }, { "label": "Sierra Leone", "value": "Sierra Leone" }, { "label": "Singapore", "value": "Singapore" }, { "label": "Slovakia", "value": "Slovakia" }, { "label": "Slovenia", "value": "Slovenia" }, { "label": "Solomon Islands", "value": "Solomon Islands" }, { "label": "Somalia", "value": "Somalia" }, { "label": "South Africa", "value": "South Africa" }, { "label": "South Korea", "value": "South Korea" }, { "label": "South Sudan", "value": "South Sudan" }, { "label": "Spain", "value": "Spain" }, { "label": "Sri Lanka", "value": "Sri Lanka" }, { "label": "Sudan", "value": "Sudan" }, { "label": "Suriname", "value": "Suriname" }, { "label": "Sweden", "value": "Sweden" }, { "label": "Switzerland", "value": "Switzerland" }, { "label": "Syria", "value": "Syria" }, { "label": "Tajikistan", "value": "Tajikistan" }, { "label": "Tanzania", "value": "Tanzania" }, { "label": "Thailand", "value": "Thailand" }, { "label": "Timor-Leste", "value": "Timor-Leste" }, { "label": "Togo", "value": "Togo" }, { "label": "Tonga", "value": "Tonga" }, { "label": "Trinidad and Tobago", "value": "Trinidad and Tobago" }, { "label": "Tunisia", "value": "Tunisia" }, { "label": "Turkey", "value": "Turkey" }, { "label": "Turkmenistan", "value": "Turkmenistan" }, { "label": "Tuvalu", "value": "Tuvalu" }, { "label": "Uganda", "value": "Uganda" }, { "label": "Ukraine", "value": "Ukraine" }, { "label": "United Arab Emirates", "value": "United Arab Emirates" }, { "label": "United Kingdom", "value": "United Kingdom" }, { "label": "United States of America", "value": "United States of America" }, { "label": "Uruguay", "value": "Uruguay" }, { "label": "Uzbekistan", "value": "Uzbekistan" }, { "label": "Vanuatu", "value": "Vanuatu" }, { "label": "Venezuela", "value": "Venezuela" }, { "label": "Vietnam", "value": "Vietnam" }, { "label": "Yemen", "value": "Yemen" }, { "label": "Zambia", "value": "Zambia" }, { "label": "Zimbabwe", "value": "Zimbabwe" }
+    ],
+    "philippine_provinces": [
+      { "label": "Abra", "value": "Abra" }, { "label": "Agusan del Norte", "value": "Agusan del Norte" }, { "label": "Agusan del Sur", "value": "Agusan del Sur" }, { "label": "Aklan", "value": "Aklan" }, { "label": "Albay", "value": "Albay" }, { "label": "Antique", "value": "Antique" }, { "label": "Apayao", "value": "Apayao" }, { "label": "Aurora", "value": "Aurora" }, { "label": "Basilan", "value": "Basilan" }, { "label": "Bataan", "value": "Bataan" }, { "label": "Batanes", "value": "Batanes" }, { "label": "Batangas", "value": "Batangas" }, { "label": "Benguet", "value": "Benguet" }, { "label": "Biliran", "value": "Biliran" }, { "label": "Bohol", "value": "Bohol" }, { "label": "Bukidnon", "value": "Bukidnon" }, { "label": "Bulacan", "value": "Bulacan" }, { "label": "Cagayan", "value": "Cagayan" }, { "label": "Camarines Norte", "value": "Camarines Norte" }, { "label": "Camarines Sur", "value": "Camarines Sur" }, { "label": "Camiguin", "value": "Camiguin" }, { "label": "Capiz", "value": "Capiz" }, { "label": "Catanduanes", "value": "Catanduanes" }, { "label": "Cavite", "value": "Cavite" }, { "label": "Cebu", "value": "Cebu" }, { "label": "Cotabato", "value": "Cotabato" }, { "label": "Cotabato City", "value": "Cotabato City" }, { "label": "Davao del Norte", "value": "Davao del Norte" }, { "label": "Davao del Sur", "value": "Davao del Sur" }, { "label": "Davao de Oro", "value": "Davao de Oro" }, { "label": "Davao Occidental", "value": "Davao Occidental" }, { "label": "Davao Oriental", "value": "Davao Oriental" }, { "label": "Dinagat Islands", "value": "Dinagat Islands" }, { "label": "Eastern Samar", "value": "Eastern Samar" }, { "label": "Guimaras", "value": "Guimaras" }, { "label": "Ifugao", "value": "Ifugao" }, { "label": "Ilocos Norte", "value": "Ilocos Norte" }, { "label": "Ilocos Sur", "value": "Ilocos Sur" }, { "label": "Iloilo", "value": "Iloilo" }, { "label": "Isabela", "value": "Isabela" }, { "label": "Isabela City", "value": "Isabela City" }, { "label": "Kalinga", "value": "Kalinga" }, { "label": "Laguna", "value": "Laguna" }, { "label": "Lanao del Norte", "value": "Lanao del Norte" }, { "label": "Lanao del Sur", "value": "Lanao del Sur" }, { "label": "La Union", "value": "La Union" }, { "label": "Leyte", "value": "Leyte" }, { "label": "Maguindanao", "value": "Maguindanao" }, { "label": "Marinduque", "value": "Marinduque" }, { "label": "Masbate", "value": "Masbate" }, { "label": "Misamis Occidental", "value": "Misamis Occidental" }, { "label": "Misamis Oriental", "value": "Misamis Oriental" }, { "label": "Mountain Province", "value": "Mountain Province" }, { "label": "NCR, National Capital Region", "value": "NCR, National Capital Region" }, { "label": "Negros Occidental", "value": "Negros Occidental" }, { "label": "Negros Oriental", "value": "Negros Oriental" }, { "label": "Northern Samar", "value": "Northern Samar" }, { "label": "Nueva Ecija", "value": "Nueva Ecija" }, { "label": "Nueva Vizcaya", "value": "Nueva Vizcaya" }, { "label": "Occidental Mindoro", "value": "Occidental Mindoro" }, { "label": "Oriental Mindoro", "value": "Oriental Mindoro" }, { "label": "Palawan", "value": "Palawan" }, { "label": "Pampanga", "value": "Pampanga" }, { "label": "Pangasinan", "value": "Pangasinan" }, { "label": "Quezon", "value": "Quezon" }, { "label": "Quirino", "value": "Quirino" }, { "label": "Rizal", "value": "Rizal" }, { "label": "Romblon", "value": "Romblon" }, { "label": "Samar", "value": "Samar" }, { "label": "Sarangani", "value": "Sarangani" }, { "label": "Siquijor", "value": "Siquijor" }, { "label": "Sorsogon", "value": "Sorsogon" }, { "label": "South Cotabato", "value": "South Cotabato" }, { "label": "Southern Leyte", "value": "Southern Leyte" }, { "label": "Sultan Kudarat", "value": "Sultan Kudarat" }, { "label": "Sulu", "value": "Sulu" }, { "label": "Surigao del Norte", "value": "Surigao del Norte" }, { "label": "Surigao del Sur", "value": "Surigao del Sur" }, { "label": "Tarlac", "value": "Tarlac" }, { "label": "Tawi-Tawi", "value": "Tawi-Tawi" }, { "label": "Zambales", "value": "Zambales" }, { "label": "Zamboanga del Norte", "value": "Zamboanga del Norte" }, { "label": "Zamboanga del Sur", "value": "Zamboanga del Sur" }, { "label": "Zamboanga Sibugay", "value": "Zamboanga Sibugay" }
+    ],
+    "address_fields_pattern": {
+      "description": "Repeated pattern for each person's current and permanent address. Same structure as applicant address sections above.",
+      "fields": [
+        { "name": "{prefix}Country", "type": "select", "required": true, "default": "Philippines" },
+        { "name": "{prefix}Addrline1", "type": "text", "required": true, "label": "Floor no., Bldg. no., House no." },
+        { "name": "{prefix}Addrline2", "type": "text", "required": true, "label": "Street, Bldg, Subdivision, Village" },
+        { "name": "{prefix}Province", "type": "select", "required": true, "cascade_triggers": "citymun" },
+        { "name": "{prefix}Citymun", "type": "select", "required": true, "cascade_depends_on": "province" },
+        { "name": "{prefix}Barangay", "type": "select", "required": true, "cascade_depends_on": "citymun" },
+        { "name": "{prefix}Zipcode", "type": "text", "required": true }
+      ]
+    }
+  }
+}
