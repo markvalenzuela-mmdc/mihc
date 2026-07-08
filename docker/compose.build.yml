@@ -28,17 +28,20 @@ services:
       dockerfile: Dockerfile
     env_file: .env.build
     environment:
-      PORT: "3939"
       INNGEST_DEV: "0"
-    ports:
-      - "3939:3939"
+    expose:
+      - "3939"
     depends_on:
+      app-postgres:
+        condition: service_healthy
       app-pgdog:
         condition: service_started
+      inngest-redis:
+        condition: service_healthy
       inngest:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3939/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3939/health').then((response)=>process.exit(response.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
       timeout: 10s
       retries: 3
