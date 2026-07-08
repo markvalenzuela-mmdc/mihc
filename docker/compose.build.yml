@@ -1,0 +1,23 @@
+include:
+  - path: services/pgdog-postgres/compose.yml
+    env_file: services/pgdog-postgres/.env
+  - path: services/inngest/compose.yml
+    env_file: services/inngest/.env
+  - path: services/pgadmin/compose.yml
+    env_file: services/pgadmin/.env
+
+services:
+  nextjs:
+    image: mihc-nextjs:build
+    build:
+      context: ../nextjs
+      dockerfile: Dockerfile
+    env_file: .env.build
+    ports:
+      - "3000:3000"
+    depends_on:
+      app-pgdog:
+        condition: service_started
+      inngest:
+        condition: service_healthy
+
