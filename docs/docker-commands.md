@@ -1,0 +1,89 @@
+# Docker Commands
+
+## Overview
+
+The project has three Docker workflows, each with a distinct purpose. They share infrastructure services (PostgreSQL, PgDog, Redis, Inngest, pgAdmin) but differ in what they run alongside them.
+
+## Commands
+
+### `just docker-local up|down`
+
+Starts or stops **infrastructure only** — the shared services that both the Next.js app and the Playwright consumer depend on. Does not run the application or test servers.
+
+**Services started:**
+- PostgreSQL (`app-postgres`)
+- PgDog connection pooler (`app-pgdog`, port `6432`)
+- Inngest server (`inngest`, port `8288`)
+- Inngest PostgreSQL + Redis
+- pgAdmin (`pgadmin`, port `5050`)
+
+**Use when:** You want to run the app locally via `pnpm dev` or run Playwright tests against a local database.
+
+```bash
+just docker-local up      # start infrastructure
+just docker-local down    # stop infrastructure
+```
+
+Uses `docker/compose.local.yml`.
+
+---
+
+### `just dev-fresh`
+
+Full local development setup: starts infrastructure, resets the database, then runs the Next.js dev server. Equivalent to:
+
+```bash
+just docker-local up
+just db-reset
+just dev
+```
+
+**Use when:** Starting a fresh development session from scratch.
+
+---
+
+### `just docker-build`
+
+Builds Docker images and starts the containerized Next.js application. Unlike the commands above, the Next.js app runs **inside a Docker container** rather than directly on your machine.
+
+```bash
+just docker-build
+```
+
+This runs `docker compose -f docker/compose.build.yml up -d --build`, which:
+1. Builds the Next.js image using `nextjs/Dockerfile`
+2. Starts the container alongside the shared infrastructure
+
+The app is available at `http://localhost:3000`.
+
+**Use when:** You want to test the production Docker build or run the app fully containerized.
+
+Uses `docker/compose.build.yml`.
+
+---
+
+## Environment Files
+
+### `nextjs/.env` — Local development
+
+Used by `just dev` and `just dev-fresh`. All service hostnames use `localhost` since you're running outside Docker:
+
+| Var | Host |
+|---|---|
+| `DATABASE_URL` | `localhost:6432` (PgDog via host port) |
+| `INNGEST_BASE_URL` | `localhost:8288` (Inngest via host port) |
+
+### `docker/.env.build` — Docker build
+
+Used by `just docker-build`. All service hostnames use Docker service names since the app runs **inside** the container and reaches services via the internal Docker network:
+
+| Var | Host |
+|---|---|
+| `DATABASE_URL` | `app-pgdog:6432` (PgDog via Docker DNS) |
+| `INNGEST_BASE_URL` | `inngest:8288` (Inngest via Docker DNS) |
+
+The `.env.build` file is a copy of `nextjs/.env` with `localhost` replaced by the appropriate Docker service names. Client-facing vars like `NEXT_PUBLIC_APP_URL` and `BETTER_AUTH_URL` keep `localhost:3000` since they are used by the browser, not internal service calls.
+
+### Why not share a single .env?
+
+`localhost` inside a Docker container refers to the container itself, not your host machine. Docker service names like `app-pgdog` only resolve inside the Docker Compose network. A single env file can't serve both contexts, so we maintain two — one for each environment.

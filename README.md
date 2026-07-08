@@ -33,6 +33,8 @@ See [`docs/containerized-infrastructure.md`](docs/containerized-infrastructure.m
 | `docker/`      | Docker Compose files for containers                    |
 | `docs/`        | Documentation, design docs, and project references     |
 
+See [`docs/docker-commands.md`](docs/docker-commands.md) for details on each Docker workflow and the difference between `nextjs/.env` and `docker/.env.build`.
+
 ## Commands
 
 Run `just` to see all available commands grouped by project:
@@ -40,7 +42,7 @@ Run `just` to see all available commands grouped by project:
 ```text
   nextjs
     dev         Start dev server
-    dev-local   Start Docker services, reset database, and run dev server
+    dev-fresh   Start Docker services, reset database, and run dev server
     build       Build for production
     lint        Lint check
     typecheck   TypeScript check
@@ -51,7 +53,7 @@ Run `just` to see all available commands grouped by project:
 
   docker
     docker-local up|down  Start or stop local Docker Compose services
-    build-docker  Build Docker images
+    docker-build  Build and run Docker images
 
   playwright
     test-playwright       Run smoke tests (live MMDC website)
@@ -81,7 +83,7 @@ The app and the Inngest consumer server run as separate processes. Open two term
 **Tab 1 — Next.js app** (Docker, database reset, dev server):
 
 ```bash
-just dev-local
+just dev-fresh
 ```
 
 This starts Docker services, resets the database, and runs the Next.js dev server on `http://localhost:3000`.

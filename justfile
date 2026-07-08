@@ -4,7 +4,7 @@ _default:
     @echo ""
     @echo "  nextjs"
     @echo "    dev         Start dev server"
-    @echo "    dev-local   Start Docker services, reset database, and run dev server"
+    @echo "    dev-fresh   Start Docker services, reset database, and run dev server"
     @echo "    build       Build for production"
     @echo "    lint        Lint check"
     @echo "    dev-test    Run Next.js unit and integration tests"
@@ -17,7 +17,7 @@ _default:
     @echo ""
     @echo "  docker"
     @echo "    docker-local up|down  Start or stop local Docker Compose services"
-    @echo "    build-docker  Build Docker images"
+    @echo "    docker-build   Build Docker images"
     @echo ""
     @echo "  playwright"
     @echo "    test-playwright       Run smoke tests (live MMDC website)"
@@ -36,7 +36,7 @@ dev:
     cd {{project_root}}/nextjs && pnpm run dev
 
 # Start local Docker services, reset the database, and run the Next.js dev server
-dev-local: (docker-local "up") db-reset dev
+dev-fresh: (docker-local "up") db-reset dev
 
 # Build for production
 build:
@@ -82,8 +82,8 @@ docker-local action="up":
     @docker compose -f "{{project_root}}/docker/compose.local.yml" {{action}} {{if action == "up" { "-d" } else { "" }}}
 
 # Build Docker images
-build-docker:
-    echo "Docker not configured yet"
+docker-build:
+    @docker compose -f "{{project_root}}/docker/compose.build.yml" up -d --build
 
 # ─────────────── playwright ───────────────
 
