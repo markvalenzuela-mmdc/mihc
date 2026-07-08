@@ -2,7 +2,7 @@
 
 import { useMemo, useTransition } from "react";
 import { ChevronRightIcon } from "lucide-react";
-import { createColumnHelper } from "@tanstack/react-table";
+import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { useQueryStates } from "nuqs";
 
 import { DataTable } from "@/components/blocks/DataTable/data-table-context";
@@ -157,7 +157,7 @@ export function E2eTestingProfilesTable({
         });
       }),
     [setSelectedProfile],
-  );
+  ) as ColumnDef<E2eProfileSummary>[];
 
   return (
     <section className="space-y-3" aria-labelledby="profiles-title">
@@ -174,7 +174,7 @@ export function E2eTestingProfilesTable({
         state={{
           table: {
             data: profiles.data,
-            columns,
+            columns
           },
           limit: limit.state,
           pagination: pagination.state,

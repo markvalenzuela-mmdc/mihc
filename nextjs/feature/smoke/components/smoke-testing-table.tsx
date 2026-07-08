@@ -10,7 +10,7 @@ import {
   SmokeTestRunStatus,
 } from "../types/smoke-test-apps.types";
 import { DataTable } from "@/components/blocks/DataTable/data-table-context";
-import { createColumnHelper } from "@tanstack/react-table";
+import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import {
   useDataTableLimit,
   useDataTablePagination,
@@ -191,7 +191,7 @@ export function SmokeTestingTable({
     [setSelectedRunId],
   );
 
-  const columns = useMemo(() => createColumns(openRun), [openRun]);
+  const columns = useMemo(() => createColumns(openRun), [openRun]) as ColumnDef<SmokeTestRun>[];
 
   function runManualSmokeTest() {
     startTransition(async () => {
