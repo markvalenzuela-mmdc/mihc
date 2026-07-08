@@ -36,6 +36,7 @@ Local development uses separate PostgreSQL services:
 
 - `app-postgres` — application database, reached from the host through PgDog on `localhost:6432`
 - `inngest-postgres` — dedicated Inngest database, reached by the `inngest` service inside Docker
+- The app PostgreSQL service can host both the main app database and a separate test database. PgDog is configured to route `mihc`, `mihc-test`, and the maintenance database `postgres` to the same `app-postgres` service.
 
 PgDog reads its config from `docker/services/pgdog-postgres/files/`.
 
@@ -98,6 +99,28 @@ docker/services/pgdog-postgres/.env
 ```
 
 The Next.js app should use this same host-facing PgDog URL in `nextjs/.env`.
+
+Use the same username and password with the test database name for integration tests:
+
+```text
+postgresql://<username>:<password>@localhost:6432/mihc-test?sslmode=disable
+```
+
+From `nextjs/`, create, migrate, and seed the test database with:
+
+```bash
+pnpm db:test:setup
+```
+
+This command reads `TEST_DATABASE_URL`, refuses to run if it matches `DATABASE_URL`, resets only the test database schemas, runs Drizzle migrations, and seeds the existing fixture data.
+
+Restart the local PgDog service after changing database routes or user database access:
+
+```bash
+docker compose -f docker/compose.local.yml restart app-pgdog
+```
+
+PgDog `v0.1.26` expects one `[[users]]` entry per database, so list the same username once for `mihc`, once for `mihc-test`, and once for `postgres`.
 
 ## Register PgDog in pgAdmin
 

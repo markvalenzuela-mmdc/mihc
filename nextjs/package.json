@@ -13,7 +13,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx lib/drizzle/seed.ts",
-    "db:reset": "tsx lib/drizzle/db-reset.ts"
+    "db:reset": "tsx lib/drizzle/db-reset.ts",
+    "db:test:setup": "tsx scripts/setup-test-db.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

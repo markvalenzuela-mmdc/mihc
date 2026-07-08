@@ -7,6 +7,7 @@ _default:
     @echo "    dev-local   Start Docker services, reset database, and run dev server"
     @echo "    build       Build for production"
     @echo "    lint        Lint check"
+    @echo "    dev-test    Run Next.js unit and integration tests"
     @echo "    typecheck   TypeScript check"
     @echo "    setup       Install dependencies"
     @echo "    db-generate Generate database migrations"
@@ -44,6 +45,10 @@ build:
 # Lint
 lint:
     cd {{project_root}}/nextjs && pnpm run lint
+
+# Run Next.js unit and integration tests
+dev-test:
+    cd {{project_root}}/nextjs && pnpm run test
 
 # TypeScript check
 typecheck:

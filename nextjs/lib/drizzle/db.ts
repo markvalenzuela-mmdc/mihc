@@ -30,4 +30,11 @@ export function getDb() {
   return cachedConnection.db;
 }
 
+export async function closeDb() {
+  if (!cachedConnection) return;
+
+  await cachedConnection.pool.end();
+  cachedConnection = undefined;
+}
+
 export * from "./schema";

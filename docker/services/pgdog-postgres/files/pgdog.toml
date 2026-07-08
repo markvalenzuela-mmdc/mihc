@@ -6,3 +6,13 @@ port = 6432
 name = "mihc"
 host = "app-postgres"
 port = 5432
+
+[[databases]]
+name = "mihc-test"
+host = "app-postgres"
+port = 5432
+
+[[databases]]
+name = "postgres"
+host = "app-postgres"
+port = 5432

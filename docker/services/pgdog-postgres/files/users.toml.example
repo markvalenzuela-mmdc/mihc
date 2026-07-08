@@ -2,3 +2,13 @@
 name = "mihc"
 database = "mihc"
 password = "mihc"
+
+[[users]]
+name = "mihc"
+database = "mihc-test"
+password = "mihc"
+
+[[users]]
+name = "mihc"
+database = "postgres"
+password = "mihc"
