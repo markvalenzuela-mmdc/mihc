@@ -21,3 +21,26 @@ services:
       inngest:
         condition: service_healthy
 
+  playwright:
+    image: mihc-playwright:build
+    build:
+      context: ../playwright
+      dockerfile: Dockerfile
+    env_file: .env.build
+    environment:
+      PORT: "3939"
+      INNGEST_DEV: "0"
+    ports:
+      - "3939:3939"
+    depends_on:
+      app-pgdog:
+        condition: service_started
+      inngest:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3939/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
