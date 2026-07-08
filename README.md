@@ -53,7 +53,8 @@ Run `just` to see all available commands grouped by project:
 
   docker
     docker-local up|down  Start or stop local Docker Compose services
-    docker-build  Build and run Docker images
+    docker-build [force]  Build and run Docker images (add force to rebuild without cache)
+    docker-down           Stop and remove all project Docker services
 
   playwright
     test-playwright       Run smoke tests (live MMDC website)

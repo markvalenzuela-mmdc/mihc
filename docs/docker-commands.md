@@ -42,23 +42,36 @@ just dev
 
 ---
 
-### `just docker-build`
+### `just docker-build [force]`
 
 Builds Docker images and starts the containerized Next.js application. Unlike the commands above, the Next.js app runs **inside a Docker container** rather than directly on your machine.
 
 ```bash
-just docker-build
+just docker-build       # build with cache
+just docker-build force # force rebuild without cache
 ```
 
-This runs `docker compose -f docker/compose.build.yml up -d --build`, which:
-1. Builds the Next.js image using `nextjs/Dockerfile`
-2. Starts the container alongside the shared infrastructure
+This builds images for both `nextjs/` and `playwright/` using their Dockerfiles, then starts containers alongside the shared infrastructure. Pass `force` to add `--no-cache` to the build step.
 
 The app is available at `http://localhost:3000`.
 
 **Use when:** You want to test the production Docker build or run the app fully containerized.
 
 Uses `docker/compose.build.yml`.
+
+---
+
+### `just docker-down`
+
+Stops and removes all project Docker services, regardless of which compose file started them.
+
+```bash
+just docker-down
+```
+
+This runs `docker compose -p docker down`, targeting the `docker` project name shared by `compose.local.yml` and `compose.build.yml`.
+
+**Use when:** You want to stop all Docker services for this project.
 
 ---
 
