@@ -1,130 +1,56 @@
-import { boolean, date, index, integer, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  date,
+  index,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+  uuid,
+} from "drizzle-orm/pg-core";
+
 import { users } from "./users";
+import { enrollmateCatalogVersions } from "./enrollmate-catalog";
 
-export const profiles = pgTable("profiles", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  name: text("name").notNull(),
-  middleName: text("middle_name"),
-  email: text("email").notNull().unique(),
-  program: text("program").notNull(),
-  cohort: text("cohort").notNull(),
-  status: text("status").notNull().default("new").references(() => e2eSteps.id).$type<
-    | "new" | "guidance_needed" | "validated"
-    | "verification" | "enrollment_confirmation"
-    | "for_payment" | "payment_verification" | "completed"
-  >(),
-  createdBy: uuid("created_by").references(() => users.id),
-  updatedBy: uuid("updated_by").references(() => users.id),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .defaultNow()
-    .notNull()
-    .$onUpdate(() => new Date()),
-});
-
-export const profileEnrollmentData = pgTable("profile_enrollment_data", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  profileId: uuid("profile_id")
-    .notNull()
-    .unique()
-    .references(() => profiles.id),
-
-  givenName: text("given_name"),
-  familyName: text("family_name"),
-  birthplace: text("birthplace"),
-  birthdate: date("birthdate"),
-  gender: text("gender"),
-  nationality: text("nationality"),
-  civilStatus: text("civil_status"),
-  monthlyIncome: text("monthly_income"),
-  mobile: text("mobile"),
-  middleName: text("middle_name"),
-  suffix: text("suffix"),
-  landline: text("landline"),
-  workType: text("work_type"),
-  companyOrgName: text("company_org_name"),
-  preferredLearningHub: text("preferred_learning_hub"),
-  studentType: text("student_type"),
-  subStudentType: text("sub_student_type"),
-  studentStatus: text("student_status"),
-  religion: text("religion"),
-  strand: text("strand"),
-  lastSchoolAttended: text("last_school_attended"),
-  termApplied: text("term_applied"),
-  programFocus: text("program_focus"),
-  programApplied: text("program_applied"),
-  certificationField: text("certification_field"),
-  isLeapPadReEnrollment: boolean("is_leap_pad_re_enrollment").notNull().default(false),
-  isSelfEnrolled: boolean("is_self_enrolled").notNull().default(false),
-
-  currentAddressCountry: text("current_address_country"),
-  currentAddressLine1: text("current_address_line1"),
-  currentAddressLine2: text("current_address_line2"),
-  currentAddressProvince: text("current_address_province"),
-  currentAddressCity: text("current_address_city"),
-  currentAddressBarangay: text("current_address_barangay"),
-  currentAddressZipCode: text("current_address_zip_code"),
-  currentForeignAddress: text("current_foreign_address"),
-
-  permanentAddressCountry: text("permanent_address_country"),
-  permanentAddressLine1: text("permanent_address_line1"),
-  permanentAddressLine2: text("permanent_address_line2"),
-  permanentAddressProvince: text("permanent_address_province"),
-  permanentAddressCity: text("permanent_address_city"),
-  permanentAddressBarangay: text("permanent_address_barangay"),
-  permanentAddressZipCode: text("permanent_address_zip_code"),
-
-  interestedInScholarship: text("interested_in_scholarship"),
-  withMedicalCondition: text("with_medical_condition"),
-  lostDate: date("lost_date"),
-  lostReason: text("lost_reason"),
-  lostReasonSpecific: text("lost_reason_specific"),
-  lostReasonRemark: text("lost_reason_remark"),
-  profileLockedDate: date("profile_locked_date"),
-  subscriptionExpirationDate: date("subscription_expiration_date"),
-
-  fatherStatus: text("father_status"),
-  motherStatus: text("mother_status"),
-  guardianType: text("guardian_type"),
-  guardianGivenName: text("guardian_given_name"),
-  guardianFamilyName: text("guardian_family_name"),
-  guardianSuffix: text("guardian_suffix"),
-  guardianBirthdate: date("guardian_birthdate"),
-  guardianMobile: text("guardian_mobile"),
-  guardianEmail: text("guardian_email"),
-  guardianOccupation: text("guardian_occupation"),
-  guardianRelationship: text("guardian_relationship"),
-  copyGuardianAddress: boolean("copy_guardian_address").default(false),
-  copyPermanentGuardianAddress: boolean("copy_permanent_guardian_address").default(false),
-
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .defaultNow()
-    .notNull()
-    .$onUpdate(() => new Date()),
-});
-
-export const profileLearnerReadiness = pgTable("profile_learner_readiness", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  profileId: uuid("profile_id").notNull().unique().references(() => profiles.id),
-  assistanceNeedScore: integer("assistance_need_score"),
-  computerDeviceAccess: text("computer_device_access"),
-  onlineLearningPlatforms: text("online_learning_platforms"),
-  softwareSkills: text("software_skills"),
-  onlinePlatformsSpecified: text("online_platforms_specified"),
-  internetConnectivity: text("internet_connectivity"),
-  timeCommitment: text("time_commitment"),
-  timeManagementEffectiveness: text("time_management_effectiveness"),
-  selfDisciplineConfidence: text("self_discipline_confidence"),
-  learningGoal: text("learning_goal"),
-  challengesProvided: text("challenges_provided"),
-  potentialChallenges: text("potential_challenges"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .defaultNow()
-    .notNull()
-    .$onUpdate(() => new Date()),
-});
+export const profiles = pgTable(
+  "profiles",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    name: text("name").notNull(),
+    middleName: text("middle_name"),
+    email: text("email").notNull().unique(),
+    program: text("program"),
+    cohort: text("cohort"),
+    catalogVersionId: uuid("catalog_version_id").references(
+      () => enrollmateCatalogVersions.id,
+    ),
+    status: text("status")
+      .notNull()
+      .default("new")
+      .references(() => e2eSteps.id)
+      .$type<
+        | "new"
+        | "guidance_needed"
+        | "validated"
+        | "verification"
+        | "enrollment_confirmation"
+        | "for_payment"
+        | "payment_verification"
+        | "completed"
+      >(),
+    createdBy: uuid("created_by").references(() => users.id),
+    updatedBy: uuid("updated_by").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [unique().on(table.id, table.catalogVersionId)],
+);
 
 export const profilePaymentDetails = pgTable("profile_payment_details", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -145,7 +71,9 @@ export const profilePaymentDetails = pgTable("profile_payment_details", {
   businessBir2303SubmittedDate: date("business_bir_2303_submitted_date"),
   proofOfPaymentSubmittedDate: date("proof_of_payment_submitted_date"),
   proofOfPaymentAaRemarks: text("proof_of_payment_aa_remarks"),
-  timestampInPaymentVerification: timestamp("timestamp_in_payment_verification", { withTimezone: true }),
+  timestampInPaymentVerification: timestamp("timestamp_in_payment_verification", {
+    withTimezone: true,
+  }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
@@ -160,20 +88,6 @@ export const profileStudyBuddy = pgTable("profile_study_buddy", {
   sbNomineeName: text("sb_nominee_name"),
   sbPromoCode: text("sb_promo_code"),
   sbNomineeEmail: text("sb_nominee_email"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .defaultNow()
-    .notNull()
-    .$onUpdate(() => new Date()),
-});
-
-export const profileDocuments = pgTable("profile_documents", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  profileId: uuid("profile_id").notNull().unique().references(() => profiles.id),
-  applicantPersonalIdGDriveLink: text("applicant_personal_id_gdrive_link"),
-  proofOfHsCompletionGDriveLink: text("proof_of_hs_completion_gdrive_link"),
-  applicantPersonalIdSubmittedDate: date("applicant_personal_id_submitted_date"),
-  proofOfHsCompletionSubmittedDate: date("proof_of_hs_completion_submitted_date"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
@@ -236,9 +150,7 @@ export const e2eRuns = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     runNumber: integer("run_number").notNull(),
-    profileId: uuid("profile_id")
-      .notNull()
-      .references(() => profiles.id),
+    profileId: uuid("profile_id").notNull().references(() => profiles.id),
     status: text("status").notNull().$type<"running" | "completed" | "aborted">(),
     startedBy: uuid("started_by").references(() => users.id),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
@@ -252,13 +164,11 @@ export const e2eRunSteps = pgTable(
   "e2e_run_steps",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    runId: uuid("run_id")
+    runId: uuid("run_id").notNull().references(() => e2eRuns.id),
+    stepId: text("step_id").notNull().references(() => e2eSteps.id),
+    status: text("status")
       .notNull()
-      .references(() => e2eRuns.id),
-    stepId: text("step_id")
-      .notNull()
-      .references(() => e2eSteps.id),
-    status: text("status").notNull().$type<"queued" | "running" | "success" | "failure">(),
+      .$type<"queued" | "running" | "success" | "failure">(),
     durationSeconds: integer("duration_seconds"),
     note: text("note"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -270,9 +180,7 @@ export const e2eRunTests = pgTable(
   "e2e_run_tests",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    runStepId: uuid("run_step_id")
-      .notNull()
-      .references(() => e2eRunSteps.id),
+    runStepId: uuid("run_step_id").notNull().references(() => e2eRunSteps.id),
     testName: text("test_name").notNull(),
     status: text("status").notNull().$type<"success" | "failure" | "skipped">(),
     durationMs: integer("duration_ms"),

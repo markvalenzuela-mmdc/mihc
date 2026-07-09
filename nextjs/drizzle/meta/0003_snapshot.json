@@ -1,0 +1,5306 @@
+{
+  "id": "a3599239-bd1a-4465-8721-9baa763dd4a3",
+  "prevId": "98bc9e57-bf9c-4828-b5a1-d4694f686e58",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.application_snapshots": {
+      "name": "application_snapshots",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "profile_flow_id": {
+          "name": "profile_flow_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "e2e_run_id": {
+          "name": "e2e_run_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "catalog_version_id": {
+          "name": "catalog_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload_hash": {
+          "name": "payload_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "raw_payload": {
+          "name": "raw_payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "captured_at": {
+          "name": "captured_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "application_snapshots_e2e_run_id_e2e_runs_id_fk": {
+          "name": "application_snapshots_e2e_run_id_e2e_runs_id_fk",
+          "tableFrom": "application_snapshots",
+          "tableTo": "e2e_runs",
+          "columnsFrom": [
+            "e2e_run_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "application_snapshots_profile_flow_id_catalog_version_id_profile_flows_id_catalog_version_id_fk": {
+          "name": "application_snapshots_profile_flow_id_catalog_version_id_profile_flows_id_catalog_version_id_fk",
+          "tableFrom": "application_snapshots",
+          "tableTo": "profile_flows",
+          "columnsFrom": [
+            "profile_flow_id",
+            "catalog_version_id"
+          ],
+          "columnsTo": [
+            "id",
+            "catalog_version_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.apps": {
+      "name": "apps",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "apps_created_by_users_id_fk": {
+          "name": "apps_created_by_users_id_fk",
+          "tableFrom": "apps",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "apps_updated_by_users_id_fk": {
+          "name": "apps_updated_by_users_id_fk",
+          "tableFrom": "apps",
+          "tableTo": "users",
+          "columnsFrom": [
+            "updated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.smoke_runs": {
+      "name": "smoke_runs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "run_number": {
+          "name": "run_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "app_id": {
+          "name": "app_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "trigger": {
+          "name": "trigger",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total": {
+          "name": "total",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "passed": {
+          "name": "passed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "failed": {
+          "name": "failed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "duration_seconds": {
+          "name": "duration_seconds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "started_by": {
+          "name": "started_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "checked_at": {
+          "name": "checked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_smoke_runs_app_run": {
+          "name": "idx_smoke_runs_app_run",
+          "columns": [
+            {
+              "expression": "app_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "run_number",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "smoke_runs_app_id_apps_id_fk": {
+          "name": "smoke_runs_app_id_apps_id_fk",
+          "tableFrom": "smoke_runs",
+          "tableTo": "apps",
+          "columnsFrom": [
+            "app_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "smoke_runs_started_by_users_id_fk": {
+          "name": "smoke_runs_started_by_users_id_fk",
+          "tableFrom": "smoke_runs",
+          "tableTo": "users",
+          "columnsFrom": [
+            "started_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "smoke_runs_app_id_run_number_unique": {
+          "name": "smoke_runs_app_id_run_number_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "app_id",
+            "run_number"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.smoke_runs_test_results": {
+      "name": "smoke_runs_test_results",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "run_id": {
+          "name": "run_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "test_name": {
+          "name": "test_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "test_file": {
+          "name": "test_file",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "duration_ms": {
+          "name": "duration_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "error_message": {
+          "name": "error_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "error_stack": {
+          "name": "error_stack",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_smoke_results_run_id": {
+          "name": "idx_smoke_results_run_id",
+          "columns": [
+            {
+              "expression": "run_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "smoke_runs_test_results_run_id_smoke_runs_id_fk": {
+          "name": "smoke_runs_test_results_run_id_smoke_runs_id_fk",
+          "tableFrom": "smoke_runs_test_results",
+          "tableTo": "smoke_runs",
+          "columnsFrom": [
+            "run_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.account": {
+      "name": "account",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_id": {
+          "name": "provider_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "account_id": {
+          "name": "account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "access_token": {
+          "name": "access_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refresh_token": {
+          "name": "refresh_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id_token": {
+          "name": "id_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "access_token_expires_at": {
+          "name": "access_token_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refresh_token_expires_at": {
+          "name": "refresh_token_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "password": {
+          "name": "password",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "account_user_id_user_id_fk": {
+          "name": "account_user_id_user_id_fk",
+          "tableFrom": "account",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.session": {
+      "name": "session",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ip_address": {
+          "name": "ip_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "session_user_id_user_id_fk": {
+          "name": "session_user_id_user_id_fk",
+          "tableFrom": "session",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "session_token_unique": {
+          "name": "session_token_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.user": {
+      "name": "user",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email_verified": {
+          "name": "email_verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "image": {
+          "name": "image",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "user_email_unique": {
+          "name": "user_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.verification": {
+      "name": "verification",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "identifier": {
+          "name": "identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.enrollmate_catalog_versions": {
+      "name": "enrollmate_catalog_versions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "source_version": {
+          "name": "source_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reference_date": {
+          "name": "reference_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "enrollmate_catalog_versions_source_version_reference_date_unique": {
+          "name": "enrollmate_catalog_versions_source_version_reference_date_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "source_version",
+            "reference_date"
+          ]
+        },
+        "enrollmate_catalog_versions_id_source_version_unique": {
+          "name": "enrollmate_catalog_versions_id_source_version_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "source_version"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.enrollmate_option_dependencies": {
+      "name": "enrollmate_option_dependencies",
+      "schema": "",
+      "columns": {
+        "catalog_version_id": {
+          "name": "catalog_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dependency_type": {
+          "name": "dependency_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parent_option_id": {
+          "name": "parent_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "child_option_id": {
+          "name": "child_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "enrollmate_option_dependencies_catalog_version_id_parent_option_id_enrollmate_options_catalog_version_id_id_fk": {
+          "name": "enrollmate_option_dependencies_catalog_version_id_parent_option_id_enrollmate_options_catalog_version_id_id_fk",
+          "tableFrom": "enrollmate_option_dependencies",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "parent_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "enrollmate_option_dependencies_catalog_version_id_child_option_id_enrollmate_options_catalog_version_id_id_fk": {
+          "name": "enrollmate_option_dependencies_catalog_version_id_child_option_id_enrollmate_options_catalog_version_id_id_fk",
+          "tableFrom": "enrollmate_option_dependencies",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "child_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "enrollmate_option_dependencies_catalog_version_id_dependency_type_parent_option_id_child_option_id_pk": {
+          "name": "enrollmate_option_dependencies_catalog_version_id_dependency_type_parent_option_id_child_option_id_pk",
+          "columns": [
+            "catalog_version_id",
+            "dependency_type",
+            "parent_option_id",
+            "child_option_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "enrollmate_option_dependencies_type_check": {
+          "name": "enrollmate_option_dependencies_type_check",
+          "value": "\"enrollmate_option_dependencies\".\"dependency_type\" in ('major_to_specialization', 'province_to_municipality', 'municipality_to_barangay')"
+        },
+        "enrollmate_option_dependencies_distinct_options_check": {
+          "name": "enrollmate_option_dependencies_distinct_options_check",
+          "value": "\"enrollmate_option_dependencies\".\"parent_option_id\" <> \"enrollmate_option_dependencies\".\"child_option_id\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.enrollmate_option_sets": {
+      "name": "enrollmate_option_sets",
+      "schema": "",
+      "columns": {
+        "catalog_version_id": {
+          "name": "catalog_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_shared": {
+          "name": "is_shared",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "enrollmate_option_sets_catalog_version_id_enrollmate_catalog_versions_id_fk": {
+          "name": "enrollmate_option_sets_catalog_version_id_enrollmate_catalog_versions_id_fk",
+          "tableFrom": "enrollmate_option_sets",
+          "tableTo": "enrollmate_catalog_versions",
+          "columnsFrom": [
+            "catalog_version_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "enrollmate_option_sets_catalog_version_id_key_pk": {
+          "name": "enrollmate_option_sets_catalog_version_id_key_pk",
+          "columns": [
+            "catalog_version_id",
+            "key"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.enrollmate_options": {
+      "name": "enrollmate_options",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "catalog_version_id": {
+          "name": "catalog_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "option_set_key": {
+          "name": "option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "submitted_value": {
+          "name": "submitted_value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "enrollmate_options_catalog_version_id_option_set_key_enrollmate_option_sets_catalog_version_id_key_fk": {
+          "name": "enrollmate_options_catalog_version_id_option_set_key_enrollmate_option_sets_catalog_version_id_key_fk",
+          "tableFrom": "enrollmate_options",
+          "tableTo": "enrollmate_option_sets",
+          "columnsFrom": [
+            "catalog_version_id",
+            "option_set_key"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "key"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "enrollmate_options_catalog_version_id_option_set_key_submitted_value_unique": {
+          "name": "enrollmate_options_catalog_version_id_option_set_key_submitted_value_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "catalog_version_id",
+            "option_set_key",
+            "submitted_value"
+          ]
+        },
+        "enrollmate_options_catalog_version_id_option_set_key_id_unique": {
+          "name": "enrollmate_options_catalog_version_id_option_set_key_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ]
+        },
+        "enrollmate_options_catalog_version_id_id_unique": {
+          "name": "enrollmate_options_catalog_version_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "catalog_version_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.e2e_run_steps": {
+      "name": "e2e_run_steps",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "run_id": {
+          "name": "run_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "step_id": {
+          "name": "step_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "duration_seconds": {
+          "name": "duration_seconds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_e2e_run_steps_run_id": {
+          "name": "idx_e2e_run_steps_run_id",
+          "columns": [
+            {
+              "expression": "run_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "e2e_run_steps_run_id_e2e_runs_id_fk": {
+          "name": "e2e_run_steps_run_id_e2e_runs_id_fk",
+          "tableFrom": "e2e_run_steps",
+          "tableTo": "e2e_runs",
+          "columnsFrom": [
+            "run_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "e2e_run_steps_step_id_e2e_steps_id_fk": {
+          "name": "e2e_run_steps_step_id_e2e_steps_id_fk",
+          "tableFrom": "e2e_run_steps",
+          "tableTo": "e2e_steps",
+          "columnsFrom": [
+            "step_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.e2e_run_tests": {
+      "name": "e2e_run_tests",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "run_step_id": {
+          "name": "run_step_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "test_name": {
+          "name": "test_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "duration_ms": {
+          "name": "duration_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "error_message": {
+          "name": "error_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_e2e_run_tests_step_id": {
+          "name": "idx_e2e_run_tests_step_id",
+          "columns": [
+            {
+              "expression": "run_step_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "e2e_run_tests_run_step_id_e2e_run_steps_id_fk": {
+          "name": "e2e_run_tests_run_step_id_e2e_run_steps_id_fk",
+          "tableFrom": "e2e_run_tests",
+          "tableTo": "e2e_run_steps",
+          "columnsFrom": [
+            "run_step_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.e2e_runs": {
+      "name": "e2e_runs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "run_number": {
+          "name": "run_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "profile_id": {
+          "name": "profile_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "started_by": {
+          "name": "started_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "e2e_runs_profile_id_profiles_id_fk": {
+          "name": "e2e_runs_profile_id_profiles_id_fk",
+          "tableFrom": "e2e_runs",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "profile_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "e2e_runs_started_by_users_id_fk": {
+          "name": "e2e_runs_started_by_users_id_fk",
+          "tableFrom": "e2e_runs",
+          "tableTo": "users",
+          "columnsFrom": [
+            "started_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "e2e_runs_profile_id_run_number_unique": {
+          "name": "e2e_runs_profile_id_run_number_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "profile_id",
+            "run_number"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.e2e_steps": {
+      "name": "e2e_steps",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.profile_additional_info": {
+      "name": "profile_additional_info",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "profile_id": {
+          "name": "profile_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "how_did_you_find_out": {
+          "name": "how_did_you_find_out",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "coursera_invite_sent": {
+          "name": "coursera_invite_sent",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "has_app_form_edits": {
+          "name": "has_app_form_edits",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "coursera_invite_sent_date": {
+          "name": "coursera_invite_sent_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "profile_additional_info_profile_id_profiles_id_fk": {
+          "name": "profile_additional_info_profile_id_profiles_id_fk",
+          "tableFrom": "profile_additional_info",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "profile_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "profile_additional_info_profile_id_unique": {
+          "name": "profile_additional_info_profile_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "profile_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.profile_disclosures": {
+      "name": "profile_disclosures",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "profile_id": {
+          "name": "profile_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_privacy_1": {
+          "name": "data_privacy_1",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "marketing_notif_consent": {
+          "name": "marketing_notif_consent",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "data_privacy_2": {
+          "name": "data_privacy_2",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "profile_disclosures_profile_id_profiles_id_fk": {
+          "name": "profile_disclosures_profile_id_profiles_id_fk",
+          "tableFrom": "profile_disclosures",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "profile_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "profile_disclosures_profile_id_unique": {
+          "name": "profile_disclosures_profile_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "profile_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.profile_payment_details": {
+      "name": "profile_payment_details",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "profile_id": {
+          "name": "profile_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "program_fee": {
+          "name": "program_fee",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "need_official_receipt": {
+          "name": "need_official_receipt",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "promo_code": {
+          "name": "promo_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tin_number": {
+          "name": "tin_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "discounted_fee": {
+          "name": "discounted_fee",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "business_name": {
+          "name": "business_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payment_method": {
+          "name": "payment_method",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "business_tin_number": {
+          "name": "business_tin_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "proof_of_payment": {
+          "name": "proof_of_payment",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "business_address": {
+          "name": "business_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_renewal_payment": {
+          "name": "is_renewal_payment",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "business_bir_2303_gdrive_link": {
+          "name": "business_bir_2303_gdrive_link",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "proof_of_payment_gdrive_link": {
+          "name": "proof_of_payment_gdrive_link",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "business_bir_2303_submitted_date": {
+          "name": "business_bir_2303_submitted_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "proof_of_payment_submitted_date": {
+          "name": "proof_of_payment_submitted_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "proof_of_payment_aa_remarks": {
+          "name": "proof_of_payment_aa_remarks",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "timestamp_in_payment_verification": {
+          "name": "timestamp_in_payment_verification",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "profile_payment_details_profile_id_profiles_id_fk": {
+          "name": "profile_payment_details_profile_id_profiles_id_fk",
+          "tableFrom": "profile_payment_details",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "profile_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "profile_payment_details_profile_id_unique": {
+          "name": "profile_payment_details_profile_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "profile_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.profile_study_buddy": {
+      "name": "profile_study_buddy",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "profile_id": {
+          "name": "profile_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sb_nominator": {
+          "name": "sb_nominator",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sb_nominee_name": {
+          "name": "sb_nominee_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sb_promo_code": {
+          "name": "sb_promo_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sb_nominee_email": {
+          "name": "sb_nominee_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "profile_study_buddy_profile_id_profiles_id_fk": {
+          "name": "profile_study_buddy_profile_id_profiles_id_fk",
+          "tableFrom": "profile_study_buddy",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "profile_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "profile_study_buddy_profile_id_unique": {
+          "name": "profile_study_buddy_profile_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "profile_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.profile_system_info": {
+      "name": "profile_system_info",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "profile_id": {
+          "name": "profile_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_sent_to_api": {
+          "name": "is_sent_to_api",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "last_sent_to_api": {
+          "name": "last_sent_to_api",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_api_error": {
+          "name": "is_api_error",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "api_error_message": {
+          "name": "api_error_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "change_record_type": {
+          "name": "change_record_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "profile_system_info_profile_id_profiles_id_fk": {
+          "name": "profile_system_info_profile_id_profiles_id_fk",
+          "tableFrom": "profile_system_info",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "profile_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "profile_system_info_profile_id_unique": {
+          "name": "profile_system_info_profile_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "profile_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.profiles": {
+      "name": "profiles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "middle_name": {
+          "name": "middle_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "program": {
+          "name": "program",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cohort": {
+          "name": "cohort",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "catalog_version_id": {
+          "name": "catalog_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'new'"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "profiles_catalog_version_id_enrollmate_catalog_versions_id_fk": {
+          "name": "profiles_catalog_version_id_enrollmate_catalog_versions_id_fk",
+          "tableFrom": "profiles",
+          "tableTo": "enrollmate_catalog_versions",
+          "columnsFrom": [
+            "catalog_version_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profiles_status_e2e_steps_id_fk": {
+          "name": "profiles_status_e2e_steps_id_fk",
+          "tableFrom": "profiles",
+          "tableTo": "e2e_steps",
+          "columnsFrom": [
+            "status"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profiles_created_by_users_id_fk": {
+          "name": "profiles_created_by_users_id_fk",
+          "tableFrom": "profiles",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profiles_updated_by_users_id_fk": {
+          "name": "profiles_updated_by_users_id_fk",
+          "tableFrom": "profiles",
+          "tableTo": "users",
+          "columnsFrom": [
+            "updated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "profiles_email_unique": {
+          "name": "profiles_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        },
+        "profiles_id_catalog_version_id_unique": {
+          "name": "profiles_id_catalog_version_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "catalog_version_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.profile_bachelor_data": {
+      "name": "profile_bachelor_data",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "profile_flow_id": {
+          "name": "profile_flow_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "catalog_version_id": {
+          "name": "catalog_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "flow_type": {
+          "name": "flow_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bachelors'"
+        },
+        "term_option_set_key": {
+          "name": "term_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bachelors.termApplied'"
+        },
+        "term_option_id": {
+          "name": "term_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gender_option_set_key": {
+          "name": "gender_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bachelors.gender'"
+        },
+        "gender_option_id": {
+          "name": "gender_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "civil_status_option_set_key": {
+          "name": "civil_status_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bachelors.civilStatus'"
+        },
+        "civil_status_option_id": {
+          "name": "civil_status_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "monthly_income_option_set_key": {
+          "name": "monthly_income_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bachelors.monthlyIncome'"
+        },
+        "monthly_income_option_id": {
+          "name": "monthly_income_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "student_status_option_set_key": {
+          "name": "student_status_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bachelors.studentStatus'"
+        },
+        "student_status_option_id": {
+          "name": "student_status_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "major_option_set_key": {
+          "name": "major_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bachelors.programFocus'"
+        },
+        "major_option_id": {
+          "name": "major_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "specialization_option_set_key": {
+          "name": "specialization_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bachelors.programApplied'"
+        },
+        "specialization_option_id": {
+          "name": "specialization_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "major_specialization_dependency_type": {
+          "name": "major_specialization_dependency_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'major_to_specialization'"
+        },
+        "learning_hub_option_set_key": {
+          "name": "learning_hub_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bachelors.prefLearningHub'"
+        },
+        "learning_hub_option_id": {
+          "name": "learning_hub_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "student_type_option_set_key": {
+          "name": "student_type_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bachelors.studentType'"
+        },
+        "student_type_option_id": {
+          "name": "student_type_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sub_student_type_option_set_key": {
+          "name": "sub_student_type_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bachelors.subStudentType'"
+        },
+        "sub_student_type_option_id": {
+          "name": "sub_student_type_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "religion_option_set_key": {
+          "name": "religion_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'shared.religion'"
+        },
+        "religion_option_id": {
+          "name": "religion_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "strand_option_set_key": {
+          "name": "strand_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bachelors.strand'"
+        },
+        "strand_option_id": {
+          "name": "strand_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_school_attended": {
+          "name": "last_school_attended",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "school_not_found": {
+          "name": "school_not_found",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "last_school_other": {
+          "name": "last_school_other",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "permanent_address_line_1": {
+          "name": "permanent_address_line_1",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "permanent_address_line_2": {
+          "name": "permanent_address_line_2",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "permanent_address_zip_code": {
+          "name": "permanent_address_zip_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "permanent_country_option_set_key": {
+          "name": "permanent_country_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'shared.country'"
+        },
+        "permanent_country_option_id": {
+          "name": "permanent_country_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "permanent_province_option_set_key": {
+          "name": "permanent_province_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'shared.province'"
+        },
+        "permanent_province_option_id": {
+          "name": "permanent_province_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "permanent_municipality_option_set_key": {
+          "name": "permanent_municipality_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'shared.municipality'"
+        },
+        "permanent_municipality_option_id": {
+          "name": "permanent_municipality_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "permanent_barangay_option_set_key": {
+          "name": "permanent_barangay_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'shared.barangay'"
+        },
+        "permanent_barangay_option_id": {
+          "name": "permanent_barangay_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "province_municipality_dependency_type": {
+          "name": "province_municipality_dependency_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'province_to_municipality'"
+        },
+        "municipality_barangay_dependency_type": {
+          "name": "municipality_barangay_dependency_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'municipality_to_barangay'"
+        },
+        "scholarship_interest_option_set_key": {
+          "name": "scholarship_interest_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bachelors.interestedForAScholarship'"
+        },
+        "scholarship_interest_option_id": {
+          "name": "scholarship_interest_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scholarship_option_set_key": {
+          "name": "scholarship_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bachelors.scholarship'"
+        },
+        "scholarship_option_id": {
+          "name": "scholarship_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "medical_condition_option_set_key": {
+          "name": "medical_condition_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bachelors.withMedicalCondition'"
+        },
+        "medical_condition_option_id": {
+          "name": "medical_condition_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "guardian_assignment_option_set_key": {
+          "name": "guardian_assignment_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bachelors.guardian'"
+        },
+        "guardian_assignment_option_id": {
+          "name": "guardian_assignment_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "referrer_given_name": {
+          "name": "referrer_given_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "referrer_family_name": {
+          "name": "referrer_family_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "referrer_email": {
+          "name": "referrer_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "profile_bachelor_data_profile_flow_id_catalog_version_id_flow_type_profile_flows_id_catalog_version_id_flow_type_fk": {
+          "name": "profile_bachelor_data_profile_flow_id_catalog_version_id_flow_type_profile_flows_id_catalog_version_id_flow_type_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "profile_flows",
+          "columnsFrom": [
+            "profile_flow_id",
+            "catalog_version_id",
+            "flow_type"
+          ],
+          "columnsTo": [
+            "id",
+            "catalog_version_id",
+            "flow_type"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_bachelor_data_term_option_fk": {
+          "name": "profile_bachelor_data_term_option_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "term_option_set_key",
+            "term_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_bachelor_data_gender_option_fk": {
+          "name": "profile_bachelor_data_gender_option_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "gender_option_set_key",
+            "gender_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_bachelor_data_civil_status_option_fk": {
+          "name": "profile_bachelor_data_civil_status_option_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "civil_status_option_set_key",
+            "civil_status_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_bachelor_data_monthly_income_option_fk": {
+          "name": "profile_bachelor_data_monthly_income_option_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "monthly_income_option_set_key",
+            "monthly_income_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_bachelor_data_student_status_option_fk": {
+          "name": "profile_bachelor_data_student_status_option_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "student_status_option_set_key",
+            "student_status_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_bachelor_data_major_option_fk": {
+          "name": "profile_bachelor_data_major_option_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "major_option_set_key",
+            "major_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_bachelor_data_specialization_option_fk": {
+          "name": "profile_bachelor_data_specialization_option_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "specialization_option_set_key",
+            "specialization_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_bachelor_data_learning_hub_option_fk": {
+          "name": "profile_bachelor_data_learning_hub_option_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "learning_hub_option_set_key",
+            "learning_hub_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_bachelor_data_student_type_option_fk": {
+          "name": "profile_bachelor_data_student_type_option_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "student_type_option_set_key",
+            "student_type_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_bachelor_data_sub_student_type_option_fk": {
+          "name": "profile_bachelor_data_sub_student_type_option_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "sub_student_type_option_set_key",
+            "sub_student_type_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_bachelor_data_religion_option_fk": {
+          "name": "profile_bachelor_data_religion_option_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "religion_option_set_key",
+            "religion_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_bachelor_data_strand_option_fk": {
+          "name": "profile_bachelor_data_strand_option_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "strand_option_set_key",
+            "strand_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_bachelor_data_permanent_country_option_fk": {
+          "name": "profile_bachelor_data_permanent_country_option_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "permanent_country_option_set_key",
+            "permanent_country_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_bachelor_data_permanent_province_option_fk": {
+          "name": "profile_bachelor_data_permanent_province_option_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "permanent_province_option_set_key",
+            "permanent_province_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_bachelor_data_permanent_municipality_option_fk": {
+          "name": "profile_bachelor_data_permanent_municipality_option_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "permanent_municipality_option_set_key",
+            "permanent_municipality_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_bachelor_data_permanent_barangay_option_fk": {
+          "name": "profile_bachelor_data_permanent_barangay_option_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "permanent_barangay_option_set_key",
+            "permanent_barangay_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_bachelor_data_scholarship_interest_option_fk": {
+          "name": "profile_bachelor_data_scholarship_interest_option_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "scholarship_interest_option_set_key",
+            "scholarship_interest_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_bachelor_data_scholarship_option_fk": {
+          "name": "profile_bachelor_data_scholarship_option_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "scholarship_option_set_key",
+            "scholarship_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_bachelor_data_medical_condition_option_fk": {
+          "name": "profile_bachelor_data_medical_condition_option_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "medical_condition_option_set_key",
+            "medical_condition_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_bachelor_data_guardian_assignment_option_fk": {
+          "name": "profile_bachelor_data_guardian_assignment_option_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "guardian_assignment_option_set_key",
+            "guardian_assignment_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_bachelor_data_major_specialization_fk": {
+          "name": "profile_bachelor_data_major_specialization_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "enrollmate_option_dependencies",
+          "columnsFrom": [
+            "catalog_version_id",
+            "major_specialization_dependency_type",
+            "major_option_id",
+            "specialization_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "dependency_type",
+            "parent_option_id",
+            "child_option_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_bachelor_data_province_municipality_fk": {
+          "name": "profile_bachelor_data_province_municipality_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "enrollmate_option_dependencies",
+          "columnsFrom": [
+            "catalog_version_id",
+            "province_municipality_dependency_type",
+            "permanent_province_option_id",
+            "permanent_municipality_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "dependency_type",
+            "parent_option_id",
+            "child_option_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_bachelor_data_municipality_barangay_fk": {
+          "name": "profile_bachelor_data_municipality_barangay_fk",
+          "tableFrom": "profile_bachelor_data",
+          "tableTo": "enrollmate_option_dependencies",
+          "columnsFrom": [
+            "catalog_version_id",
+            "municipality_barangay_dependency_type",
+            "permanent_municipality_option_id",
+            "permanent_barangay_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "dependency_type",
+            "parent_option_id",
+            "child_option_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "profile_bachelor_data_profile_flow_id_unique": {
+          "name": "profile_bachelor_data_profile_flow_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "profile_flow_id"
+          ]
+        },
+        "profile_bachelor_data_id_catalog_version_id_unique": {
+          "name": "profile_bachelor_data_id_catalog_version_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "catalog_version_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "profile_bachelor_data_option_sets_check": {
+          "name": "profile_bachelor_data_option_sets_check",
+          "value": "\"profile_bachelor_data\".\"term_option_set_key\" = 'bachelors.termApplied'\n        and \"profile_bachelor_data\".\"gender_option_set_key\" = 'bachelors.gender'\n        and \"profile_bachelor_data\".\"civil_status_option_set_key\" = 'bachelors.civilStatus'\n        and \"profile_bachelor_data\".\"monthly_income_option_set_key\" = 'bachelors.monthlyIncome'\n        and \"profile_bachelor_data\".\"student_status_option_set_key\" = 'bachelors.studentStatus'\n        and \"profile_bachelor_data\".\"major_option_set_key\" = 'bachelors.programFocus'\n        and \"profile_bachelor_data\".\"specialization_option_set_key\" = 'bachelors.programApplied'\n        and \"profile_bachelor_data\".\"learning_hub_option_set_key\" = 'bachelors.prefLearningHub'\n        and \"profile_bachelor_data\".\"student_type_option_set_key\" = 'bachelors.studentType'\n        and \"profile_bachelor_data\".\"sub_student_type_option_set_key\" = 'bachelors.subStudentType'\n        and \"profile_bachelor_data\".\"religion_option_set_key\" = 'shared.religion'\n        and \"profile_bachelor_data\".\"strand_option_set_key\" = 'bachelors.strand'\n        and \"profile_bachelor_data\".\"permanent_country_option_set_key\" = 'shared.country'\n        and \"profile_bachelor_data\".\"permanent_province_option_set_key\" = 'shared.province'\n        and \"profile_bachelor_data\".\"permanent_municipality_option_set_key\" = 'shared.municipality'\n        and \"profile_bachelor_data\".\"permanent_barangay_option_set_key\" = 'shared.barangay'\n        and \"profile_bachelor_data\".\"scholarship_interest_option_set_key\" = 'bachelors.interestedForAScholarship'\n        and \"profile_bachelor_data\".\"scholarship_option_set_key\" = 'bachelors.scholarship'\n        and \"profile_bachelor_data\".\"medical_condition_option_set_key\" = 'bachelors.withMedicalCondition'\n        and \"profile_bachelor_data\".\"guardian_assignment_option_set_key\" = 'bachelors.guardian'"
+        },
+        "profile_bachelor_data_flow_type_check": {
+          "name": "profile_bachelor_data_flow_type_check",
+          "value": "\"profile_bachelor_data\".\"flow_type\" = 'bachelors'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.profile_discovery_channels": {
+      "name": "profile_discovery_channels",
+      "schema": "",
+      "columns": {
+        "profile_flow_id": {
+          "name": "profile_flow_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "catalog_version_id": {
+          "name": "catalog_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "option_set_key": {
+          "name": "option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'shared.discoveryChannels'"
+        },
+        "option_id": {
+          "name": "option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "profile_discovery_channels_profile_flow_id_catalog_version_id_profile_flows_id_catalog_version_id_fk": {
+          "name": "profile_discovery_channels_profile_flow_id_catalog_version_id_profile_flows_id_catalog_version_id_fk",
+          "tableFrom": "profile_discovery_channels",
+          "tableTo": "profile_flows",
+          "columnsFrom": [
+            "profile_flow_id",
+            "catalog_version_id"
+          ],
+          "columnsTo": [
+            "id",
+            "catalog_version_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_discovery_channels_option_fk": {
+          "name": "profile_discovery_channels_option_fk",
+          "tableFrom": "profile_discovery_channels",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "option_set_key",
+            "option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "profile_discovery_channels_profile_flow_id_option_id_pk": {
+          "name": "profile_discovery_channels_profile_flow_id_option_id_pk",
+          "columns": [
+            "profile_flow_id",
+            "option_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "profile_discovery_channels_option_set_check": {
+          "name": "profile_discovery_channels_option_set_check",
+          "value": "\"profile_discovery_channels\".\"option_set_key\" = 'shared.discoveryChannels'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.profile_documents": {
+      "name": "profile_documents",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "profile_id": {
+          "name": "profile_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bachelor_data_id": {
+          "name": "bachelor_data_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "applicant_personal_id_gdrive_link": {
+          "name": "applicant_personal_id_gdrive_link",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "proof_of_hs_completion_gdrive_link": {
+          "name": "proof_of_hs_completion_gdrive_link",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "applicant_personal_id_submitted_date": {
+          "name": "applicant_personal_id_submitted_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "proof_of_hs_completion_submitted_date": {
+          "name": "proof_of_hs_completion_submitted_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "applicant_personal_id_fixture_uri": {
+          "name": "applicant_personal_id_fixture_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "applicant_personal_id_original_filename": {
+          "name": "applicant_personal_id_original_filename",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "applicant_personal_id_mime_type": {
+          "name": "applicant_personal_id_mime_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "applicant_personal_id_size_bytes": {
+          "name": "applicant_personal_id_size_bytes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "proof_of_hs_completion_fixture_uri": {
+          "name": "proof_of_hs_completion_fixture_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "proof_of_hs_completion_original_filename": {
+          "name": "proof_of_hs_completion_original_filename",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "proof_of_hs_completion_mime_type": {
+          "name": "proof_of_hs_completion_mime_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "proof_of_hs_completion_size_bytes": {
+          "name": "proof_of_hs_completion_size_bytes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "profile_documents_profile_id_profiles_id_fk": {
+          "name": "profile_documents_profile_id_profiles_id_fk",
+          "tableFrom": "profile_documents",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "profile_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_documents_bachelor_data_id_profile_bachelor_data_id_fk": {
+          "name": "profile_documents_bachelor_data_id_profile_bachelor_data_id_fk",
+          "tableFrom": "profile_documents",
+          "tableTo": "profile_bachelor_data",
+          "columnsFrom": [
+            "bachelor_data_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "profile_documents_profile_id_unique": {
+          "name": "profile_documents_profile_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "profile_id"
+          ]
+        },
+        "profile_documents_bachelor_data_id_unique": {
+          "name": "profile_documents_bachelor_data_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "bachelor_data_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "profile_documents_personal_id_size_check": {
+          "name": "profile_documents_personal_id_size_check",
+          "value": "\"profile_documents\".\"applicant_personal_id_size_bytes\" is null or \"profile_documents\".\"applicant_personal_id_size_bytes\" between 0 and 3145728"
+        },
+        "profile_documents_hs_completion_size_check": {
+          "name": "profile_documents_hs_completion_size_check",
+          "value": "\"profile_documents\".\"proof_of_hs_completion_size_bytes\" is null or \"profile_documents\".\"proof_of_hs_completion_size_bytes\" between 0 and 3145728"
+        },
+        "profile_documents_personal_id_extension_check": {
+          "name": "profile_documents_personal_id_extension_check",
+          "value": "\"profile_documents\".\"applicant_personal_id_original_filename\" is null or lower(\"profile_documents\".\"applicant_personal_id_original_filename\") ~ '\\.(pdf|jpe?g|png|xlsx?|docx)$'"
+        },
+        "profile_documents_hs_completion_extension_check": {
+          "name": "profile_documents_hs_completion_extension_check",
+          "value": "\"profile_documents\".\"proof_of_hs_completion_original_filename\" is null or lower(\"profile_documents\".\"proof_of_hs_completion_original_filename\") ~ '\\.(pdf|jpe?g|png|xlsx?|docx)$'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.profile_enrollment_data": {
+      "name": "profile_enrollment_data",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "profile_id": {
+          "name": "profile_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "catalog_version_id": {
+          "name": "catalog_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "given_name": {
+          "name": "given_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "family_name": {
+          "name": "family_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "middle_name": {
+          "name": "middle_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nickname": {
+          "name": "nickname",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "birthplace": {
+          "name": "birthplace",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "birthdate": {
+          "name": "birthdate",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mobile": {
+          "name": "mobile",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "landline": {
+          "name": "landline",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "suffix": {
+          "name": "suffix",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "suffix_option_set_key": {
+          "name": "suffix_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'shared.suffix'"
+        },
+        "suffix_option_id": {
+          "name": "suffix_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nationality": {
+          "name": "nationality",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nationality_option_set_key": {
+          "name": "nationality_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'shared.nationality'"
+        },
+        "nationality_option_id": {
+          "name": "nationality_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_address_country": {
+          "name": "current_address_country",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_address_line1": {
+          "name": "current_address_line1",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_address_line2": {
+          "name": "current_address_line2",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_address_province": {
+          "name": "current_address_province",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_address_city": {
+          "name": "current_address_city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_address_barangay": {
+          "name": "current_address_barangay",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_address_zip_code": {
+          "name": "current_address_zip_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_foreign_address": {
+          "name": "current_foreign_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_country_option_set_key": {
+          "name": "current_country_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'shared.country'"
+        },
+        "current_country_option_id": {
+          "name": "current_country_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_province_option_set_key": {
+          "name": "current_province_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'shared.province'"
+        },
+        "current_province_option_id": {
+          "name": "current_province_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_municipality_option_set_key": {
+          "name": "current_municipality_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'shared.municipality'"
+        },
+        "current_municipality_option_id": {
+          "name": "current_municipality_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_barangay_option_set_key": {
+          "name": "current_barangay_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'shared.barangay'"
+        },
+        "current_barangay_option_id": {
+          "name": "current_barangay_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "province_municipality_dependency_type": {
+          "name": "province_municipality_dependency_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'province_to_municipality'"
+        },
+        "municipality_barangay_dependency_type": {
+          "name": "municipality_barangay_dependency_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'municipality_to_barangay'"
+        },
+        "gender": {
+          "name": "gender",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "civil_status": {
+          "name": "civil_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "monthly_income": {
+          "name": "monthly_income",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "work_type": {
+          "name": "work_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "company_org_name": {
+          "name": "company_org_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "preferred_learning_hub": {
+          "name": "preferred_learning_hub",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "student_type": {
+          "name": "student_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sub_student_type": {
+          "name": "sub_student_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "student_status": {
+          "name": "student_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "religion": {
+          "name": "religion",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "strand": {
+          "name": "strand",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_school_attended": {
+          "name": "last_school_attended",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "term_applied": {
+          "name": "term_applied",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "program_focus": {
+          "name": "program_focus",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "program_applied": {
+          "name": "program_applied",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "certification_field": {
+          "name": "certification_field",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_leap_pad_re_enrollment": {
+          "name": "is_leap_pad_re_enrollment",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "is_self_enrolled": {
+          "name": "is_self_enrolled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "permanent_address_country": {
+          "name": "permanent_address_country",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "permanent_address_line1": {
+          "name": "permanent_address_line1",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "permanent_address_line2": {
+          "name": "permanent_address_line2",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "permanent_address_province": {
+          "name": "permanent_address_province",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "permanent_address_city": {
+          "name": "permanent_address_city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "permanent_address_barangay": {
+          "name": "permanent_address_barangay",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "permanent_address_zip_code": {
+          "name": "permanent_address_zip_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "interested_in_scholarship": {
+          "name": "interested_in_scholarship",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "with_medical_condition": {
+          "name": "with_medical_condition",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lost_date": {
+          "name": "lost_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lost_reason": {
+          "name": "lost_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lost_reason_specific": {
+          "name": "lost_reason_specific",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lost_reason_remark": {
+          "name": "lost_reason_remark",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "profile_locked_date": {
+          "name": "profile_locked_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "subscription_expiration_date": {
+          "name": "subscription_expiration_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "father_status": {
+          "name": "father_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mother_status": {
+          "name": "mother_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "guardian_type": {
+          "name": "guardian_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "guardian_given_name": {
+          "name": "guardian_given_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "guardian_family_name": {
+          "name": "guardian_family_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "guardian_suffix": {
+          "name": "guardian_suffix",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "guardian_birthdate": {
+          "name": "guardian_birthdate",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "guardian_mobile": {
+          "name": "guardian_mobile",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "guardian_email": {
+          "name": "guardian_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "guardian_occupation": {
+          "name": "guardian_occupation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "guardian_relationship": {
+          "name": "guardian_relationship",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "copy_guardian_address": {
+          "name": "copy_guardian_address",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "copy_permanent_guardian_address": {
+          "name": "copy_permanent_guardian_address",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "profile_enrollment_data_profile_id_profiles_id_fk": {
+          "name": "profile_enrollment_data_profile_id_profiles_id_fk",
+          "tableFrom": "profile_enrollment_data",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "profile_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_enrollment_data_catalog_version_id_enrollmate_catalog_versions_id_fk": {
+          "name": "profile_enrollment_data_catalog_version_id_enrollmate_catalog_versions_id_fk",
+          "tableFrom": "profile_enrollment_data",
+          "tableTo": "enrollmate_catalog_versions",
+          "columnsFrom": [
+            "catalog_version_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_enrollment_data_suffix_option_fk": {
+          "name": "profile_enrollment_data_suffix_option_fk",
+          "tableFrom": "profile_enrollment_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "suffix_option_set_key",
+            "suffix_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_enrollment_data_nationality_option_fk": {
+          "name": "profile_enrollment_data_nationality_option_fk",
+          "tableFrom": "profile_enrollment_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "nationality_option_set_key",
+            "nationality_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_enrollment_data_current_country_option_fk": {
+          "name": "profile_enrollment_data_current_country_option_fk",
+          "tableFrom": "profile_enrollment_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "current_country_option_set_key",
+            "current_country_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_enrollment_data_current_province_option_fk": {
+          "name": "profile_enrollment_data_current_province_option_fk",
+          "tableFrom": "profile_enrollment_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "current_province_option_set_key",
+            "current_province_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_enrollment_data_current_municipality_option_fk": {
+          "name": "profile_enrollment_data_current_municipality_option_fk",
+          "tableFrom": "profile_enrollment_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "current_municipality_option_set_key",
+            "current_municipality_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_enrollment_data_current_barangay_option_fk": {
+          "name": "profile_enrollment_data_current_barangay_option_fk",
+          "tableFrom": "profile_enrollment_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "current_barangay_option_set_key",
+            "current_barangay_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_enrollment_data_current_province_municipality_fk": {
+          "name": "profile_enrollment_data_current_province_municipality_fk",
+          "tableFrom": "profile_enrollment_data",
+          "tableTo": "enrollmate_option_dependencies",
+          "columnsFrom": [
+            "catalog_version_id",
+            "province_municipality_dependency_type",
+            "current_province_option_id",
+            "current_municipality_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "dependency_type",
+            "parent_option_id",
+            "child_option_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_enrollment_data_current_municipality_barangay_fk": {
+          "name": "profile_enrollment_data_current_municipality_barangay_fk",
+          "tableFrom": "profile_enrollment_data",
+          "tableTo": "enrollmate_option_dependencies",
+          "columnsFrom": [
+            "catalog_version_id",
+            "municipality_barangay_dependency_type",
+            "current_municipality_option_id",
+            "current_barangay_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "dependency_type",
+            "parent_option_id",
+            "child_option_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "profile_enrollment_data_profile_id_unique": {
+          "name": "profile_enrollment_data_profile_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "profile_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "profile_enrollment_data_option_set_keys_check": {
+          "name": "profile_enrollment_data_option_set_keys_check",
+          "value": "\"profile_enrollment_data\".\"suffix_option_set_key\" = 'shared.suffix'\n        and \"profile_enrollment_data\".\"nationality_option_set_key\" = 'shared.nationality'\n        and \"profile_enrollment_data\".\"current_country_option_set_key\" = 'shared.country'\n        and \"profile_enrollment_data\".\"current_province_option_set_key\" = 'shared.province'\n        and \"profile_enrollment_data\".\"current_municipality_option_set_key\" = 'shared.municipality'\n        and \"profile_enrollment_data\".\"current_barangay_option_set_key\" = 'shared.barangay'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.profile_flows": {
+      "name": "profile_flows",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "profile_id": {
+          "name": "profile_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "catalog_version_id": {
+          "name": "catalog_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "flow_type": {
+          "name": "flow_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "profile_flows_profile_id_flow_type_unique": {
+          "name": "profile_flows_profile_id_flow_type_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "profile_id",
+            "flow_type"
+          ]
+        },
+        "profile_flows_id_catalog_version_id_unique": {
+          "name": "profile_flows_id_catalog_version_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "catalog_version_id"
+          ]
+        },
+        "profile_flows_id_catalog_version_id_flow_type_unique": {
+          "name": "profile_flows_id_catalog_version_id_flow_type_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "catalog_version_id",
+            "flow_type"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "profile_flows_type_check": {
+          "name": "profile_flows_type_check",
+          "value": "\"profile_flows\".\"flow_type\" in ('bachelors', 'microcredentials')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.profile_learner_readiness": {
+      "name": "profile_learner_readiness",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "profile_id": {
+          "name": "profile_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "microcredential_data_id": {
+          "name": "microcredential_data_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "catalog_version_id": {
+          "name": "catalog_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "assistance_need_score": {
+          "name": "assistance_need_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "computer_device_access": {
+          "name": "computer_device_access",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "online_learning_platforms": {
+          "name": "online_learning_platforms",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "software_skills": {
+          "name": "software_skills",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "online_platforms_specified": {
+          "name": "online_platforms_specified",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "internet_connectivity": {
+          "name": "internet_connectivity",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "time_commitment": {
+          "name": "time_commitment",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "time_management_effectiveness": {
+          "name": "time_management_effectiveness",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "self_discipline_confidence": {
+          "name": "self_discipline_confidence",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "learning_goal": {
+          "name": "learning_goal",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "challenges_provided": {
+          "name": "challenges_provided",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "potential_challenges": {
+          "name": "potential_challenges",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "device_access_option_set_key": {
+          "name": "device_access_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'microcredentials.deviceAccess'"
+        },
+        "device_access_option_id": {
+          "name": "device_access_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "internet_option_set_key": {
+          "name": "internet_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'microcredentials.internetConnectivity'"
+        },
+        "internet_option_id": {
+          "name": "internet_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "software_skills_option_set_key": {
+          "name": "software_skills_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'microcredentials.softwareSkills'"
+        },
+        "software_skills_option_id": {
+          "name": "software_skills_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "online_platforms_option_set_key": {
+          "name": "online_platforms_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'microcredentials.onlineLearningPlatforms'"
+        },
+        "online_platforms_option_id": {
+          "name": "online_platforms_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "time_commitment_option_set_key": {
+          "name": "time_commitment_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'microcredentials.timeCommitment'"
+        },
+        "time_commitment_option_id": {
+          "name": "time_commitment_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "self_discipline_option_set_key": {
+          "name": "self_discipline_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'microcredentials.selfDiscipline'"
+        },
+        "self_discipline_option_id": {
+          "name": "self_discipline_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "time_management_option_set_key": {
+          "name": "time_management_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'microcredentials.timeManagement'"
+        },
+        "time_management_option_id": {
+          "name": "time_management_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "learning_goal_option_set_key": {
+          "name": "learning_goal_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'microcredentials.learningGoals'"
+        },
+        "learning_goal_option_id": {
+          "name": "learning_goal_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "profile_learner_readiness_profile_id_profiles_id_fk": {
+          "name": "profile_learner_readiness_profile_id_profiles_id_fk",
+          "tableFrom": "profile_learner_readiness",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "profile_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_learner_readiness_microcredential_data_id_profile_microcredential_data_id_fk": {
+          "name": "profile_learner_readiness_microcredential_data_id_profile_microcredential_data_id_fk",
+          "tableFrom": "profile_learner_readiness",
+          "tableTo": "profile_microcredential_data",
+          "columnsFrom": [
+            "microcredential_data_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_learner_readiness_microcredential_data_id_catalog_version_id_profile_microcredential_data_id_catalog_version_id_fk": {
+          "name": "profile_learner_readiness_microcredential_data_id_catalog_version_id_profile_microcredential_data_id_catalog_version_id_fk",
+          "tableFrom": "profile_learner_readiness",
+          "tableTo": "profile_microcredential_data",
+          "columnsFrom": [
+            "microcredential_data_id",
+            "catalog_version_id"
+          ],
+          "columnsTo": [
+            "id",
+            "catalog_version_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_learner_readiness_device_access_option_fk": {
+          "name": "profile_learner_readiness_device_access_option_fk",
+          "tableFrom": "profile_learner_readiness",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "device_access_option_set_key",
+            "device_access_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_learner_readiness_internet_option_fk": {
+          "name": "profile_learner_readiness_internet_option_fk",
+          "tableFrom": "profile_learner_readiness",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "internet_option_set_key",
+            "internet_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_learner_readiness_software_skills_option_fk": {
+          "name": "profile_learner_readiness_software_skills_option_fk",
+          "tableFrom": "profile_learner_readiness",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "software_skills_option_set_key",
+            "software_skills_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_learner_readiness_online_platforms_option_fk": {
+          "name": "profile_learner_readiness_online_platforms_option_fk",
+          "tableFrom": "profile_learner_readiness",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "online_platforms_option_set_key",
+            "online_platforms_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_learner_readiness_time_commitment_option_fk": {
+          "name": "profile_learner_readiness_time_commitment_option_fk",
+          "tableFrom": "profile_learner_readiness",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "time_commitment_option_set_key",
+            "time_commitment_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_learner_readiness_self_discipline_option_fk": {
+          "name": "profile_learner_readiness_self_discipline_option_fk",
+          "tableFrom": "profile_learner_readiness",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "self_discipline_option_set_key",
+            "self_discipline_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_learner_readiness_time_management_option_fk": {
+          "name": "profile_learner_readiness_time_management_option_fk",
+          "tableFrom": "profile_learner_readiness",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "time_management_option_set_key",
+            "time_management_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_learner_readiness_learning_goal_option_fk": {
+          "name": "profile_learner_readiness_learning_goal_option_fk",
+          "tableFrom": "profile_learner_readiness",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "learning_goal_option_set_key",
+            "learning_goal_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "profile_learner_readiness_profile_id_unique": {
+          "name": "profile_learner_readiness_profile_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "profile_id"
+          ]
+        },
+        "profile_learner_readiness_microcredential_data_id_unique": {
+          "name": "profile_learner_readiness_microcredential_data_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "microcredential_data_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "profile_learner_readiness_option_sets_check": {
+          "name": "profile_learner_readiness_option_sets_check",
+          "value": "\"profile_learner_readiness\".\"device_access_option_set_key\" = 'microcredentials.deviceAccess'\n        and \"profile_learner_readiness\".\"internet_option_set_key\" = 'microcredentials.internetConnectivity'\n        and \"profile_learner_readiness\".\"software_skills_option_set_key\" = 'microcredentials.softwareSkills'\n        and \"profile_learner_readiness\".\"online_platforms_option_set_key\" = 'microcredentials.onlineLearningPlatforms'\n        and \"profile_learner_readiness\".\"time_commitment_option_set_key\" = 'microcredentials.timeCommitment'\n        and \"profile_learner_readiness\".\"self_discipline_option_set_key\" = 'microcredentials.selfDiscipline'\n        and \"profile_learner_readiness\".\"time_management_option_set_key\" = 'microcredentials.timeManagement'\n        and \"profile_learner_readiness\".\"learning_goal_option_set_key\" = 'microcredentials.learningGoals'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.profile_microcredential_data": {
+      "name": "profile_microcredential_data",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "profile_flow_id": {
+          "name": "profile_flow_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "catalog_version_id": {
+          "name": "catalog_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "flow_type": {
+          "name": "flow_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'microcredentials'"
+        },
+        "gender_option_set_key": {
+          "name": "gender_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'microcredentials.gender'"
+        },
+        "gender_option_id": {
+          "name": "gender_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "civil_status_option_set_key": {
+          "name": "civil_status_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'microcredentials.civilStatus'"
+        },
+        "civil_status_option_id": {
+          "name": "civil_status_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "monthly_income_option_set_key": {
+          "name": "monthly_income_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'microcredentials.monthlyIncome'"
+        },
+        "monthly_income_option_id": {
+          "name": "monthly_income_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "student_status_option_set_key": {
+          "name": "student_status_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'microcredentials.studentStatus'"
+        },
+        "student_status_option_id": {
+          "name": "student_status_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "certification_option_set_key": {
+          "name": "certification_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'microcredentials.certificationField'"
+        },
+        "certification_option_id": {
+          "name": "certification_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tin_number": {
+          "name": "tin_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "profile_microcredential_data_profile_flow_id_catalog_version_id_flow_type_profile_flows_id_catalog_version_id_flow_type_fk": {
+          "name": "profile_microcredential_data_profile_flow_id_catalog_version_id_flow_type_profile_flows_id_catalog_version_id_flow_type_fk",
+          "tableFrom": "profile_microcredential_data",
+          "tableTo": "profile_flows",
+          "columnsFrom": [
+            "profile_flow_id",
+            "catalog_version_id",
+            "flow_type"
+          ],
+          "columnsTo": [
+            "id",
+            "catalog_version_id",
+            "flow_type"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_microcredential_data_gender_option_fk": {
+          "name": "profile_microcredential_data_gender_option_fk",
+          "tableFrom": "profile_microcredential_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "gender_option_set_key",
+            "gender_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_microcredential_data_civil_status_option_fk": {
+          "name": "profile_microcredential_data_civil_status_option_fk",
+          "tableFrom": "profile_microcredential_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "civil_status_option_set_key",
+            "civil_status_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_microcredential_data_monthly_income_option_fk": {
+          "name": "profile_microcredential_data_monthly_income_option_fk",
+          "tableFrom": "profile_microcredential_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "monthly_income_option_set_key",
+            "monthly_income_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_microcredential_data_student_status_option_fk": {
+          "name": "profile_microcredential_data_student_status_option_fk",
+          "tableFrom": "profile_microcredential_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "student_status_option_set_key",
+            "student_status_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_microcredential_data_certification_option_fk": {
+          "name": "profile_microcredential_data_certification_option_fk",
+          "tableFrom": "profile_microcredential_data",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "certification_option_set_key",
+            "certification_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "profile_microcredential_data_profile_flow_id_unique": {
+          "name": "profile_microcredential_data_profile_flow_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "profile_flow_id"
+          ]
+        },
+        "profile_microcredential_data_id_catalog_version_id_unique": {
+          "name": "profile_microcredential_data_id_catalog_version_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "catalog_version_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "profile_microcredential_data_option_sets_check": {
+          "name": "profile_microcredential_data_option_sets_check",
+          "value": "\"profile_microcredential_data\".\"gender_option_set_key\" = 'microcredentials.gender'\n        and \"profile_microcredential_data\".\"civil_status_option_set_key\" = 'microcredentials.civilStatus'\n        and \"profile_microcredential_data\".\"monthly_income_option_set_key\" = 'microcredentials.monthlyIncome'\n        and \"profile_microcredential_data\".\"student_status_option_set_key\" = 'microcredentials.studentStatus'\n        and \"profile_microcredential_data\".\"certification_option_set_key\" = 'microcredentials.certificationField'"
+        },
+        "profile_microcredential_data_flow_type_check": {
+          "name": "profile_microcredential_data_flow_type_check",
+          "value": "\"profile_microcredential_data\".\"flow_type\" = 'microcredentials'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.profile_study_reasons": {
+      "name": "profile_study_reasons",
+      "schema": "",
+      "columns": {
+        "bachelor_data_id": {
+          "name": "bachelor_data_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "catalog_version_id": {
+          "name": "catalog_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "option_set_key": {
+          "name": "option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bachelors.studyReasons'"
+        },
+        "option_id": {
+          "name": "option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "profile_study_reasons_bachelor_data_id_catalog_version_id_profile_bachelor_data_id_catalog_version_id_fk": {
+          "name": "profile_study_reasons_bachelor_data_id_catalog_version_id_profile_bachelor_data_id_catalog_version_id_fk",
+          "tableFrom": "profile_study_reasons",
+          "tableTo": "profile_bachelor_data",
+          "columnsFrom": [
+            "bachelor_data_id",
+            "catalog_version_id"
+          ],
+          "columnsTo": [
+            "id",
+            "catalog_version_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_study_reasons_option_fk": {
+          "name": "profile_study_reasons_option_fk",
+          "tableFrom": "profile_study_reasons",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "option_set_key",
+            "option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "profile_study_reasons_bachelor_data_id_option_id_pk": {
+          "name": "profile_study_reasons_bachelor_data_id_option_id_pk",
+          "columns": [
+            "bachelor_data_id",
+            "option_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "profile_study_reasons_option_set_check": {
+          "name": "profile_study_reasons_option_set_check",
+          "value": "\"profile_study_reasons\".\"option_set_key\" = 'bachelors.studyReasons'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.profile_related_people": {
+      "name": "profile_related_people",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "bachelor_data_id": {
+          "name": "bachelor_data_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "catalog_version_id": {
+          "name": "catalog_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "living_status_option_set_key": {
+          "name": "living_status_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "living_status_option_id": {
+          "name": "living_status_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "given_name": {
+          "name": "given_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "middle_name": {
+          "name": "middle_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "family_name": {
+          "name": "family_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "suffix_option_set_key": {
+          "name": "suffix_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'shared.suffix'"
+        },
+        "suffix_option_id": {
+          "name": "suffix_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "birthdate": {
+          "name": "birthdate",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "landline": {
+          "name": "landline",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mobile": {
+          "name": "mobile",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "occupation": {
+          "name": "occupation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "relationship_option_set_key": {
+          "name": "relationship_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "relationship_option_id": {
+          "name": "relationship_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "relationship_other": {
+          "name": "relationship_other",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "profile_related_people_bachelor_data_id_catalog_version_id_profile_bachelor_data_id_catalog_version_id_fk": {
+          "name": "profile_related_people_bachelor_data_id_catalog_version_id_profile_bachelor_data_id_catalog_version_id_fk",
+          "tableFrom": "profile_related_people",
+          "tableTo": "profile_bachelor_data",
+          "columnsFrom": [
+            "bachelor_data_id",
+            "catalog_version_id"
+          ],
+          "columnsTo": [
+            "id",
+            "catalog_version_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_related_people_living_status_option_fk": {
+          "name": "profile_related_people_living_status_option_fk",
+          "tableFrom": "profile_related_people",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "living_status_option_set_key",
+            "living_status_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_related_people_suffix_option_fk": {
+          "name": "profile_related_people_suffix_option_fk",
+          "tableFrom": "profile_related_people",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "suffix_option_set_key",
+            "suffix_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_related_people_relationship_option_fk": {
+          "name": "profile_related_people_relationship_option_fk",
+          "tableFrom": "profile_related_people",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "relationship_option_set_key",
+            "relationship_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "profile_related_people_bachelor_data_id_role_unique": {
+          "name": "profile_related_people_bachelor_data_id_role_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "bachelor_data_id",
+            "role"
+          ]
+        },
+        "profile_related_people_id_catalog_version_id_unique": {
+          "name": "profile_related_people_id_catalog_version_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "catalog_version_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "profile_related_people_role_options_check": {
+          "name": "profile_related_people_role_options_check",
+          "value": "(\n        \"profile_related_people\".\"role\" = 'father'\n        and \"profile_related_people\".\"living_status_option_set_key\" = 'bachelors.fthrDeceased'\n        and \"profile_related_people\".\"relationship_option_set_key\" is null\n        and \"profile_related_people\".\"relationship_option_id\" is null\n      ) or (\n        \"profile_related_people\".\"role\" = 'mother'\n        and \"profile_related_people\".\"living_status_option_set_key\" = 'bachelors.mthrDeceased'\n        and \"profile_related_people\".\"relationship_option_set_key\" is null\n        and \"profile_related_people\".\"relationship_option_id\" is null\n      ) or (\n        \"profile_related_people\".\"role\" = 'guardian'\n        and \"profile_related_people\".\"living_status_option_set_key\" is null\n        and \"profile_related_people\".\"living_status_option_id\" is null\n        and \"profile_related_people\".\"relationship_option_set_key\" = 'bachelors.grdnApplRelationship'\n      )"
+        },
+        "profile_related_people_suffix_option_set_check": {
+          "name": "profile_related_people_suffix_option_set_check",
+          "value": "\"profile_related_people\".\"suffix_option_set_key\" = 'shared.suffix'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.profile_related_person_addresses": {
+      "name": "profile_related_person_addresses",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "related_person_id": {
+          "name": "related_person_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "catalog_version_id": {
+          "name": "catalog_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "address_type": {
+          "name": "address_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "same_as_applicant": {
+          "name": "same_as_applicant",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "country_option_set_key": {
+          "name": "country_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'shared.country'"
+        },
+        "country_option_id": {
+          "name": "country_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "address_line_1": {
+          "name": "address_line_1",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "address_line_2": {
+          "name": "address_line_2",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "province_option_set_key": {
+          "name": "province_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'shared.province'"
+        },
+        "province_option_id": {
+          "name": "province_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "municipality_option_set_key": {
+          "name": "municipality_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'shared.municipality'"
+        },
+        "municipality_option_id": {
+          "name": "municipality_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "barangay_option_set_key": {
+          "name": "barangay_option_set_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'shared.barangay'"
+        },
+        "barangay_option_id": {
+          "name": "barangay_option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "zip_code": {
+          "name": "zip_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "province_municipality_dependency_type": {
+          "name": "province_municipality_dependency_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'province_to_municipality'"
+        },
+        "municipality_barangay_dependency_type": {
+          "name": "municipality_barangay_dependency_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'municipality_to_barangay'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "profile_related_person_addresses_related_person_id_catalog_version_id_profile_related_people_id_catalog_version_id_fk": {
+          "name": "profile_related_person_addresses_related_person_id_catalog_version_id_profile_related_people_id_catalog_version_id_fk",
+          "tableFrom": "profile_related_person_addresses",
+          "tableTo": "profile_related_people",
+          "columnsFrom": [
+            "related_person_id",
+            "catalog_version_id"
+          ],
+          "columnsTo": [
+            "id",
+            "catalog_version_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_related_person_addresses_country_option_fk": {
+          "name": "profile_related_person_addresses_country_option_fk",
+          "tableFrom": "profile_related_person_addresses",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "country_option_set_key",
+            "country_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_related_person_addresses_province_option_fk": {
+          "name": "profile_related_person_addresses_province_option_fk",
+          "tableFrom": "profile_related_person_addresses",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "province_option_set_key",
+            "province_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_related_person_addresses_municipality_option_fk": {
+          "name": "profile_related_person_addresses_municipality_option_fk",
+          "tableFrom": "profile_related_person_addresses",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "municipality_option_set_key",
+            "municipality_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_related_person_addresses_barangay_option_fk": {
+          "name": "profile_related_person_addresses_barangay_option_fk",
+          "tableFrom": "profile_related_person_addresses",
+          "tableTo": "enrollmate_options",
+          "columnsFrom": [
+            "catalog_version_id",
+            "barangay_option_set_key",
+            "barangay_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "option_set_key",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_related_person_addresses_province_municipality_fk": {
+          "name": "profile_related_person_addresses_province_municipality_fk",
+          "tableFrom": "profile_related_person_addresses",
+          "tableTo": "enrollmate_option_dependencies",
+          "columnsFrom": [
+            "catalog_version_id",
+            "province_municipality_dependency_type",
+            "province_option_id",
+            "municipality_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "dependency_type",
+            "parent_option_id",
+            "child_option_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_related_person_addresses_municipality_barangay_fk": {
+          "name": "profile_related_person_addresses_municipality_barangay_fk",
+          "tableFrom": "profile_related_person_addresses",
+          "tableTo": "enrollmate_option_dependencies",
+          "columnsFrom": [
+            "catalog_version_id",
+            "municipality_barangay_dependency_type",
+            "municipality_option_id",
+            "barangay_option_id"
+          ],
+          "columnsTo": [
+            "catalog_version_id",
+            "dependency_type",
+            "parent_option_id",
+            "child_option_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "profile_related_person_addresses_related_person_id_address_type_unique": {
+          "name": "profile_related_person_addresses_related_person_id_address_type_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "related_person_id",
+            "address_type"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "profile_related_person_addresses_type_check": {
+          "name": "profile_related_person_addresses_type_check",
+          "value": "\"profile_related_person_addresses\".\"address_type\" in ('current', 'permanent')"
+        },
+        "profile_related_person_addresses_option_sets_check": {
+          "name": "profile_related_person_addresses_option_sets_check",
+          "value": "\"profile_related_person_addresses\".\"country_option_set_key\" = 'shared.country'\n        and \"profile_related_person_addresses\".\"province_option_set_key\" = 'shared.province'\n        and \"profile_related_person_addresses\".\"municipality_option_set_key\" = 'shared.municipality'\n        and \"profile_related_person_addresses\".\"barangay_option_set_key\" = 'shared.barangay'"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

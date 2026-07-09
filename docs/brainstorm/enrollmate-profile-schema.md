@@ -201,6 +201,11 @@ Composite foreign keys ensure both options belong to the dependency’s catalog 
 
 Only relationships explicitly present in the JSON are seeded. No national geography dataset is inferred or fetched.
 
+The checked-in snapshot contains 14 Rizal municipalities, 16 Antipolo
+barangays, and 20 Tanay barangays. The two barangay lists share `San Isidro
+(Pob.)`, so the catalog stores 35 unique barangay options and 36 explicit
+municipality-to-barangay dependency edges.
+
 ## Declarative database integrity
 
 The database must reject:
