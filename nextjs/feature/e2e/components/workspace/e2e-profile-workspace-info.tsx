@@ -4,7 +4,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { formatTimestamp } from "@/lib/mock-testing-data";
+import { formatTimestamp } from "@/lib/utils";
 import {
   PlayIcon,
   StepForwardIcon,

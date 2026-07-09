@@ -3,7 +3,7 @@ import { StatusBadge } from "@/components/status-badge";
 import {
   formatDurationSeconds,
   formatTimestamp,
-} from "@/lib/mock-testing-data";
+} from "@/lib/utils";
 import { PlayIcon, ChevronRightIcon } from "lucide-react";
 import {
   SmokeTestRun,

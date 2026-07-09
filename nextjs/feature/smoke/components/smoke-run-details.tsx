@@ -9,7 +9,7 @@ import {
 import {
   formatDurationSeconds,
   formatDurationMs,
-} from "@/lib/mock-testing-data";
+} from "@/lib/utils";
 import {
   SmokeTestRun,
   SmokeTestRunResults,

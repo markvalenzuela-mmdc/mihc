@@ -13,7 +13,7 @@ import {
   formatDurationMs,
   formatDurationSeconds,
   formatTimestamp,
-} from "@/lib/mock-testing-data";
+} from "@/lib/utils";
 import {
   E2eSelectedRun,
   E2eRunStep,
