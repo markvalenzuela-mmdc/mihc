@@ -14,18 +14,50 @@ const e2eRunHistoryConfig = [
   { profileIndex: 3, runNumbers: [14, 13, 12, 11, 10, 9, 8, 7, 6, 5], dayStart: 18 },
 ];
 
+type E2eRunStatus = typeof e2eRuns.$inferInsert.status;
+type E2eRunStepStatus = typeof e2eRunSteps.$inferInsert.status;
+type E2eRunTestStatus = typeof e2eRunTests.$inferInsert.status;
+
+interface E2eRunTestFixture {
+  id: string;
+  testName: string;
+  status: E2eRunTestStatus;
+  durationMs: number;
+  errorMessage: string | null;
+}
+
+interface E2eRunStepFixture {
+  id: string;
+  stepId: string;
+  status: E2eRunStepStatus;
+  durationSeconds: number | null;
+  note: string;
+  tests: E2eRunTestFixture[];
+}
+
+interface E2eRunFixture {
+  id: string;
+  runNumber: number;
+  profileId: string;
+  status: E2eRunStatus;
+  startedBy: typeof currentOperator | null;
+  startedAt: string;
+  completedAt: string | null;
+  steps: E2eRunStepFixture[];
+}
+
 function createE2eRunHistory({
   profileIndex,
   runNumbers,
   dayStart,
-}: (typeof e2eRunHistoryConfig)[number]) {
+}: (typeof e2eRunHistoryConfig)[number]): E2eRunFixture[] {
   const profile = profiles[profileIndex];
   const profileToken = String(profileIndex + 1).padStart(4, "0");
 
-  return runNumbers.map((runNumber, index) => {
+  return runNumbers.map<E2eRunFixture>((runNumber, index) => {
     const hasFailure = index % 4 === 1;
     const isAborted = index % 7 === 3;
-    const status: "running" | "completed" | "aborted" = isAborted ? "aborted" : "completed";
+    const status: E2eRunStatus = isAborted ? "aborted" : "completed";
     const day = String(dayStart + index).padStart(2, "0");
     const hour = String(9 + (index % 6)).padStart(2, "0");
 
@@ -37,10 +69,10 @@ function createE2eRunHistory({
       startedBy: index % 3 === 0 ? currentOperator : null,
       startedAt: `2026-06-${day}T${hour}:05:00+08:00`,
       completedAt: `2026-06-${day}T${hour}:10:${String(20 + index).padStart(2, "0")}+08:00`,
-      steps: e2eStepDefinitions.map((step, stepIndex) => {
+      steps: e2eStepDefinitions.map<E2eRunStepFixture>((step, stepIndex) => {
         const didRunStep = !isAborted || stepIndex < 2;
         const didFailStep = hasFailure && stepIndex === 2;
-        const stepStatus: "queued" | "running" | "success" | "failure" = !didRunStep ? "queued" : didFailStep ? "failure" : "success";
+        const stepStatus: E2eRunStepStatus = !didRunStep ? "queued" : didFailStep ? "failure" : "success";
 
         return {
           id: `history-${profileIndex + 1}-${runNumber}-${stepIndex + 1}`,
@@ -111,7 +143,7 @@ const e2eRunFixtures = [
     steps: e2eStepDefinitions.map((step, index) => ({ id: `ea5004-${index}`, stepId: step.id, status: index === 0 ? "success" : index === 1 ? "running" : "queued", durationSeconds: index === 0 ? 38 : null, note: index === 0 ? `${step.label} completed.` : index === 1 ? "Running profile status checks." : "Waiting for the preceding status step.", tests: index === 0 ? [{ id: "ea5004-0-1", testName: `${step.label} status checks pass`, status: "success", durationMs: 2400, errorMessage: null }] : [] })),
   },
   ...e2eRunHistoryConfig.flatMap(createE2eRunHistory),
-];
+] satisfies E2eRunFixture[];
 
 export async function seedE2eRuns(tx: NodePgDatabase<typeof schema>) {
   const messages: string[] = [];

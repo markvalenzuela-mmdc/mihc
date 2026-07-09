@@ -36,13 +36,43 @@ const smokeRunBackfillConfig = {
   },
 };
 
-function createSmokeRunHistory(appId: keyof typeof smokeRunBackfillConfig) {
+type SmokeRunAppId = keyof typeof smokeRunBackfillConfig;
+type SmokeRunStatus = typeof smokeRuns.$inferInsert.status;
+type SmokeRunTrigger = typeof smokeRuns.$inferInsert.trigger;
+type SmokeRunTestStatus = typeof smokeRunsTestResults.$inferInsert.status;
+
+interface SmokeRunTestFixture {
+  id: string;
+  testName: string;
+  testFile: string | null;
+  status: SmokeRunTestStatus;
+  durationMs: number | null;
+  errorMessage: string | null;
+  errorStack: string | null;
+}
+
+interface SmokeRunFixture {
+  id: string;
+  runNumber: number;
+  appId: SmokeRunAppId;
+  status: SmokeRunStatus;
+  trigger: SmokeRunTrigger;
+  total: number;
+  passed: number;
+  failed: number;
+  durationSeconds: number;
+  startedBy: typeof currentOperator | null;
+  checkedAt: string;
+  testResults: SmokeRunTestFixture[];
+}
+
+function createSmokeRunHistory(appId: SmokeRunAppId): SmokeRunFixture[] {
   const config = smokeRunBackfillConfig[appId];
 
-  return config.runNumbers.map((runNumber, index) => {
+  return config.runNumbers.map<SmokeRunFixture>((runNumber, index) => {
     const hasFailure = index % 4 === 1;
     const hasSkipped = index % 5 === 2;
-    const status: "success" | "degraded" | "failure" = hasFailure ? "degraded" : "success";
+    const status: SmokeRunStatus = hasFailure ? "degraded" : "success";
     const passed = hasFailure ? config.testNames.length - 1 : config.testNames.length;
     const failed = hasFailure ? 1 : 0;
 
@@ -51,14 +81,14 @@ function createSmokeRunHistory(appId: keyof typeof smokeRunBackfillConfig) {
       runNumber,
       appId,
       status,
-      trigger: (index % 3 === 0 ? "manual" : "scheduled") as "scheduled" | "manual",
+      trigger: index % 3 === 0 ? "manual" : "scheduled",
       total: config.testNames.length,
       passed,
       failed,
       durationSeconds: config.durationSeconds + index * 2,
       startedBy: index % 3 === 0 ? currentOperator : null,
       checkedAt: `${config.checkedAtBase}${String(13 - index).padStart(2, "0")}:10:00+08:00`,
-      testResults: config.testNames.map((testName, testIndex) => ({
+      testResults: config.testNames.map<SmokeRunTestFixture>((testName, testIndex) => ({
         id: `${appId}-${runNumber}-${testIndex + 1}`,
         testName,
         testFile: testIndex === config.testNames.length - 1 ? null : config.testFile,
@@ -177,7 +207,7 @@ const smokeRunFixtures = [
   ...createSmokeRunHistory("enrollmate"),
   ...createSmokeRunHistory("enrollmate-clp"),
   ...createSmokeRunHistory("n8n"),
-];
+] satisfies SmokeRunFixture[];
 
 export async function seedSmokeRuns(tx: NodePgDatabase<typeof schema>) {
   const messages: string[] = [];
