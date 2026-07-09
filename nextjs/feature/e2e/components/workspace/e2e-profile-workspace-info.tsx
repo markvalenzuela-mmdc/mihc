@@ -11,112 +11,28 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "lucide-react";
+import { memo, useMemo } from "react";
 import { PageNumberPaginationMeta } from "@/lib/drizzle/pagination";
 import {
   E2eProfileWorkspaceProfile,
   E2eStepDefinition,
   E2eRunHistoryItem,
-  E2eProfileEnrollmentData,
 } from "../../types/e2e-testing.types";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  getProfileSheetGroups,
+  type ProfileSheetGroup,
+  type ProfileSheetFieldValue,
+} from "./e2e-profile-sheet-groups";
 
-type EnrollmentField = { label: string; value: string | boolean | null };
-
-function getEnrollmentGroups(
-  data: E2eProfileEnrollmentData,
-): { label: string; fields: EnrollmentField[] }[] {
-  function formatAddress(...parts: (string | null)[]) {
-    return parts.filter(Boolean).join(", ") || null;
-  }
-
-  return [
-    {
-      label: "Student",
-      fields: [
-        {
-          label: "Name",
-          value:
-            [data.givenName, data.familyName].filter(Boolean).join(" ") || null,
-        },
-        { label: "Birthdate", value: data.birthdate },
-        { label: "Birthplace", value: data.birthplace },
-        { label: "Gender", value: data.gender },
-        { label: "Nationality", value: data.nationality },
-        { label: "Mobile", value: data.mobile },
-        { label: "Civil status", value: data.civilStatus },
-        { label: "Religion", value: data.religion },
-      ],
-    },
-    {
-      label: "Enrollment",
-      fields: [
-        { label: "Student type", value: data.studentType },
-        { label: "Student status", value: data.studentStatus },
-        { label: "Strand", value: data.strand },
-        { label: "Last school", value: data.lastSchoolAttended },
-        { label: "Term applied", value: data.termApplied },
-        { label: "Program", value: data.programApplied },
-        { label: "Learning hub", value: data.preferredLearningHub },
-        { label: "Scholarship interest", value: data.interestedInScholarship },
-      ],
-    },
-    {
-      label: "Addresses",
-      fields: [
-        {
-          label: "Current address",
-          value: formatAddress(
-            data.currentAddressLine1,
-            data.currentAddressLine2,
-            data.currentAddressBarangay,
-            data.currentAddressCity,
-            data.currentAddressProvince,
-            data.currentAddressZipCode,
-            data.currentAddressCountry,
-          ),
-        },
-        {
-          label: "Permanent address",
-          value: formatAddress(
-            data.permanentAddressLine1,
-            data.permanentAddressLine2,
-            data.permanentAddressBarangay,
-            data.permanentAddressCity,
-            data.permanentAddressProvince,
-            data.permanentAddressZipCode,
-            data.permanentAddressCountry,
-          ),
-        },
-      ],
-    },
-    {
-      label: "Guardian",
-      fields: [
-        {
-          label: "Guardian",
-          value:
-            [
-              data.guardianGivenName,
-              data.guardianFamilyName,
-              data.guardianSuffix,
-            ]
-              .filter(Boolean)
-              .join(" ") || null,
-        },
-        { label: "Relationship", value: data.guardianRelationship },
-        { label: "Mobile", value: data.guardianMobile },
-        { label: "Email", value: data.guardianEmail },
-        { label: "Occupation", value: data.guardianOccupation },
-        { label: "Father status", value: data.fatherStatus },
-        { label: "Mother status", value: data.motherStatus },
-        { label: "Use student address", value: data.copyGuardianAddress },
-      ],
-    },
-  ];
-}
+const FIRST_COLLAPSIBLE_PROFILE_SHEET_GROUP_LABEL = "Current address";
 
 function RunHistorySkeleton() {
   return (
@@ -395,16 +311,63 @@ export function ProfileWorkspaceRunHistory({
   );
 }
 
+function formatProfileSheetFieldValue(value: ProfileSheetFieldValue) {
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (value instanceof Date) return value.toISOString();
+  if (value === null || value === undefined || value === "") {
+    return "Not provided";
+  }
+  return String(value);
+}
+
+const ProfileSheetGroupCard = memo(function ProfileSheetGroupCard({
+  group,
+}: {
+  group: ProfileSheetGroup;
+}) {
+  return (
+    <div className="space-y-2">
+      <h4 className="text-sm font-medium">{group.label}</h4>
+      <div className="rounded-lg border bg-muted/10 p-4">
+        <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+          {group.fields.map((field) => (
+            <div key={`${group.label}-${field.label}`}>
+              <dt className="text-xs text-muted-foreground">{field.label}</dt>
+              <dd className="mt-0.5 text-sm">
+                {formatProfileSheetFieldValue(field.value)}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </div>
+  );
+});
+
 export function ProfileWorkspaceEnrollmentData({
   profile,
 }: {
   profile: E2eProfileWorkspaceProfile;
 }) {
-  const groups = getEnrollmentGroups(profile.enrollmentData);
-  function formatFieldValue(value: string | boolean | null) {
-    if (typeof value === "boolean") return value ? "Yes" : "No";
-    return value || "Not provided";
-  }
+  const { visibleGroups, collapsibleGroups } = useMemo(() => {
+    const groups = getProfileSheetGroups(profile);
+    const firstCollapsedGroupIndex = groups.findIndex(
+      (group) => group.label === FIRST_COLLAPSIBLE_PROFILE_SHEET_GROUP_LABEL,
+    );
+
+    if (firstCollapsedGroupIndex === -1) {
+      return {
+        visibleGroups: groups,
+        collapsibleGroups: [],
+      };
+    }
+
+    return {
+      visibleGroups: groups.slice(0, firstCollapsedGroupIndex),
+      collapsibleGroups: groups.slice(firstCollapsedGroupIndex),
+    };
+  }, [profile]);
+
   return (
     <section className="space-y-4" aria-labelledby="enrollment-heading">
       <div>
@@ -415,21 +378,27 @@ export function ProfileWorkspaceEnrollmentData({
           Read-only values that will populate the enrollment workflow.
         </p>
       </div>
-      {groups.map((group) => (
-        <div key={group.label} className="space-y-2">
-          <h4 className="text-sm font-medium">{group.label}</h4>
-          <dl className="grid grid-cols-1 gap-x-6 gap-y-3 rounded-lg border bg-muted/10 p-4 sm:grid-cols-2">
-            {group.fields.map((field) => (
-              <div key={field.label}>
-                <dt className="text-xs text-muted-foreground">{field.label}</dt>
-                <dd className="mt-0.5 text-sm">
-                  {formatFieldValue(field.value)}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </div>
+      {visibleGroups.map((group) => (
+        <ProfileSheetGroupCard key={group.label} group={group} />
       ))}
+      {collapsibleGroups.length ? (
+        <Collapsible className="space-y-4">
+          <CollapsibleTrigger className="group flex w-full items-center justify-between gap-3 rounded-lg border bg-muted/10 p-4 text-left text-sm font-medium outline-none transition-colors hover:bg-muted/30 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
+            <span>Detailed enrollment data</span>
+            <ChevronRightIcon
+              className="size-4 shrink-0 text-muted-foreground transition-transform group-aria-expanded:rotate-90"
+              aria-hidden="true"
+            />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="space-y-4">
+              {collapsibleGroups.map((group) => (
+                <ProfileSheetGroupCard key={group.label} group={group} />
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      ) : null}
     </section>
   );
 }

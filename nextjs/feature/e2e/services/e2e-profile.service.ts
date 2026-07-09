@@ -79,6 +79,54 @@ export async function getE2eProfileById(
       where: (profiles, { eq }) => eq(profiles.id, profileId),
       with: {
         enrollmentData: true,
+        learnerReadiness: true,
+        paymentDetails: true,
+        studyBuddy: true,
+        documents: true,
+        additionalInfo: true,
+        disclosures: true,
+        systemInfo: true,
+        flows: {
+          with: {
+            bachelorData: {
+              with: {
+                relatedPeople: {
+                  with: {
+                    addresses: true,
+                  },
+                },
+                studyReasons: {
+                  with: {
+                    option: {
+                      columns: {
+                        id: true,
+                        label: true,
+                        submittedValue: true,
+                      },
+                    },
+                  },
+                },
+                documents: true,
+              },
+            },
+            microcredentialData: {
+              with: {
+                learnerReadiness: true,
+              },
+            },
+            discoveryChannels: {
+              with: {
+                option: {
+                  columns: {
+                    id: true,
+                    label: true,
+                    submittedValue: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     }),
     db.query.e2eSteps.findMany({
@@ -107,12 +155,26 @@ export async function getE2eProfileById(
 
   if (!profile || !profile.enrollmentData) return null;
 
+  const catalogVersionId = profile.catalogVersionId;
+  const catalogOptions = catalogVersionId
+    ? await db.query.enrollmateOptions.findMany({
+        where: (enrollmateOptions, { eq }) =>
+          eq(enrollmateOptions.catalogVersionId, catalogVersionId),
+        columns: {
+          id: true,
+          label: true,
+          submittedValue: true,
+        },
+      })
+    : [];
+
   const activeRunSerialized = activeRun ? serializeE2eRun(activeRun) : null;
 
   return {
     profile: {
       ...profile,
       latestRun: latestRun ?? null,
+      catalogOptions,
       enrollmentData: profile.enrollmentData,
     },
     activeRun: activeRunSerialized,

@@ -3,7 +3,22 @@ import type {
   e2eRunSteps,
   e2eRunTests,
   e2eSteps,
+  enrollmateOptions,
+  profileAdditionalInfo,
+  profileBachelorData,
+  profileDisclosures,
+  profileDiscoveryChannels,
+  profileDocuments,
   profileEnrollmentData,
+  profileFlows,
+  profileLearnerReadiness,
+  profileMicrocredentialData,
+  profilePaymentDetails,
+  profileRelatedPeople,
+  profileRelatedPersonAddresses,
+  profileStudyBuddy,
+  profileStudyReasons,
+  profileSystemInfo,
   profiles,
   users,
 } from "@/lib/drizzle/db";
@@ -35,10 +50,50 @@ export interface E2eProfileSummary
 }
 
 export type E2eProfileEnrollmentData = typeof profileEnrollmentData.$inferSelect;
+export type E2eProfileCatalogOption = Pick<
+  typeof enrollmateOptions.$inferSelect,
+  "id" | "label" | "submittedValue"
+>;
+
+export type E2eProfileWorkspaceRelatedPerson =
+  typeof profileRelatedPeople.$inferSelect & {
+    addresses: (typeof profileRelatedPersonAddresses.$inferSelect)[];
+  };
+
+export type E2eProfileWorkspaceBachelorData =
+  typeof profileBachelorData.$inferSelect & {
+    relatedPeople: E2eProfileWorkspaceRelatedPerson[];
+    studyReasons: (typeof profileStudyReasons.$inferSelect & {
+      option: E2eProfileCatalogOption | null;
+    })[];
+    documents: typeof profileDocuments.$inferSelect | null;
+  };
+
+export type E2eProfileWorkspaceMicrocredentialData =
+  typeof profileMicrocredentialData.$inferSelect & {
+    learnerReadiness: typeof profileLearnerReadiness.$inferSelect | null;
+  };
+
+export type E2eProfileWorkspaceFlow = typeof profileFlows.$inferSelect & {
+  bachelorData: E2eProfileWorkspaceBachelorData | null;
+  microcredentialData: E2eProfileWorkspaceMicrocredentialData | null;
+  discoveryChannels: (typeof profileDiscoveryChannels.$inferSelect & {
+    option: E2eProfileCatalogOption | null;
+  })[];
+};
 
 export interface E2eProfileWorkspaceProfile extends E2eProfileSummary {
   middleName: string | null;
+  catalogOptions: E2eProfileCatalogOption[];
   enrollmentData: E2eProfileEnrollmentData;
+  learnerReadiness: typeof profileLearnerReadiness.$inferSelect | null;
+  paymentDetails: typeof profilePaymentDetails.$inferSelect | null;
+  studyBuddy: typeof profileStudyBuddy.$inferSelect | null;
+  documents: typeof profileDocuments.$inferSelect | null;
+  additionalInfo: typeof profileAdditionalInfo.$inferSelect | null;
+  disclosures: typeof profileDisclosures.$inferSelect | null;
+  systemInfo: typeof profileSystemInfo.$inferSelect | null;
+  flows: E2eProfileWorkspaceFlow[];
 }
 
 export type E2eStepDefinition = typeof e2eSteps.$inferSelect;

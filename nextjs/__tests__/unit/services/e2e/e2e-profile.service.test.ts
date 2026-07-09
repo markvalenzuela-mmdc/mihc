@@ -13,6 +13,7 @@ describe("e2e profile service", () => {
   const e2eStepsFindMany = vi.fn();
   const e2eRunsFindMany = vi.fn();
   const e2eRunsFindFirst = vi.fn();
+  const enrollmateOptionsFindMany = vi.fn();
   const where = vi.fn();
   const from = vi.fn<() => unknown>(() => ({ where }));
   const select = vi.fn(() => ({ from }));
@@ -29,6 +30,9 @@ describe("e2e profile service", () => {
         findMany: e2eRunsFindMany,
         findFirst: e2eRunsFindFirst,
       },
+      enrollmateOptions: {
+        findMany: enrollmateOptionsFindMany,
+      },
     },
     select,
   };
@@ -39,6 +43,7 @@ describe("e2e profile service", () => {
     e2eStepsFindMany.mockReset();
     e2eRunsFindMany.mockReset();
     e2eRunsFindFirst.mockReset();
+    enrollmateOptionsFindMany.mockReset();
     where.mockReset();
     from.mockClear();
     select.mockClear();
@@ -120,8 +125,96 @@ describe("e2e profile service", () => {
       cohort: "2026",
       status: "in_progress",
       middleName: null,
+      catalogVersionId: "catalog-version-1",
       e2eRuns: [],
-      enrollmentData: { id: "enrollment-1" },
+      enrollmentData: {
+        id: "enrollment-1",
+        currentProvinceOptionId: "province-option-1",
+      },
+      learnerReadiness: {
+        id: "readiness-1",
+        assistanceNeedScore: 7,
+        deviceAccessOptionId: "device-option-1",
+      },
+      paymentDetails: {
+        id: "payment-1",
+        paymentMethod: "GCash",
+      },
+      studyBuddy: {
+        id: "study-buddy-1",
+        sbNomineeEmail: "buddy@example.com",
+      },
+      documents: {
+        id: "documents-1",
+        applicantPersonalIdGDriveLink: "https://drive.example/id",
+      },
+      additionalInfo: {
+        id: "additional-info-1",
+        courseraInviteSent: true,
+      },
+      disclosures: {
+        id: "disclosures-1",
+        dataPrivacy1: true,
+      },
+      systemInfo: {
+        id: "system-info-1",
+        isSentToApi: true,
+      },
+      flows: [
+        {
+          id: "flow-1",
+          flowType: "bachelors",
+          bachelorData: {
+            id: "bachelor-data-1",
+            majorOptionId: "major-option-1",
+            relatedPeople: [
+              {
+                id: "related-person-1",
+                role: "father",
+                livingStatusOptionId: "living-status-option-1",
+                addresses: [
+                  {
+                    id: "related-address-1",
+                    addressType: "current",
+                    sameAsApplicant: true,
+                  },
+                ],
+              },
+            ],
+            studyReasons: [
+              {
+                option: {
+                  id: "study-reason-option-1",
+                  label: "Career growth",
+                  submittedValue: "career-growth",
+                },
+              },
+            ],
+            documents: null,
+          },
+          microcredentialData: null,
+          discoveryChannels: [
+            {
+              option: {
+                id: "discovery-option-1",
+                label: "Facebook",
+                submittedValue: "facebook",
+              },
+            },
+          ],
+        },
+        {
+          id: "flow-2",
+          flowType: "microcredentials",
+          bachelorData: null,
+          microcredentialData: {
+            id: "microcredential-data-1",
+            certificationOptionId: "certification-option-1",
+            learnerReadiness: null,
+          },
+          discoveryChannels: [],
+        },
+      ],
     };
     const activeRun = {
       id: "run-1",
@@ -143,11 +236,35 @@ describe("e2e profile service", () => {
     e2eRunsFindFirst
       .mockResolvedValueOnce(activeRun)
       .mockResolvedValueOnce(latestRun);
+    enrollmateOptionsFindMany.mockResolvedValue([
+      {
+        id: "major-option-1",
+        label: "Information Technology",
+        submittedValue: "BSIT",
+      },
+      {
+        id: "device-option-1",
+        label: "Laptop",
+        submittedValue: "laptop",
+      },
+    ]);
 
     await expect(getE2eProfileById("profile-1", db as never)).resolves.toEqual({
       profile: {
         ...profile,
         latestRun,
+        catalogOptions: [
+          {
+            id: "major-option-1",
+            label: "Information Technology",
+            submittedValue: "BSIT",
+          },
+          {
+            id: "device-option-1",
+            label: "Laptop",
+            submittedValue: "laptop",
+          },
+        ],
         enrollmentData: profile.enrollmentData,
       },
       activeRun: {
@@ -161,6 +278,35 @@ describe("e2e profile service", () => {
         steps: [],
       },
       stepDefinitions: [{ id: "submitted" }],
+    });
+
+    expect(profilesFindFirst).toHaveBeenCalledWith({
+      where: expect.any(Function),
+      with: {
+        enrollmentData: true,
+        learnerReadiness: true,
+        paymentDetails: true,
+        studyBuddy: true,
+        documents: true,
+        additionalInfo: true,
+        disclosures: true,
+        systemInfo: true,
+        flows: expect.objectContaining({
+          with: expect.objectContaining({
+            bachelorData: expect.any(Object),
+            microcredentialData: expect.any(Object),
+            discoveryChannels: expect.any(Object),
+          }),
+        }),
+      },
+    });
+    expect(enrollmateOptionsFindMany).toHaveBeenCalledWith({
+      where: expect.any(Function),
+      columns: {
+        id: true,
+        label: true,
+        submittedValue: true,
+      },
     });
   });
 
