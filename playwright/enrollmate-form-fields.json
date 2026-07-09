@@ -4,19 +4,25 @@
     "version": "1.8.3",
     "reference_date": "2026-07-08",
     "source": "Live UAT form extraction at https://uat.enrollmate.mmdc.mcl.edu.ph/apply-now",
-    "total_steps": 4,
-    "dependencies": {
-      "specialization_depends_on_major": true,
-      "city_municipality_depends_on_province": true,
-      "barangay_depends_on_city_municipality": true,
-      "scholarship_depends_on_scholarship_interest": true,
-      "guardian_fields_depend_on_guardian_selection": true
-    },
     "notes": [
       "All native select controls use identical label and submitted value (placeholder 'Please Select' submits empty string)",
       "City/Municipality and Barangay are dependency-driven cascading selects; captured values are examples only, not complete national data",
       "Specialization values change dynamically based on Major selection"
     ]
+  },
+  "application_types": {
+    "bachelors": {
+      "title": "Online Application for College Freshmen and Transferees",
+      "endpoint": "/apply-now/bachelors-degree",
+      "total_steps": 4,
+      "steps_ref": "steps array where step 1-4 = bachelors data"
+    },
+    "microcredentials": {
+      "title": "Online Application for Certification Programs",
+      "endpoint": "/apply-now/micro-credentials",
+      "total_steps": 3,
+      "steps_ref": "steps array where step 5-7 = microcredentials data"
+    }
   },
 
   "steps": [
@@ -754,6 +760,384 @@
           "label": "BACK"
         }
       ]
+    },
+    {
+      "step": 5,
+      "application_type": "microcredentials",
+      "title": "Basic Information",
+      "sections": [
+        {
+          "section": "Personal Information",
+          "fields": [
+            { "name": "givenName", "id": "givenName", "type": "text", "required": true, "label": "First name" },
+            { "name": "middleName", "id": "middleName", "type": "text", "required": false, "label": "Middle name" },
+            { "name": "familyName", "id": "familyName", "type": "text", "required": true, "label": "Last name" },
+            { "name": "suffix", "id": "suffix", "type": "select", "required": false, "label": "Suffix", "placeholder_value": "", "options_ref": "see suffix_options_below" },
+            { "name": "email", "id": "email", "type": "email", "required": true, "label": "Email" },
+            { "name": "birthdate", "id": "birthdate", "type": "date", "required": true, "label": "Birthdate" },
+            { "name": "birthplace", "id": "birthplace", "type": "text", "required": true, "label": "Place of Birth" },
+            { "name": "gender", "id": "gender", "type": "select", "required": true, "label": "Gender", "placeholder_value": "", "options": [{ "label": "Female", "value": "Female" }, { "label": "Male", "value": "Male" }] },
+            { "name": "nationality", "id": "nationality", "type": "select", "required": false, "label": "Nationality", "placeholder_value": "", "default_value": "Filipino", "options_ref": "see nationality_options below" },
+            { "name": "civilStatus", "id": "civilStatus", "type": "select", "required": true, "label": "Civil Status", "placeholder_value": "", "options": [{ "label": "Single", "value": "Single" }, { "label": "Married", "value": "Married" }, { "label": "Divorced", "value": "Divorced" }, { "label": "Legally Separated", "value": "Legally Separated" }, { "label": "Widowed", "value": "Widowed" }, { "label": "Religious/Clergy", "value": "Religious/Clergy" }, { "label": "Marriage Annulled", "value": "Marriage Annulled" }, { "label": "Separated Unofficial", "value": "Separated Unofficial" }] },
+            { "name": "studentStatus", "id": "studentStatus", "type": "select", "required": true, "label": "Student Status", "placeholder_value": "", "options": [{ "label": "Full-Time Student", "value": "Full-Time Student" }, { "label": "Working Student", "value": "Working Student" }] },
+            { "name": "monthlyIncome", "id": "monthlyIncome", "type": "select", "required": true, "label": "Combined Household Monthly Income (Php)", "placeholder_value": "", "options": [{ "label": "Less than 10,000", "value": "Less than 10,000" }, { "label": "10,000 - 24,999", "value": "10,000 - 24,999" }, { "label": "25,000 - 49,999", "value": "25,000 - 49,999" }, { "label": "50,000 - 79,999", "value": "50,000 - 79,999" }, { "label": "80,000 - 134,999", "value": "80,000 - 134,999" }, { "label": "More than 135,000", "value": "More than 135,000" }] },
+            { "name": "mobile", "id": "mobile", "type": "tel", "required": true, "label": "Mobile", "placeholder": "+63 9XX XXXXXXX" },
+            { "name": "landline", "id": "landline", "type": "tel", "required": false, "label": "Landline" }
+          ]
+        },
+        {
+          "section": "Certification Details",
+          "fields": [
+            {
+              "name": "tinNumber",
+              "id": "tinNumber",
+              "type": "text",
+              "required": false,
+              "label": "Tax Identification Number",
+              "description": "Unique to microcredentials; not present in bachelors form."
+            },
+            {
+              "name": "certificationField",
+              "id": "certificationField",
+              "type": "select",
+              "required": true,
+              "label": "Certification Field",
+              "placeholder_value": "",
+              "description": "Unique to microcredentials; not present in bachelors form.",
+              "options": [
+                { "label": "AI, Tech, and Data", "value": "AI, Tech, and Data" },
+                { "label": "Business & Marketing", "value": "Business & Marketing" },
+                { "label": "English Language Training", "value": "English Language Training" },
+                { "label": "Virtual Assistance", "value": "Virtual Assistance" }
+              ]
+            }
+          ]
+        },
+        {
+          "section": "Current Address",
+          "notes": "Microcredentials has only Current Address (no Permanent Address, unlike bachelors).",
+          "prefix": "curraddr",
+          "fields": [
+            { "name": "curraddrCountry", "id": "curraddrCountry", "type": "select", "required": true, "label": "Current Country", "default_value": "Philippines", "options_ref": "see country_options below", "cascade_parent": true },
+            { "name": "curraddrAddrline1", "id": "curraddrAddrline1", "type": "text", "required": true, "label": "Current Floor no., Bldg. no., House no." },
+            { "name": "curraddrAddrline2", "id": "curraddrAddrline2", "type": "text", "required": true, "label": "Current Street, Bldg, Subdivision, Village" },
+            { "name": "curraddrProvince", "id": "curraddrProvince", "type": "select", "required": true, "label": "Current Province", "placeholder_value": "", "cascade_triggers": "curraddrCitymun", "options_ref": "see philippine_provinces below" },
+            { "name": "curraddrCitymun", "id": "curraddrCitymun", "type": "select", "required": true, "label": "Current City/Municipality", "placeholder_value": "", "description": "DYNAMIC: Options depend on selected Province.", "cascade_depends_on": "curraddrProvince", "cascade_triggers": "curraddrBarangay" },
+            { "name": "curraddrBarangay", "id": "curraddrBarangay", "type": "select", "required": true, "label": "Current Barangay", "placeholder_value": "", "description": "DYNAMIC: Options depend on selected City/Municipality.", "cascade_depends_on": "curraddrCitymun", "example_options_for_tanay": ["Cayabu", "Cuyambay", "Daraitan", "Katipunan-Bayan (Pob.)", "Kaybuto (Pob.)", "Laiban", "Madilay-dilay", "Mag-Ampon (Pob.)", "Mamuyao", "Pinagkamaligan (Pob.)", "Plaza Aldea (Pob.)", "Sampaloc", "San Andres", "San Isidro (Pob.)", "Santa Inez", "Santo Ni\u00f1o", "Tabing Ilog (Pob.)", "Tandang Kutyo (Pob.)", "Tinucan", "Wawa (Pob.)"] },
+            { "name": "curraddrZipcode", "id": "curraddrZipcode", "type": "text", "required": true, "label": "Current Zipcode" }
+          ]
+        }
+      ]
+    },
+    {
+      "step": 6,
+      "application_type": "microcredentials",
+      "title": "Guidance Form",
+      "source": "Extracted from compiled chunk 891 (Salesforce API field map) and common.a19d74a95dd0c83f.js (picklist arrays). Not navigated live due to Angular validation barriers.",
+      "sections": [
+        {
+          "section": "Emergency Contact",
+          "fields": [
+            { "name": "emergencyContactGivenName", "id": "emergencyContactGivenName", "type": "text", "required": false, "label": "Emergency Contact Given Name", "salesforce_api": "IPYG_Emergency_Given_Name__c" },
+            { "name": "emergencyContactMiddleName", "id": "emergencyContactMiddleName", "type": "text", "required": false, "label": "Emergency Contact Middle Name", "salesforce_api": "IPYG_Emergency_Middle_Name__c" },
+            { "name": "emergencyContactFamilyName", "id": "emergencyContactFamilyName", "type": "text", "required": false, "label": "Emergency Contact Family Name", "salesforce_api": "IPYG_Emergency_Family_Name__c" },
+            { "name": "emergencyContactMobile", "id": "emergencyContactMobile", "type": "tel", "required": false, "label": "Emergency Contact Mobile", "salesforce_api": "IPYG_Cell_Phone_Number__c" },
+            {
+              "name": "relationshipToStudent",
+              "id": "relationshipToStudent",
+              "type": "select",
+              "required": false,
+              "label": "Relationship to Student",
+              "placeholder_value": "",
+              "salesforce_api": "IPYG_Relationship_to_Student__c",
+              "options": [
+                { "label": "Father", "value": "Father" },
+                { "label": "Mother", "value": "Mother" },
+                { "label": "Guardian", "value": "Guardian" },
+                { "label": "Spouse/Partner", "value": "Spouse/Partner" },
+                { "label": "Sibling", "value": "Sibling" },
+                { "label": "Other", "value": "Other" }
+              ]
+            },
+            {
+              "name": "inputRelationshipToStudent",
+              "id": "inputRelationshipToStudent",
+              "type": "text",
+              "required": false,
+              "label": "Input Relationship to Student",
+              "description": "CONDITIONAL: Only visible when 'Relationship to Student' is set to 'Other'.",
+              "salesforce_api": "IPYG_Emrgncy_Input_Relship_to_Stdnt__c",
+              "conditional_on": { "field": "relationshipToStudent", "values": ["Other"] }
+            }
+          ]
+        },
+        {
+          "section": "Learning Profile",
+          "description": "Questions about the applicant's readiness and preferences for the certification program.",
+          "fields": [
+            {
+              "name": "deviceAccess",
+              "id": "deviceAccess",
+              "type": "select",
+              "required": false,
+              "label": "Computer/Device Access",
+              "placeholder_value": "",
+              "salesforce_api": "IPYG_LP_Computer_Device_Access__c",
+              "options": [
+                { "label": "Yes", "value": "Yes" },
+                { "label": "No", "value": "No" }
+              ]
+            },
+            {
+              "name": "internetConnectivity",
+              "id": "internetConnectivity",
+              "type": "select",
+              "required": false,
+              "label": "Internet Connectivity",
+              "placeholder_value": "",
+              "salesforce_api": "IPYG_LP_Internet_Connectivity__c",
+              "options": [
+                { "label": "Yes", "value": "Yes" },
+                { "label": "No", "value": "No" }
+              ]
+            },
+            {
+              "name": "softwareSkills",
+              "id": "softwareSkills",
+              "type": "select",
+              "required": false,
+              "label": "Software Skills",
+              "placeholder_value": "",
+              "salesforce_api": "IPYG_LP_Software_Skills__c",
+              "options": [
+                { "label": "On my own", "value": "On my own" },
+                { "label": "With a group", "value": "With a group" }
+              ]
+            },
+            {
+              "name": "onlineLearningPlatforms",
+              "id": "onlineLearningPlatforms",
+              "type": "select",
+              "required": false,
+              "label": "Online Learning Platforms",
+              "placeholder_value": "",
+              "salesforce_api": "IPYG_LP_Online_Learning_Platforms__c",
+              "options": [
+                { "label": "Daily", "value": "Daily" },
+                { "label": "Every other day", "value": "Every other day" },
+                { "label": "Every two days", "value": "Every two days" },
+                { "label": "Once a week", "value": "Once a week" },
+                { "label": "Every hour", "value": "Every hour" }
+              ]
+            },
+            {
+              "name": "onlinePlatformsSpecified",
+              "id": "onlinePlatformsSpecified",
+              "type": "text",
+              "required": false,
+              "label": "Online Platforms Specified",
+              "description": "CONDITIONAL: Likely visible when onlineLearningPlatforms includes 'Others'.",
+              "salesforce_api": "IPYG_LP_Online_Platforms_Specified__c"
+            },
+            {
+              "name": "timeCommitment",
+              "id": "timeCommitment",
+              "type": "select",
+              "required": false,
+              "label": "Time Commitment",
+              "placeholder_value": "",
+              "salesforce_api": "IPYG_LP_Time_Commitment__c",
+              "options": [
+                { "label": "<2 hr", "value": "<2 hr" },
+                { "label": "2-4 hrs", "value": "2-4 hrs" },
+                { "label": ">4 hrs", "value": ">4 hrs" }
+              ]
+            },
+            {
+              "name": "timeManagement",
+              "id": "timeManagement",
+              "type": "select",
+              "required": false,
+              "label": "Time Management Effectiveness",
+              "placeholder_value": "",
+              "salesforce_api": "IPYG_LP_Time_Management_Effectiveness__c",
+              "options": [
+                { "label": "Very effective", "value": "Very effective" },
+                { "label": "Somewhat effective", "value": "Somewhat effective" },
+                { "label": "Not effective", "value": "Not effective" }
+              ]
+            },
+            {
+              "name": "selfDiscipline",
+              "id": "selfDiscipline",
+              "type": "select",
+              "required": false,
+              "label": "Self-Discipline Confidence",
+              "placeholder_value": "",
+              "salesforce_api": "IPYG_LP_Self_Discipline_Confidence__c",
+              "options": [
+                { "label": "Very confident", "value": "Very confident" },
+                { "label": "Somewhat confident", "value": "Somewhat confident" },
+                { "label": "Not confident - I may need some guidance", "value": "Not confident - I may need some guidance" }
+              ]
+            },
+            {
+              "name": "learningGoals",
+              "id": "learningGoals",
+              "type": "select",
+              "required": false,
+              "label": "Learning Goals",
+              "placeholder_value": "",
+              "salesforce_api": "IPYG_LP_Learning_Goals__c",
+              "options": [
+                { "label": "New Job Seeker: I\u2019m preparing to apply for my first job or re-enter the workforce", "value": "New Job Seeker: I\u2019m preparing to apply for my first job or re-enter the workforce" },
+                { "label": "Job Change: Preparing to apply for a better job outside my current company", "value": "Job Change: Preparing to apply for a better job outside my current company" },
+                { "label": "Career Shift: Preparing to apply for a job outside my current company and field", "value": "Career Shift: Preparing to apply for a job outside my current company and field" },
+                { "label": "Internal Career Change: Shifting to a new field or department within my current company", "value": "Internal Career Change: Shifting to a new field or department within my current company" },
+                { "label": "Career Advancement: Gaining skills to grow within my existing company", "value": "Career Advancement: Gaining skills to grow within my existing company" },
+                { "label": "Flexible Career Path: Preparing for a role that combines different skill sets", "value": "Flexible Career Path: Preparing for a role that combines different skill sets" },
+                { "label": "Personal Enrichment: Expanding knowledge for personal growth and learning", "value": "Personal Enrichment: Expanding knowledge for personal growth and learning" },
+                { "label": "Skills Update: Staying current with industry trends and technologies", "value": "Skills Update: Staying current with industry trends and technologies" },
+                { "label": "Entrepreneurial Pursuit: Building skills to start a business or a side hustle", "value": "Entrepreneurial Pursuit: Building skills to start a business or a side hustle" },
+                { "label": "Certification Requirement: Earning credentials to meet professional requirements", "value": "Certification Requirement: Earning credentials to meet professional requirements" }
+              ]
+            },
+            {
+              "name": "challenges",
+              "id": "challenges",
+              "type": "select",
+              "required": false,
+              "label": "Potential Challenges",
+              "placeholder_value": "",
+              "salesforce_api": "IPYG_LP_Potential_Challenges__c",
+              "options": [
+                { "label": "Family", "value": "Family" },
+                { "label": "Work", "value": "Work" },
+                { "label": "Friends", "value": "Friends" },
+                { "label": "Pets", "value": "Pets" },
+                { "label": "My alone time", "value": "My alone time" }
+              ]
+            },
+            {
+              "name": "challengesProvided",
+              "id": "challengesProvided",
+              "type": "text",
+              "required": false,
+              "label": "Challenges Provided",
+              "description": "CONDITIONAL: Likely visible when 'challenges' includes an option that requires elaboration.",
+              "salesforce_api": "IPYG_LP_Challenges_Provided__c"
+            },
+            {
+              "name": "companyOrOrganization",
+              "id": "companyOrOrganization",
+              "type": "text",
+              "required": false,
+              "label": "Company or Organization",
+              "salesforce_api": "IPYG_Company_Organization_Name__c"
+            },
+            {
+              "name": "workType",
+              "id": "workType",
+              "type": "select",
+              "required": false,
+              "label": "Work Type",
+              "placeholder_value": "",
+              "salesforce_api": "IPYG_Work_Type__c",
+              "description": "Likely visible when student is a Working Student.",
+              "options": [
+                { "label": "Full-Time", "value": "Full-Time" },
+                { "label": "Part-Time", "value": "Part-Time" },
+                { "label": "Self-Employed/Freelancer", "value": "Self-Employed/Freelancer" }
+              ]
+            },
+            {
+              "name": "certificationProgram",
+              "id": "certificationProgram",
+              "type": "select",
+              "required": false,
+              "label": "Certification Program",
+              "placeholder_value": "",
+              "description": "DYNAMIC: Options depend on selected Certification Field (step 5).",
+              "salesforce_api": "IPYG_LP_Certification_Program__c",
+              "conditional_on": { "field": "certificationField", "values": ["AI, Tech, and Data", "Business & Marketing", "English Language Training", "Virtual Assistance"] },
+              "options_by_dependency": {
+                "Virtual Assistance": [
+                  { "label": "Virtual Assistance Career Starter", "value": "Virtual Assistance Career Starter" }
+                ],
+                "Business & Marketing": [
+                  { "label": "Google Digital Marketing & E-Commerce", "value": "Google Digital Marketing & E-Commerce" },
+                  { "label": "Adobe Content Creator", "value": "Adobe Content Creator" }
+                ],
+                "AI, Tech, and Data": [
+                  { "label": "IBM Data Analytics", "value": "IBM Data Analytics" },
+                  { "label": "AI for Personal Productivity", "value": "AI for Personal Productivity" },
+                  { "label": "Meta Front-End Developer", "value": "Meta Front-End Developer" },
+                  { "label": "IBM Full Stack Software Developer", "value": "IBM Full Stack Software Developer" },
+                  { "label": "Meta Database Engineer", "value": "Meta Database Engineer" },
+                  { "label": "IBM Data Science", "value": "IBM Data Science" },
+                  { "label": "IBM Data Engineering", "value": "IBM Data Engineering" }
+                ],
+                "English Language Training": [
+                  { "label": "IELTS Preparation", "value": "IELTS Preparation" },
+                  { "label": "ESL Instructor", "value": "ESL Instructor" }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "section": "Student Consent & Additional Info",
+          "fields": [
+            {
+              "name": "foreignAddress",
+              "id": "foreignAddress",
+              "type": "textarea",
+              "required": false,
+              "label": "Foreign Address",
+              "description": "Textarea for foreign address if country is not Philippines.",
+              "salesforce_api": "IPYG_Foreign_Address__c",
+              "conditional_on": { "field": "curraddrCountry", "values": ["(not Philippines)"] }
+            },
+            {
+              "name": "howDidYouFindOutMMDC",
+              "id": "howDidYouFindOutMMDC",
+              "type": "select",
+              "required": false,
+              "label": "How did you find out about MMDC?",
+              "placeholder_value": "",
+              "salesforce_api": "IPYG_How_did_you_find_out_about_MMDC__c",
+              "options": [
+                { "label": "Facebook", "value": "Facebook" },
+                { "label": "Instagram", "value": "Instagram" },
+                { "label": "Twitter", "value": "Twitter" },
+                { "label": "Youtube", "value": "Youtube" },
+                { "label": "Tiktok", "value": "Tiktok" },
+                { "label": "Reddit", "value": "Reddit" },
+                { "label": "LinkedIn", "value": "LinkedIn" },
+                { "label": "Pinterest", "value": "Pinterest" },
+                { "label": "Telegram", "value": "Telegram" },
+                { "label": "Viber", "value": "Viber" },
+                { "label": "Whatsapp", "value": "Whatsapp" }
+              ]
+            },
+            {
+              "name": "consentAgreement",
+              "type": "checkbox",
+              "required": true,
+              "label": "Consent Agreement",
+              "description": "Consent for MMDC to process personal information. Text references parents/legal guardians providing consent on behalf of minor."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "step": 7,
+      "application_type": "microcredentials",
+      "title": "Confirmation",
+      "description": "Review/summary page for microcredentials application.",
+      "source": "Step title confirmed in compiled source. Content structure unknown.",
+      "fields": []
     }
   ],
 
