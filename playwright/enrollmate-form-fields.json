@@ -14,21 +14,20 @@
     "bachelors": {
       "title": "Online Application for College Freshmen and Transferees",
       "endpoint": "/apply-now/bachelors-degree",
-      "total_steps": 4,
-      "steps_ref": "steps array where step 1-4 = bachelors data"
+      "total_steps": 4
     },
     "microcredentials": {
       "title": "Online Application for Certification Programs",
       "endpoint": "/apply-now/micro-credentials",
-      "total_steps": 3,
-      "steps_ref": "steps array where step 5-7 = microcredentials data"
+      "total_steps": 3
     }
   },
 
-  "steps": [
-    {
-      "step": 1,
-      "title": "Student's Information",
+  "bachelors": {
+    "steps": [
+      {
+        "step": 1,
+        "title": "Student's Information",
       "sections": [
         {
           "section": "Applicant Information",
@@ -760,11 +759,15 @@
           "label": "BACK"
         }
       ]
-    },
-    {
-      "step": 5,
-      "application_type": "microcredentials",
-      "title": "Basic Information",
+    }
+  ]
+  },
+
+  "microcredentials": {
+    "steps": [
+      {
+        "step": 1,
+        "title": "Basic Information",
       "sections": [
         {
           "section": "Personal Information",
@@ -830,8 +833,7 @@
       ]
     },
     {
-      "step": 6,
-      "application_type": "microcredentials",
+      "step": 2,
       "title": "Learner Readiness Questionnaire",
       "source": "Live verified via browser navigation (originally compiled as 'Guidance Form')",
       "sections": [
@@ -887,14 +889,16 @@
       ]
     },
     {
-      "step": 7,
-      "application_type": "microcredentials",
+      "step": 3,
       "title": "Confirmation",
-      "description": "Review/summary page for microcredentials application.",
-      "source": "Step title confirmed in compiled source. Content structure unknown.",
-      "fields": []
+      "description": "Review/summary page for microcredentials application. Live verified: shows all Basic Information and Learner Readiness Questionnaire data as read-only, plus SUBMIT and BACK buttons.",
+      "fields": [
+        { "name": "SUBMIT", "type": "button", "action": "submit", "label": "SUBMIT" },
+        { "name": "BACK", "type": "button", "action": "back", "label": "BACK" }
+      ]
     }
-  ],
+  ]
+},
 
   "reusable_option_sets": {
     "nationality_options": [
