@@ -2,13 +2,13 @@
 
 ## Overview
 
-The project has three Docker workflows, each with a distinct purpose. They share infrastructure services (PostgreSQL, PgDog, Redis, Inngest, pgAdmin) but differ in what they run alongside them.
+The project has four Docker workflows, each with a distinct purpose. They share infrastructure services (PostgreSQL, PgDog, Redis, Inngest, pgAdmin) but differ in what they run alongside them.
 
 ## Commands
 
 ### `just docker-local up|down`
 
-Starts or stops **infrastructure only** — the shared services that both the Next.js app and the Playwright consumer depend on. Does not run the application or test servers.
+Starts or stops **infrastructure only** ΓÇö the shared services that both the Next.js app and the Playwright consumer depend on. Does not run the application or test servers.
 
 **Services started:**
 - PostgreSQL (`app-postgres`)
@@ -61,6 +61,29 @@ Uses `docker/compose.build.yml`.
 
 ---
 
+### `just docker-deploy up|down`
+
+Starts or stops the **deployment-oriented stack** ΓÇö services configured for a Coolify or production-like environment. Uses shared Postgres + PgBouncer (instead of PgDog) and a shared Redis for Inngest.
+
+```bash
+just docker-deploy up      # start deploy stack
+just docker-deploy down    # stop deploy stack
+```
+
+Uses `docker/compose.deploy.yml`.
+
+**Services started:**
+- PostgreSQL (`postgres`)
+- PgBouncer connection pooler (`pgbouncer`)
+- Redis (`redis`)
+- Inngest server (`inngest`, port `8288`)
+- pgAdmin (`pgadmin`, port `5050`)
+- Next.js app (`nextjs`, port `3000`) ΓÇö pulled from `ghcr.io/markvalenzuela-mmdc/mihc-nextjs`
+
+**Use when:** You want to run the full stack using the published Docker image against shared infrastructure, matching the Coolify deployment topology.
+
+---
+
 ### `just docker-down`
 
 Stops and removes all project Docker services, regardless of which compose file started them.
@@ -69,7 +92,7 @@ Stops and removes all project Docker services, regardless of which compose file 
 just docker-down
 ```
 
-This runs `docker compose -p docker down`, targeting the `docker` project name shared by `compose.local.yml` and `compose.build.yml`.
+This runs `docker compose -p docker down`, targeting the `docker` project name shared by `compose.local.yml`, `compose.build.yml`, and `compose.deploy.yml`.
 
 **Use when:** You want to stop all Docker services for this project.
 
@@ -77,7 +100,7 @@ This runs `docker compose -p docker down`, targeting the `docker` project name s
 
 ## Environment Files
 
-### `nextjs/.env` — Local development
+### `nextjs/.env` ΓÇö Local development
 
 Used by `just dev` and `just dev-fresh`. All service hostnames use `localhost` since you're running outside Docker:
 
@@ -86,7 +109,7 @@ Used by `just dev` and `just dev-fresh`. All service hostnames use `localhost` s
 | `DATABASE_URL` | `localhost:6432` (PgDog via host port) |
 | `INNGEST_BASE_URL` | `localhost:8288` (Inngest via host port) |
 
-### `docker/.env.build` — Docker build
+### `docker/.env.build` ΓÇö Docker build
 
 Used by `just docker-build`. All service hostnames use Docker service names since the app runs **inside** the container and reaches services via the internal Docker network:
 
@@ -99,4 +122,4 @@ The `.env.build` file is a copy of `nextjs/.env` with `localhost` replaced by th
 
 ### Why not share a single .env?
 
-`localhost` inside a Docker container refers to the container itself, not your host machine. Docker service names like `app-pgdog` only resolve inside the Docker Compose network. A single env file can't serve both contexts, so we maintain two — one for each environment.
+`localhost` inside a Docker container refers to the container itself, not your host machine. Docker service names like `app-pgdog` only resolve inside the Docker Compose network. A single env file can't serve both contexts, so we maintain two ΓÇö one for each environment.

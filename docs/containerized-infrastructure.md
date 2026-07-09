@@ -12,11 +12,14 @@ No application code, schemas, migrations, Dockerfiles, or app images are include
 
 ## Compose files
 
-- `docker/compose.local.yml` — local development entrypoint that includes service-owned Compose files
-- `docker/services/pgdog-postgres/compose.yml` — app PostgreSQL and PgDog
-- `docker/services/inngest/compose.yml` — Inngest, Inngest PostgreSQL, and Inngest Redis
-- `docker/services/pgadmin/compose.yml` — pgAdmin
-- `docker/compose.deploy.yml` — Coolify deployment-oriented stack
+- `docker/compose.local.yml` ΓÇö local development entrypoint that includes service-owned Compose files
+- `docker/services/pgdog-postgres/compose.yml` ΓÇö app PostgreSQL and PgDog
+- `docker/services/inngest/compose.yml` ΓÇö Inngest, Inngest PostgreSQL, and Inngest Redis
+- `docker/services/pgadmin/compose.yml` ΓÇö pgAdmin
+- `docker/compose.deploy.yml` ΓÇö deploy entrypoint that includes deploy-variant Compose files and the Next.js service
+- `docker/services/pgdog-postgres/compose.deploy.yml` ΓÇö deploy app PostgreSQL and PgBouncer
+- `docker/services/inngest/compose.deploy.yml` ΓÇö deploy Redis and Inngest (shared Postgres/Redis)
+- `docker/services/pgadmin/compose.deploy.yml` ΓÇö deploy pgAdmin (server mode + MFA)
 
 Each service folder owns its own `.env.example` and local `.env` file. Local `.env` files are ignored by git.
 
@@ -34,8 +37,8 @@ Each service folder owns its own `.env.example` and local `.env` file. Local `.e
 
 Local development uses separate PostgreSQL services:
 
-- `app-postgres` — application database, reached from the host through PgDog on `localhost:6432`
-- `inngest-postgres` — dedicated Inngest database, reached by the `inngest` service inside Docker
+- `app-postgres` ΓÇö application database, reached from the host through PgDog on `localhost:6432`
+- `inngest-postgres` ΓÇö dedicated Inngest database, reached by the `inngest` service inside Docker
 - The app PostgreSQL service can host both the main app database and a separate test database. PgDog is configured to route `mihc`, `mihc-test`, and the maintenance database `postgres` to the same `app-postgres` service.
 
 PgDog reads its config from `docker/services/pgdog-postgres/files/`.
@@ -169,20 +172,33 @@ Use `inngest-postgres`, not `localhost`, because pgAdmin runs inside Docker. Ins
 | Aspect | Local | Deploy |
 |---|---|---|
 | Credentials | Service-local `.env` files | Supplied via env secrets |
-| pgAdmin mode | Desktop mode | Server mode + deployment auth policy |
+| Connection pool | PgDog (port 6432) | PgBouncer (internal) |
+| Inngest databases | Dedicated inngest-postgres + inngest-redis | Shared postgres + redis services |
+| pgAdmin mode | Desktop mode | Server mode + MFA |
 | Port exposure | PgDog and pgAdmin have fixed local ports; Inngest dependencies use dynamic host ports | Deployment-specific |
-| Service layout | Included service-owned Compose files | Service templates can be deployed independently |
+| Service layout | Included service-owned Compose files | Included deploy-variant Compose files |
+
+## Deploy Commands
+
+From the repository root:
+
+```bash
+just docker-deploy up     # start deploy services (detached)
+just docker-deploy down   # stop deploy services
+just docker-deploy config # validate and print merged config
+```
+
+`just docker-deploy` defaults to `up`.
 
 ## Coolify Deployment
 
-1. Add a new Docker Compose resource in Coolify.
-2. Paste the contents of `docker/compose.deploy.yml` as the compose file.
-3. Set the environment variables from `docker/.env.deploy.example` as Coolify environment variables.
-4. Generate secrets for `POSTGRES_PASSWORD`, `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`, `PGADMIN_DEFAULT_PASSWORD`.
-5. Enable HTTPS for the Inngest (8288) and pgAdmin (5050) public ports in Coolify.
-6. Deploy.
+1. Copy or reference the `docker/compose.deploy.yml` along with its included service files under `docker/services/*/compose.deploy.yml` as the compose definition in Coolify.
+2. Set the environment variables from `docker/.env.deploy.example` as Coolify environment variables.
+3. Generate secrets for `POSTGRES_PASSWORD`, `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`, `PGADMIN_DEFAULT_PASSWORD`.
+4. Enable HTTPS for the Inngest (8288) and pgAdmin (5050) public ports in Coolify.
+5. Deploy.
 
-> PostgreSQL and Redis use named volumes (`mihc_postgres_data`, `mihc_redis_data`). Coolify will manage these as persistent storage.
+> PostgreSQL and Redis use named volumes (`deploy-postgres-data`, `deploy-redis-data`). Coolify will manage these as persistent storage.
 
 ## Troubleshooting
 

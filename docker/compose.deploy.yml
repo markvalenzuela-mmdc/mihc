@@ -1,84 +1,47 @@
+include:
+  - path: services/pgdog-postgres/compose.yml
+    env_file: services/pgdog-postgres/.env
+  - path: services/inngest/compose.yml
+    env_file: services/inngest/.env
+  - path: services/pgadmin/compose.yml
+    env_file: services/pgadmin/.env
+
 services:
-  postgres:
-    image: postgres:16.6
+  nextjs:
+    image: ghcr.io/markvalenzuela-mmdc/mihc-nextjs:latest
     restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_APP_DB}
-    volumes:
-      - mihc_postgres_data:/var/lib/postgresql/data
-      - ./docker/postgres/init:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_APP_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  pgbouncer:
-    image: edoburu/pgbouncer:v1.24.0-p1
-    restart: unless-stopped
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: ${POSTGRES_USER}
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
-      DB_NAME: ${POSTGRES_APP_DB}
-      POOL_MODE: transaction
-      MAX_CLIENT_CONN: 100
-      DEFAULT_POOL_SIZE: 20
-    depends_on:
-      postgres:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h localhost -p 5432 -U ${POSTGRES_USER} -d ${POSTGRES_APP_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis:7.4.1-alpine
-    restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
-    volumes:
-      - mihc_redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  inngest:
-    image: inngest/inngest:v1.9.0
-    restart: unless-stopped
-    command: ["inngest", "start"]
-    environment:
-      INNGEST_EVENT_KEY: ${INNGEST_EVENT_KEY}
-      INNGEST_SIGNING_KEY: ${INNGEST_SIGNING_KEY}
-      INNGEST_POSTGRES_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_INNGEST_DB}
-      INNGEST_REDIS_URI: redis://redis:6379
+    env_file: .env.build
     ports:
-      - "8288:8288"
+      - "3000:3000"
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
+      app-pgdog:
+        condition: service_started
+      inngest:
         condition: service_healthy
 
-  pgadmin:
-    image: dpage/pgadmin4:8.14
-    restart: unless-stopped
+  playwright:
+    image: mihc-playwright:build
+    build:
+      context: ../playwright
+      dockerfile: Dockerfile
+    env_file: .env.build
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
-      PGADMIN_CONFIG_SERVER_MODE: "True"
-      PGADMIN_CONFIG_MFA_ENABLED: "True"
-    ports:
-      - "5050:80"
+      INNGEST_DEV: "0"
+    expose:
+      - "3939"
     depends_on:
-      postgres:
+      app-postgres:
         condition: service_healthy
+      app-pgdog:
+        condition: service_started
+      inngest-redis:
+        condition: service_healthy
+      inngest:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3939/health').then((response)=>process.exit(response.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
-volumes:
-  mihc_postgres_data:
-  mihc_redis_data:

@@ -19,6 +19,7 @@ _default:
     @echo "    docker-local up|down  Start or stop local Docker Compose services"
     @echo "    docker-build [force]  Build Docker images (add force to rebuild without cache)"
     @echo "    docker-down           Stop and remove all project Docker services"
+    @echo "    docker-deploy up|down Start or stop deploy Compose services"
     @echo ""
     @echo "  playwright"
     @echo "    test-playwright       Run smoke tests (live MMDC website)"
@@ -89,6 +90,10 @@ docker-build rebuild="":
 # Stop and remove the project's Docker services (started by any compose file)
 docker-down:
     @docker compose -p docker down
+
+# Start or stop deploy Docker Compose services
+docker-deploy action="up":
+    @docker compose -f "{{project_root}}/docker/compose.deploy.yml" {{action}} {{if action == "up" { "-d" } else { "" }}}
 
 # ─────────────── playwright ───────────────
 
