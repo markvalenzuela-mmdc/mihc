@@ -1,359 +1,896 @@
-# EnrollMate Profile Schema Implementation Plan
+# EnrollMate Generic Option Catalog Implementation Plan
 
-> **For agentic workers:** Implement inline and task-by-task. Do not re-scrape, browse, verify, or modify the UAT-derived JSON.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Revise the Next.js schema so it stores every field and every captured predefined answer in `playwright/enrollmate-form-fields.json` for both EnrollMate flows.
+**Goal:** Replace the uncommitted dedicated lookup-table design with typed shared/flow-specific profile tables backed by one versioned generic option catalog, declarative composite foreign-key integrity, and immutable JSONB snapshots.
 
-**Architecture:** Keep one shared profile, add bachelor/microcredential flow rows, seed relational lookup tables from the checked-in JSON, and normalize repeated relatives and addresses. Limit changes to Next.js schema, relations, seed fixtures, migrations, and schema-focused tests.
+**Architecture:** Keep real profile, flow, relative, address, document, and readiness facts relational. Store dropdown and checkbox definitions in `enrollmate_option_sets`, values in `enrollmate_options`, and cascading relationships in `enrollmate_option_dependencies`; typed domain columns reference those options through catalog-version and option-set-aware composite foreign keys. Read values only from the checked-in UAT JSON, generate all DDL through Drizzle, and never edit generated SQL manually.
 
-**Source of truth:** `playwright/enrollmate-form-fields.json`
+**Tech Stack:** TypeScript 5, Next.js 16, Drizzle ORM 0.45, Drizzle Kit 0.31, PostgreSQL, Zod 4, Vitest 4
 
 ---
 
-## Guardrails
+## Scope and preservation rules
 
-- Do not access EnrollMate UAT.
-- Do not create browser or extraction scripts.
-- Do not modify `playwright/enrollmate-form-fields.json`.
-- Do not add external-data prerequisites.
-- Do not add catalog synchronization.
-- Do not redesign frontend components, API routes, E2E execution, or Playwright tests.
-- Seed only values already present in the JSON.
-- Preserve existing data with additive migrations and exact-value backfills.
+- `playwright/enrollmate-form-fields.json` is authoritative and immutable.
+- Do not access UAT or use browser automation.
+- Do not modify `repomix-output.xml`.
+- Preserve committed migrations `0000–0002`.
+- The uncommitted `0003–0005` migrations, snapshots, dedicated option tables, and their seed implementation are superseded by this approved design.
+- Before deleting any superseded path, verify it remains untracked or differs only because of this EnrollMate schema work.
+- Stage and commit only files named by each task.
+- Do not introduce a general-purpose EAV table.
+- Do not use custom PostgreSQL triggers or handwritten migration SQL.
 
-## Files
+## Final file structure
 
 ### Create
 
-- `nextjs/lib/drizzle/schema/enrollmate-options.ts`
-- `nextjs/lib/drizzle/schema/profile-relatives.ts`
-- `nextjs/lib/drizzle/enrollmate-option-source.ts`
-- `nextjs/lib/drizzle/seed-enrollmate-options.ts`
-- `nextjs/__tests__/unit/lib/enrollmate-option-source.test.ts`
-- `nextjs/__tests__/integration/enrollmate-profile-schema.test.ts`
-- Generated Drizzle migration and snapshot files under `nextjs/drizzle/`
+- `nextjs/lib/drizzle/schema/enrollmate-catalog.ts` — catalog versions, sets, options, dependencies, and reusable composite-constraint helpers.
+- `nextjs/lib/drizzle/schema/profile-applications.ts` — shared applicant data, flows, bachelor data, microcredential data, learner readiness, documents, and multi-select junctions.
+- `nextjs/lib/drizzle/schema/profile-relatives.ts` — father, mother, guardian, and their addresses.
+- `nextjs/lib/drizzle/schema/application-snapshots.ts` — immutable raw payload snapshots.
+- `nextjs/lib/drizzle/enrollmate-option-source.ts` — validated mapping from the checked-in JSON to generic sets/options/dependencies.
+- `nextjs/lib/drizzle/seed-enrollmate-catalog.ts` — deterministic catalog and profile-option seeding.
+- `nextjs/__tests__/unit/lib/enrollmate-option-source.test.ts` — JSON mapping tests.
+- `nextjs/__tests__/integration/enrollmate-catalog-schema.test.ts` — database constraint and seed tests.
+- One generated migration and matching Drizzle snapshot after committed migration `0002`.
 
 ### Modify
 
-- `nextjs/lib/drizzle/schema/profiles.ts`
-- `nextjs/lib/drizzle/schema/relations.ts`
-- `nextjs/lib/drizzle/schema/index.ts`
-- `nextjs/lib/drizzle/seed.ts`
-- `nextjs/lib/mock-testing-data.ts`
-- Existing schema-derived E2E types only where compilation requires nullable `program` or `cohort`
+- `nextjs/lib/drizzle/schema/profiles.ts` — retain core profile and workflow tables; remove superseded application-table definitions and add profile catalog reference.
+- `nextjs/lib/drizzle/schema/relations.ts` — relations for the approved model.
+- `nextjs/lib/drizzle/schema/index.ts` — exports for the new modules.
+- `nextjs/lib/drizzle/seed.ts` — call generic catalog seeding and seed shared/bachelor/microcredential fixtures.
+- `nextjs/lib/mock-testing-data.ts` — fixtures split into shared, bachelor, and microcredential sections.
+- `nextjs/vitest.config.ts` — retain serial file execution only if the two integration files still share one reset database.
+- `nextjs/drizzle/meta/_journal.json` — generated by Drizzle Kit, never edited manually.
 
-## Task 1: Parse the checked-in option values
+### Remove or replace
+
+- `nextjs/lib/drizzle/schema/enrollmate-options.ts`
+- `nextjs/lib/drizzle/seed-enrollmate-options.ts`
+- `nextjs/drizzle/0003_enrollmate_profile_schema.sql`
+- `nextjs/drizzle/0004_enrollmate_guardian_assignment.sql`
+- `nextjs/drizzle/0005_enrollmate_document_constraints.sql`
+- `nextjs/drizzle/meta/0003_snapshot.json`
+- `nextjs/drizzle/meta/0004_snapshot.json`
+- `nextjs/drizzle/meta/0005_snapshot.json`
+- `nextjs/__tests__/integration/enrollmate-profile-schema.test.ts` after Task 8 moves its useful assertions to the generic-catalog test.
+
+## Task 1: Restore the migration baseline and protect unrelated work
 
 **Files:**
 
-- Create: `nextjs/lib/drizzle/enrollmate-option-source.ts`
-- Create: `nextjs/__tests__/unit/lib/enrollmate-option-source.test.ts`
+- Remove: the superseded untracked files listed above.
+- Modify: `nextjs/drizzle/meta/_journal.json`
+- Preserve: `repomix-output.xml`
 
-- [ ] Write a failing test that loads `playwright/enrollmate-form-fields.json` and asserts the captured baselines:
+- [ ] **Step 1: Record the working-tree ownership boundary**
+
+Run:
+
+```powershell
+git status --short
+git diff -- nextjs/drizzle/meta/_journal.json nextjs/lib/drizzle/schema nextjs/lib/drizzle/seed.ts nextjs/lib/mock-testing-data.ts nextjs/vitest.config.ts
+git ls-files nextjs/drizzle/0003_enrollmate_profile_schema.sql nextjs/lib/drizzle/schema/enrollmate-options.ts repomix-output.xml
+```
+
+Expected:
+
+- `0003–0005`, their snapshots, `enrollmate-options.ts`, and `seed-enrollmate-options.ts` are untracked.
+- `repomix-output.xml` is untracked and remains untouched.
+- Committed migrations end at `0002`.
+
+- [ ] **Step 2: Remove only superseded untracked artifacts**
+
+Use `apply_patch` to remove the untracked `0003–0005` SQL files, their snapshots, `enrollmate-options.ts`, and `seed-enrollmate-options.ts`.
+
+Do not use `git clean`, reset, checkout, or a directory-wide deletion.
+
+- [ ] **Step 3: Restore the Drizzle journal to the committed `0002` entries**
+
+Edit only the uncommitted `idx` 3–5 entries. Preserve entries 0–2 byte-for-byte.
+
+- [ ] **Step 4: Verify the boundary**
+
+Run:
+
+```powershell
+git status --short
+git diff --check
+git diff -- playwright/enrollmate-form-fields.json
+```
+
+Expected: no JSON diff, no `repomix-output.xml` modification, and no generated migration after `0002`.
+
+## Task 2: Map the authoritative JSON into generic catalog records
+
+**Files:**
+
+- Replace: `nextjs/lib/drizzle/enrollmate-option-source.ts`
+- Replace: `nextjs/__tests__/unit/lib/enrollmate-option-source.test.ts`
+
+- [ ] **Step 1: Write the failing source-mapping tests**
+
+Define the target contract:
 
 ```ts
+export interface CatalogOptionSet {
+  key: string;
+  label: string;
+  isShared: boolean;
+  sortOrder: number;
+  options: Array<{
+    label: string;
+    submittedValue: string;
+    sortOrder: number;
+    metadata: Record<string, unknown> | null;
+  }>;
+}
+
+export interface CatalogDependency {
+  type:
+    | "major_to_specialization"
+    | "province_to_municipality"
+    | "municipality_to_barangay";
+  parentSetKey: string;
+  parentValue: string;
+  childSetKey: string;
+  childValue: string;
+}
+
+export interface EnrollmateCatalogSource {
+  version: string;
+  referenceDate: string;
+  source: string;
+  optionSets: CatalogOptionSet[];
+  dependencies: CatalogDependency[];
+}
+```
+
+Tests must assert:
+
+```ts
+const source = loadEnrollmateCatalogSource();
+
 expect(source.version).toBe("1.8.3");
-expect(source.nationalities).toHaveLength(136);
-expect(source.religions).toHaveLength(92);
-expect(source.countries).toHaveLength(195);
-expect(source.provinces).toHaveLength(84);
-expect(source.majors).toHaveLength(2);
-expect(source.specializations).toHaveLength(8);
-expect(source.scholarships).toHaveLength(8);
-expect(source.certificationFields).toHaveLength(4);
-expect(source.discoveryChannels).toHaveLength(11);
-expect(source.studyReasons).toHaveLength(8);
-expect(source.learningGoals).toHaveLength(10);
+expect(source.referenceDate).toBe("2026-07-08");
+expect(source.optionSets.find(({ key }) => key === "shared.nationality")?.options)
+  .toHaveLength(136);
+expect(source.optionSets.find(({ key }) => key === "shared.religion")?.options)
+  .toHaveLength(92);
+expect(source.optionSets.find(({ key }) => key === "shared.country")?.options)
+  .toHaveLength(195);
+expect(source.optionSets.find(({ key }) => key === "shared.province")?.options)
+  .toHaveLength(84);
+expect(source.optionSets.find(({ key }) => key === "bachelors.programFocus")?.options)
+  .toHaveLength(2);
+expect(source.optionSets.find(({ key }) => key === "bachelors.programApplied")?.options)
+  .toHaveLength(8);
+expect(source.optionSets.find(({ key }) => key === "shared.discoveryChannels")?.options)
+  .toHaveLength(11);
+expect(source.optionSets.find(({ key }) => key === "bachelors.studyReasons")?.options)
+  .toHaveLength(8);
 ```
 
-- [ ] Assert that every explicitly listed option has a non-empty label and submitted value and is unique within its captured field or parent.
+Also assert:
 
-- [ ] Implement `loadEnrollmateOptionSource()` by reading the checked-in JSON from `../playwright/`. Preserve source order as `sortOrder`.
+- `bachelors.withMedicalCondition` and `microcredentials.deviceAccess` are distinct sets even though both contain Yes/No.
+- Bachelor and microcredential discovery channels map to the one explicitly shared set.
+- Every option has non-empty label/value and is unique within its set.
+- The captured 8 major-specialization, 14 province-municipality, and 16 municipality-barangay edges are retained exactly.
 
-- [ ] Extract only explicitly present values. For cities and barangays, import the captured examples and their declared parents; do not supplement them.
+- [ ] **Step 2: Run the focused test and confirm failure**
 
-- [ ] Run:
+Run:
 
 ```powershell
 cd nextjs
-pnpm test -- __tests__/unit/lib/enrollmate-option-source.test.ts
+.\node_modules\.bin\vitest.cmd run __tests__/unit/lib/enrollmate-option-source.test.ts
 ```
 
-Expected: PASS without network access.
+Expected: FAIL because `loadEnrollmateCatalogSource` and generic set keys do not exist.
 
-## Task 2: Add hard-value lookup tables
+- [ ] **Step 3: Implement field-specific and shared-set configuration**
+
+Export one stable configuration object:
+
+```ts
+export const ENROLLMATE_OPTION_SET_KEYS = {
+  suffix: "shared.suffix",
+  country: "shared.country",
+  province: "shared.province",
+  municipality: "shared.municipality",
+  barangay: "shared.barangay",
+  nationality: "shared.nationality",
+  religion: "shared.religion",
+  discoveryChannels: "shared.discoveryChannels",
+  bachelorGender: "bachelors.gender",
+  bachelorCivilStatus: "bachelors.civilStatus",
+  bachelorMonthlyIncome: "bachelors.monthlyIncome",
+  bachelorStudentStatus: "bachelors.studentStatus",
+  bachelorTerm: "bachelors.termApplied",
+  bachelorMajor: "bachelors.programFocus",
+  bachelorSpecialization: "bachelors.programApplied",
+  bachelorLearningHub: "bachelors.prefLearningHub",
+  bachelorStudentType: "bachelors.studentType",
+  bachelorSubStudentType: "bachelors.subStudentType",
+  bachelorStrand: "bachelors.strand",
+  bachelorScholarshipInterest: "bachelors.interestedForAScholarship",
+  bachelorScholarship: "bachelors.scholarship",
+  bachelorMedicalCondition: "bachelors.withMedicalCondition",
+  bachelorFatherLivingStatus: "bachelors.fthrDeceased",
+  bachelorMotherLivingStatus: "bachelors.mthrDeceased",
+  bachelorGuardianAssignment: "bachelors.guardian",
+  bachelorGuardianRelationship: "bachelors.grdnApplRelationship",
+  bachelorStudyReasons: "bachelors.studyReasons",
+  microcredentialGender: "microcredentials.gender",
+  microcredentialCivilStatus: "microcredentials.civilStatus",
+  microcredentialMonthlyIncome: "microcredentials.monthlyIncome",
+  microcredentialStudentStatus: "microcredentials.studentStatus",
+  microcredentialCertification: "microcredentials.certificationField",
+  microcredentialDeviceAccess: "microcredentials.deviceAccess",
+  microcredentialInternet: "microcredentials.internetConnectivity",
+  microcredentialSoftwareSkills: "microcredentials.softwareSkills",
+  microcredentialOnlinePlatforms: "microcredentials.onlineLearningPlatforms",
+  microcredentialTimeCommitment: "microcredentials.timeCommitment",
+  microcredentialSelfDiscipline: "microcredentials.selfDiscipline",
+  microcredentialTimeManagement: "microcredentials.timeManagement",
+  microcredentialLearningGoals: "microcredentials.learningGoals",
+} as const;
+```
+
+This is the complete controlled-set contract. The parser maps option labels and submitted values from the JSON rather than duplicating them in TypeScript.
+
+- [ ] **Step 4: Implement `loadEnrollmateCatalogSource`**
+
+Read `../playwright/enrollmate-form-fields.json`, validate required structural nodes, preserve option ordering, flatten dependent options, and throw errors containing the set key and submitted value for duplicates or missing parents.
+
+- [ ] **Step 5: Run tests and typecheck**
+
+```powershell
+cd nextjs
+.\node_modules\.bin\vitest.cmd run __tests__/unit/lib/enrollmate-option-source.test.ts
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+Expected: PASS.
+
+- [ ] **Step 6: Commit**
+
+```powershell
+git add nextjs/lib/drizzle/enrollmate-option-source.ts nextjs/__tests__/unit/lib/enrollmate-option-source.test.ts
+git commit -m "feat(nextjs): map EnrollMate generic option catalog"
+```
+
+## Task 3: Define the generic catalog with declarative constraints
 
 **Files:**
 
-- Create: `nextjs/lib/drizzle/schema/enrollmate-options.ts`
+- Create: `nextjs/lib/drizzle/schema/enrollmate-catalog.ts`
 - Modify: `nextjs/lib/drizzle/schema/index.ts`
 - Modify: `nextjs/lib/drizzle/schema/relations.ts`
+- Test: `nextjs/__tests__/integration/enrollmate-catalog-schema.test.ts`
 
-- [ ] Add a common lookup shape:
+- [ ] **Step 1: Write failing catalog integration tests**
 
-```text
-id uuid primary key
-label text not null
-submitted_value text not null
-sort_order integer not null
-source_version text not null
-unique (source_version, submitted_value)
+Tests must attempt:
+
+1. Duplicate `(catalog_version_id, key)` option sets.
+2. Duplicate submitted values within one version/set.
+3. An option referencing a nonexistent version/set pair.
+4. A dependency referencing options from different catalog versions.
+
+Each operation must reject with a PostgreSQL constraint failure.
+
+- [ ] **Step 2: Define catalog tables**
+
+Use Drizzle `pgTable`, `primaryKey`, `unique`, `foreignKey`, `check`, and `jsonb`.
+
+```ts
+export const enrollmateCatalogVersions = pgTable(
+  "enrollmate_catalog_versions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    sourceVersion: text("source_version").notNull(),
+    referenceDate: date("reference_date").notNull(),
+    source: text("source").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    unique().on(table.sourceVersion, table.referenceDate),
+  ],
+);
 ```
 
-- [ ] Create dedicated lookup tables for every controlled set listed in the approved design:
+Define `enrollmateOptionSets` with composite primary key `(catalogVersionId, key)`.
 
-```text
-terms
-majors
-specializations
-suffixes
-genders
-nationalities
-civil_statuses
-income_brackets
-learning_hubs
-student_types
-sub_student_types
-student_statuses
-religions
-strands
-scholarships
-yes_no_answers
-living_statuses
-guardian_assignments
-guardian_relationships
-certification_fields
-time_commitments
-self_discipline_levels
-time_management_levels
-learning_goals
-discovery_channels
-study_reasons
-countries
-provinces
-municipalities
-barangays
+Define `enrollmateOptions` with:
+
+- UUID primary key.
+- `catalogVersionId`.
+- `optionSetKey`.
+- label/value/order/active fields.
+- nullable `metadata` JSONB.
+- composite FK to option sets.
+- unique `(catalogVersionId, optionSetKey, submittedValue)`.
+- unique `(catalogVersionId, optionSetKey, id)` for downstream membership FKs.
+
+Define `enrollmateOptionDependencies` with:
+
+- constrained dependency type.
+- parent/child option IDs.
+- composite FKs proving both options belong to the dependency catalog.
+- composite primary key over version, type, parent, and child.
+
+- [ ] **Step 3: Add reusable constraint builders**
+
+In the same module export helpers that return Drizzle table constraints:
+
+```ts
+export function optionMembershipForeignKey({
+  name,
+  catalogVersionId,
+  optionSetKey,
+  optionId,
+}: OptionMembershipColumns) {
+  return foreignKey({
+    name,
+    columns: [catalogVersionId, optionSetKey, optionId],
+    foreignColumns: [
+      enrollmateOptions.catalogVersionId,
+      enrollmateOptions.optionSetKey,
+      enrollmateOptions.id,
+    ],
+  });
+}
 ```
 
-- [ ] Add `major_id` to specializations, `province_id` to municipalities, and `municipality_id` to barangays.
+Add a corresponding dependency FK helper for version, dependency type, parent ID, and child ID.
 
-- [ ] Export the tables and add their Drizzle relations.
+- [ ] **Step 4: Export schema and relations**
 
-- [ ] Generate the additive migration:
+Export the module from `schema/index.ts`. Add catalog-version→sets, set→options, and option parent/child dependency relations.
+
+- [ ] **Step 5: Run typecheck**
 
 ```powershell
 cd nextjs
-pnpm exec drizzle-kit generate --name enrollmate_options
+.\node_modules\.bin\tsc.cmd --noEmit
 ```
 
-## Task 3: Seed exactly the scraped options
+Expected: PASS.
+
+- [ ] **Step 6: Commit**
+
+```powershell
+git add nextjs/lib/drizzle/schema/enrollmate-catalog.ts nextjs/lib/drizzle/schema/index.ts nextjs/lib/drizzle/schema/relations.ts nextjs/__tests__/integration/enrollmate-catalog-schema.test.ts
+git commit -m "feat(nextjs): add generic EnrollMate catalog schema"
+```
+
+## Task 4: Split shared, bachelor, and microcredential application data
 
 **Files:**
 
-- Create: `nextjs/lib/drizzle/seed-enrollmate-options.ts`
-- Modify: `nextjs/lib/drizzle/seed.ts`
-- Create: `nextjs/__tests__/integration/enrollmate-profile-schema.test.ts`
-
-- [ ] Write an integration test that runs the seed twice and confirms stable row counts.
-
-- [ ] Implement deterministic IDs from:
-
-```text
-enrollmate-option:<source-version>:<table>:<parent-value>:<submitted-value>
-```
-
-- [ ] Insert independent option sets first, then majors/specializations and province/municipality/barangay dependencies.
-
-- [ ] Use `onConflictDoUpdate` for label and ordering changes while preserving deterministic IDs.
-
-- [ ] Call option seeding before profile seeding.
-
-- [ ] Assert that database labels and submitted values exactly equal the JSON-derived arrays and contain no additional values.
-
-## Task 4: Add unified profile flows and missing applicant fields
-
-**Files:**
-
+- Create: `nextjs/lib/drizzle/schema/profile-applications.ts`
 - Modify: `nextjs/lib/drizzle/schema/profiles.ts`
-- Modify: `nextjs/lib/drizzle/schema/relations.ts`
-- Modify: `nextjs/lib/mock-testing-data.ts`
-- Modify: `nextjs/lib/drizzle/seed.ts`
-- Modify: `nextjs/__tests__/integration/enrollmate-profile-schema.test.ts`
-
-- [ ] Add `profile_flows` with unique `(profile_id, flow_type)` and flow type limited to `bachelors | microcredentials`.
-
-- [ ] Make transitional `profiles.program` and `profiles.cohort` nullable.
-
-- [ ] Add applicant fields:
-
-```text
-nickname
-school_not_found
-last_school_other
-```
-
-- [ ] Add referrer given name, family name, and email to `profile_additional_info`.
-
-- [ ] Add lookup-ID columns for every controlled applicant, bachelor, address, and learner-readiness value currently stored as text.
-
-- [ ] Keep legacy text columns during backfill; do not destructively rename or drop them in the generated migration.
-
-- [ ] Add:
-
-```text
-profile_discovery_channels (profile_flow_id, discovery_channel_id)
-profile_study_reasons (profile_flow_id, study_reason_id)
-```
-
-with composite primary keys.
-
-- [ ] Update fixtures so at least one profile supports both flows and every populated controlled value exactly matches the JSON.
-
-## Task 5: Add complete bachelor relatives and addresses
-
-**Files:**
-
-- Create: `nextjs/lib/drizzle/schema/profile-relatives.ts`
 - Modify: `nextjs/lib/drizzle/schema/index.ts`
 - Modify: `nextjs/lib/drizzle/schema/relations.ts`
 - Modify: `nextjs/lib/mock-testing-data.ts`
-- Modify: `nextjs/lib/drizzle/seed.ts`
-- Modify: `nextjs/__tests__/integration/enrollmate-profile-schema.test.ts`
+- Test: `nextjs/__tests__/integration/enrollmate-catalog-schema.test.ts`
 
-- [ ] Add `profile_related_people` with:
+- [ ] **Step 1: Write failing application-structure tests**
+
+Assert:
+
+- One profile can have bachelor and microcredential flow rows.
+- Duplicate `(profile_id, flow_type)` fails.
+- A flow catalog version different from its profile fails.
+- Bachelor data cannot attach to a microcredential flow.
+- Microcredential data cannot attach to a bachelor flow.
+
+Use explicit flow checks and one-to-one unique FKs.
+
+- [ ] **Step 2: Add profile catalog identity**
+
+Add nullable transitional `profiles.catalogVersionId` and unique `(id, catalogVersionId)`. It remains nullable only for preexisting profiles without a configured flow; every `profile_flow` requires a non-null matching version.
+
+Keep `program` and `cohort` nullable transitional display fields. They are not canonical application answers.
+
+- [ ] **Step 3: Define shared applicant data**
+
+Move or redefine `profileEnrollmentData` in `profile-applications.ts` with:
+
+- Existing free-entry name, nickname, birth, and contact fields.
+- Shared suffix/nationality option references.
+- Shared current-address fields and country/province/municipality/barangay option references.
+- Catalog version and companion option-set key columns.
+- Composite option-membership FKs.
+- Province→municipality and municipality→barangay dependency FKs.
+
+Retain legacy flow-specific columns as deprecated nullable columns for data preservation; new seed writes must not use them as canonical values.
+
+- [ ] **Step 4: Define `profileFlows`**
+
+Columns:
 
 ```text
+id
 profile_id
-role
-living_status_id
-given_name
-middle_name
-family_name
-suffix_id
-birthdate
-landline
-mobile
-email
-occupation
-relationship_id
-relationship_other
-unique (profile_id, role)
+catalog_version_id
+flow_type
+created_at
+updated_at
 ```
 
-- [ ] Add `profile_related_person_addresses` with:
+Add:
+
+- unique `(profile_id, flow_type)`.
+- check flow type in `bachelors | microcredentials`.
+- composite FK `(profile_id, catalog_version_id)` to profiles.
+- unique `(id, catalog_version_id)` for child tables.
+
+- [ ] **Step 5: Define `profileBachelorData`**
+
+Use one row per bachelor flow with a check-fixed flow type or an explicit bachelor-flow discriminator participating in a composite FK.
+
+Include:
+
+- term, gender, civil status, income, student status.
+- major and specialization.
+- learning hub, student type, sub-student type, religion, strand.
+- school fields.
+- permanent address.
+- scholarship interest/selection.
+- medical answer.
+- guardian assignment.
+- referrer fields.
+
+Every option column gets:
+
+- catalog version.
+- fixed expected option-set key with default and check constraint.
+- option ID.
+- composite option-membership FK.
+
+Major/specialization and address chains get dependency FKs.
+
+- [ ] **Step 6: Define `profileMicrocredentialData` and readiness**
+
+Microcredential data includes certification, gender, civil status, income, student status, and applicant TIN. Readiness is one-to-one with microcredential data and includes the eight controlled answers plus optional challenges.
+
+Use field-specific set keys for every controlled field.
+
+- [ ] **Step 7: Define multi-select junctions**
+
+`profileDiscoveryChannels` is flow-scoped and references `shared.discoveryChannels`.
+
+`profileStudyReasons` is bachelor-data-scoped and references `bachelors.studyReasons`.
+
+Both use composite catalog/set/option membership FKs.
+
+- [ ] **Step 8: Update fixture types**
+
+Replace the flat enrollment fixture shape with:
+
+```ts
+{
+  sharedEnrollment: { ... },
+  flows: {
+    bachelors: { data: { ... }, discoveryChannels: [...], studyReasons: [...] },
+    microcredentials: { data: { ... }, readiness: { ... }, discoveryChannels: [...] },
+  },
+}
+```
+
+At least one fixture must contain both flows. Values remain submitted-value strings until the seed resolves IDs.
+
+- [ ] **Step 9: Run typecheck and focused tests**
+
+```powershell
+cd nextjs
+.\node_modules\.bin\tsc.cmd --noEmit
+.\node_modules\.bin\vitest.cmd run __tests__/integration/enrollmate-catalog-schema.test.ts
+```
+
+Expected: tests still fail only because migrations and catalog seed are not present.
+
+- [ ] **Step 10: Commit**
+
+```powershell
+git add nextjs/lib/drizzle/schema/profile-applications.ts nextjs/lib/drizzle/schema/profiles.ts nextjs/lib/drizzle/schema/index.ts nextjs/lib/drizzle/schema/relations.ts nextjs/lib/mock-testing-data.ts nextjs/__tests__/integration/enrollmate-catalog-schema.test.ts
+git commit -m "feat(nextjs): split EnrollMate application flows"
+```
+
+## Task 5: Model relatives, documents, and snapshots
+
+**Files:**
+
+- Replace: `nextjs/lib/drizzle/schema/profile-relatives.ts`
+- Create: `nextjs/lib/drizzle/schema/application-snapshots.ts`
+- Modify: `nextjs/lib/drizzle/schema/profile-applications.ts`
+- Modify: `nextjs/lib/drizzle/schema/index.ts`
+- Modify: `nextjs/lib/drizzle/schema/relations.ts`
+- Test: `nextjs/__tests__/integration/enrollmate-catalog-schema.test.ts`
+
+- [ ] **Step 1: Add failing domain-entity tests**
+
+Test:
+
+- Father, mother, and guardian are unique per bachelor data row.
+- Each related person has one current and one permanent address.
+- Wrong suffix/living-status/relationship option sets fail.
+- Invalid address dependencies fail.
+- PID/PHSC sizes over 3 MB and unsupported extensions fail.
+- Snapshot raw JSON and catalog version round-trip unchanged.
+
+- [ ] **Step 2: Define relatives**
+
+Attach `profileRelatedPeople` to `profileBachelorData`, not directly to profile. Add role check, option membership for living status/suffix/relationship, and unique `(bachelorDataId, role)`.
+
+Use a role-aware check constraint: father rows use `bachelors.fthrDeceased`, mother rows use `bachelors.mthrDeceased`, and guardian rows leave living status null. This preserves field-specific option-set semantics without splitting relatives into separate tables.
+
+- [ ] **Step 3: Define relative addresses**
+
+Add current/permanent check, `sameAsApplicant`, address lines, zip, option membership, and both geographic dependency FKs. Enforce unique `(relatedPersonId, addressType)`.
+
+- [ ] **Step 4: Scope documents to bachelor data**
+
+Add `bachelorDataId` as the canonical one-to-one relation while retaining the existing `profileId` transition column. Add PID and PHSC fixture URI/name/MIME/size plus Drizzle checks for:
 
 ```text
-related_person_id
-address_type
-same_as_applicant
-country_id
-address_line_1
-address_line_2
-province_id
-municipality_id
-barangay_id
-zip_code
-unique (related_person_id, address_type)
+size between 0 and 3145728
+extension in pdf, jpg, jpeg, png, xls, xlsx, docx
 ```
 
-- [ ] Limit roles to father, mother, and guardian; limit address type to current and permanent.
+Do not edit generated SQL to add these checks.
 
-- [ ] Seed father, mother, and optional guardian records using hard option references.
+- [ ] **Step 5: Define application snapshots**
 
-- [ ] Preserve existing partial parent/guardian columns until the backfill is verified.
+Use:
 
-## Task 6: Represent PID and PHSC fixture inputs
+```ts
+export const applicationSnapshots = pgTable("application_snapshots", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  profileFlowId: uuid("profile_flow_id").notNull(),
+  e2eRunId: uuid("e2e_run_id"),
+  catalogVersionId: uuid("catalog_version_id").notNull(),
+  payloadHash: text("payload_hash").notNull(),
+  rawPayload: jsonb("raw_payload").$type<Record<string, unknown>>().notNull(),
+  capturedAt: timestamp("captured_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+```
+
+Add composite flow/version FK and optional E2E-run FK. Do not add `updatedAt` or update APIs.
+
+- [ ] **Step 6: Add relations and run typecheck**
+
+```powershell
+cd nextjs
+.\node_modules\.bin\tsc.cmd --noEmit
+```
+
+Expected: PASS.
+
+- [ ] **Step 7: Commit**
+
+```powershell
+git add nextjs/lib/drizzle/schema/profile-relatives.ts nextjs/lib/drizzle/schema/application-snapshots.ts nextjs/lib/drizzle/schema/profile-applications.ts nextjs/lib/drizzle/schema/index.ts nextjs/lib/drizzle/schema/relations.ts nextjs/__tests__/integration/enrollmate-catalog-schema.test.ts
+git commit -m "feat(nextjs): add EnrollMate application entities"
+```
+
+## Task 6: Seed the catalog and split profile fixtures through Drizzle
 
 **Files:**
 
-- Modify: `nextjs/lib/drizzle/schema/profiles.ts`
+- Create: `nextjs/lib/drizzle/seed-enrollmate-catalog.ts`
+- Modify: `nextjs/lib/drizzle/seed.ts`
 - Modify: `nextjs/lib/mock-testing-data.ts`
-- Modify: `nextjs/lib/drizzle/seed.ts`
-- Modify: `nextjs/__tests__/integration/enrollmate-profile-schema.test.ts`
+- Test: `nextjs/__tests__/integration/enrollmate-catalog-schema.test.ts`
 
-- [ ] Add PID and PHSC fixture URI, original filename, MIME type, and size columns to `profile_documents`.
+- [ ] **Step 1: Write failing seed tests**
 
-- [ ] Preserve existing Google Drive archive links and submitted dates.
+After one seed:
 
-- [ ] Add non-negative size constraints.
+- Exactly one catalog version matches JSON metadata.
+- Every option set/value pair matches JSON order.
+- No database option exists outside the JSON.
+- Dependencies match captured JSON edges.
+- One seeded profile has both flows.
 
-- [ ] Test the captured 3 MB limit and accepted extensions in schema-focused validation helpers without contacting UAT.
+After a second seed, every count remains unchanged.
 
-## Task 7: Generate and harden the migration
+- [ ] **Step 2: Implement deterministic IDs**
+
+Export:
+
+```ts
+export function getCatalogVersionId(source: EnrollmateCatalogSource): string;
+export function getOptionId(
+  version: string,
+  setKey: string,
+  submittedValue: string,
+): string;
+```
+
+Use SHA-256-derived UUIDv5-style deterministic IDs. Never derive or hardcode option labels outside the JSON parser.
+
+- [ ] **Step 3: Seed catalog rows in dependency order**
+
+Within one Drizzle transaction:
+
+1. Catalog version.
+2. Option sets.
+3. Options.
+4. Dependencies.
+5. Profiles and shared enrollment data.
+6. Flow rows and flow-specific data.
+7. Relatives, addresses, documents, and multi-selects.
+
+Use exact composite conflict targets and update labels/order/active metadata without changing deterministic IDs.
+
+- [ ] **Step 4: Resolve fixture values strictly**
+
+Create:
+
+```ts
+function requireOptionId(
+  optionIndex: Map<string, string>,
+  setKey: string,
+  submittedValue: string | null,
+): string | null;
+```
+
+The index key is `${setKey}\0${submittedValue}`. Throw:
+
+```text
+Unknown EnrollMate option "<value>" for set "<setKey>"
+```
+
+Do not add missing fixture values to the catalog. Update invalid fixtures to values already present in the JSON.
+
+- [ ] **Step 5: Wire the main seed**
+
+Call generic catalog/profile seeding before E2E runs. Keep unrelated smoke and workflow seed behavior unchanged.
+
+- [ ] **Step 6: Run seed-focused tests**
+
+```powershell
+cd nextjs
+.\node_modules\.bin\vitest.cmd run __tests__/unit/lib/enrollmate-option-source.test.ts __tests__/integration/enrollmate-catalog-schema.test.ts
+```
+
+Expected: schema-dependent tests remain blocked until Task 7 generates/applies the migration; source tests pass.
+
+- [ ] **Step 7: Commit**
+
+```powershell
+git add nextjs/lib/drizzle/seed-enrollmate-catalog.ts nextjs/lib/drizzle/seed.ts nextjs/lib/mock-testing-data.ts nextjs/__tests__/integration/enrollmate-catalog-schema.test.ts
+git commit -m "feat(nextjs): seed EnrollMate generic catalog"
+```
+
+## Task 7: Generate one Drizzle migration without manual SQL
 
 **Files:**
 
-- Modify: generated files under `nextjs/drizzle/`
-- Modify: `nextjs/lib/drizzle/seed.ts`
-- Modify: `nextjs/__tests__/integration/enrollmate-profile-schema.test.ts`
+- Generate: next migration after `nextjs/drizzle/0002_bouncy_annihilus.sql`
+- Generate: matching `nextjs/drizzle/meta/` snapshot
+- Modify by generator only: `nextjs/drizzle/meta/_journal.json`
 
-- [ ] Generate:
+- [ ] **Step 1: Confirm no superseded migration remains**
+
+```powershell
+git status --short
+Get-ChildItem nextjs/drizzle/*.sql | Select-Object -ExpandProperty Name
+```
+
+Expected: committed `0000–0002` only.
+
+- [ ] **Step 2: Generate from Drizzle schema**
 
 ```powershell
 cd nextjs
-pnpm exec drizzle-kit generate --name enrollmate_profile_schema
+.\node_modules\.bin\drizzle-kit.cmd generate --name enrollmate_generic_catalog
 ```
 
-- [ ] Inspect the SQL and reject any destructive drop of existing profile data.
+Expected: one new migration and snapshot.
 
-- [ ] Backfill lookup IDs by exact `submitted_value` equality.
+- [ ] **Step 3: Verify generated SQL without editing it**
 
-- [ ] If an existing fixture value is absent from the JSON, update the fixture to a captured value; do not add an invented option.
+Read the generated migration and confirm it contains:
 
-- [ ] Backfill existing father/mother status and partial guardian data into related-person rows.
+- Four generic catalog tables.
+- Shared, flow, bachelor, microcredential, relative, address, document, multi-select, and snapshot structures.
+- Composite option-membership FKs.
+- Composite dependency FKs.
+- No dedicated per-option-set tables.
+- No destructive removal of committed profile data.
+- No hardcoded scraped option values.
+- No trigger/function DDL.
 
-- [ ] Keep incomplete relative fields null rather than fabricating data.
+If any required constraint is absent, edit the Drizzle schema, delete only the uncommitted generated migration/snapshot, restore only its journal entry, and regenerate.
 
-- [ ] Apply migrations to the test database and seed twice:
+- [ ] **Step 4: Apply migration and seed test database**
 
 ```powershell
 cd nextjs
-pnpm run db:test:setup
-pnpm run db:seed
+.\node_modules\.bin\tsx.cmd scripts/setup-test-db.ts
 ```
 
-Expected: both commands succeed and the second seed adds no duplicate options.
+Expected: migrations and seed complete successfully.
 
-## Task 8: Prove JSON-to-schema coverage
+- [ ] **Step 5: Run catalog integration tests**
+
+```powershell
+cd nextjs
+.\node_modules\.bin\vitest.cmd run __tests__/integration/enrollmate-catalog-schema.test.ts
+```
+
+Expected: PASS.
+
+- [ ] **Step 6: Commit generated artifacts**
+
+```powershell
+git add nextjs/drizzle nextjs/lib/drizzle/schema nextjs/__tests__/integration/enrollmate-catalog-schema.test.ts
+git commit -m "feat(nextjs): migrate EnrollMate generic catalog"
+```
+
+## Task 8: Complete constraint and snapshot coverage
 
 **Files:**
 
-- Modify: `nextjs/__tests__/integration/enrollmate-profile-schema.test.ts`
+- Modify: `nextjs/__tests__/integration/enrollmate-catalog-schema.test.ts`
+- Remove: `nextjs/__tests__/integration/enrollmate-profile-schema.test.ts`
+- Modify: `nextjs/vitest.config.ts` only if serial integration execution remains necessary.
 
-- [ ] Compare every captured option array against ordered database rows.
+- [ ] **Step 1: Add membership failure tests**
 
-- [ ] Assert there are no database option values absent from the JSON.
+Insert a valid religion option into a bachelor gender field and expect rejection. Insert an option from a second catalog version into a first-version profile flow and expect rejection.
 
-- [ ] Assert one profile has both flow rows.
+Copy the still-relevant count, dual-flow, relative-address, and multi-select assertions from `enrollmate-profile-schema.test.ts`, then remove that superseded test file.
 
-- [ ] Assert all controlled populated profile fields have valid foreign keys.
+- [ ] **Step 2: Add dependency failure tests**
 
-- [ ] Assert multiple discovery channels and study reasons can be selected.
+For each dependency type, insert:
 
-- [ ] Assert invalid major-specialization and captured geography relationships fail.
+- One valid pair that succeeds.
+- One cross-parent pair that fails.
 
-- [ ] Assert father, mother, guardian, and six related-person address slots are representable.
+Cover major/specialization, province/municipality, and municipality/barangay.
 
-- [ ] Run:
+- [ ] **Step 3: Add flow-isolation tests**
+
+Assert:
+
+- One profile has both flows.
+- Bachelor and microcredential gender selections use their respective option sets.
+- Discovery selections differ by flow.
+- Study reasons cannot attach to microcredential data.
+- Relatives attach only to bachelor data.
+- Readiness attaches only to microcredential data.
+
+- [ ] **Step 4: Add snapshot tests**
+
+Insert:
+
+```ts
+const rawPayload = {
+  email: "ari.santos@example.edu",
+  programFocus: "BS Information Technology",
+};
+```
+
+Read it back and assert exact deep equality, unchanged catalog version, matching hash, and no `updatedAt` column.
+
+- [ ] **Step 5: Run full tests**
 
 ```powershell
 cd nextjs
-pnpm test -- __tests__/unit/lib/enrollmate-option-source.test.ts
-pnpm test -- __tests__/integration/enrollmate-profile-schema.test.ts
-pnpm test
-pnpm lint
-pnpm exec tsc --noEmit
-pnpm build
+.\node_modules\.bin\vitest.cmd run
 ```
 
-Expected: all commands pass without network access.
+Expected: all tests pass. If parallel integration resets conflict, retain `fileParallelism: false`; otherwise remove that unrelated configuration change.
+
+- [ ] **Step 6: Commit**
+
+```powershell
+git add nextjs/__tests__/integration/enrollmate-catalog-schema.test.ts nextjs/__tests__/integration/enrollmate-profile-schema.test.ts nextjs/vitest.config.ts
+git commit -m "test(nextjs): verify EnrollMate catalog integrity"
+```
+
+## Task 9: Final repository verification
+
+**Files:**
+
+- No new files unless verification exposes a scoped defect.
+
+- [ ] **Step 1: Run all quality gates**
+
+```powershell
+cd nextjs
+.\node_modules\.bin\vitest.cmd run
+.\node_modules\.bin\eslint.cmd .
+.\node_modules\.bin\tsc.cmd --noEmit
+.\node_modules\.bin\next.cmd build
+```
+
+Expected:
+
+- Tests pass.
+- ESLint has no new warnings in changed files; unrelated existing warnings are reported.
+- TypeScript passes.
+- Production build passes.
+
+- [ ] **Step 2: Prove migration and seed idempotency**
+
+```powershell
+cd nextjs
+.\node_modules\.bin\tsx.cmd scripts/setup-test-db.ts
+.\node_modules\.bin\tsx.cmd lib/drizzle/seed.ts
+```
+
+Expected: both complete; the second seed creates no duplicates.
+
+- [ ] **Step 3: Audit the final diff**
+
+```powershell
+git status --short
+git diff --check
+git diff -- playwright/enrollmate-form-fields.json
+git diff -- repomix-output.xml
+rg -n "CREATE TRIGGER|CREATE FUNCTION|INSERT INTO.*enrollmate_options" nextjs/drizzle
+```
+
+Expected:
+
+- JSON diff is empty.
+- `repomix-output.xml` remains untouched and untracked.
+- No handwritten trigger/function SQL.
+- Generated migrations contain no option-value inserts.
+- No dedicated option tables remain.
+- Every changed line traces to the approved design.
+
+- [ ] **Step 4: Compare against the approved design**
+
+Verify each section in `docs/brainstorm/enrollmate-profile-schema.md` has an implementation or explicit test:
+
+- Generic versioned catalog.
+- Typed option columns.
+- Composite membership and dependency integrity.
+- Shared/bachelor/microcredential split.
+- Relatives and addresses.
+- Multi-selects.
+- Documents.
+- Snapshots.
+- Drizzle-only migrations.
+
+- [ ] **Step 5: Commit any final scoped corrections**
+
+If verification required a correction:
+
+```powershell
+git add <only-the-corrected-files>
+git commit -m "fix(nextjs): complete EnrollMate catalog migration"
+```
+
+If no correction was required, do not create an empty commit.
 
 ## Completion criteria
 
-- Only Next.js schema-related code, fixtures, migrations, and tests changed.
-- The checked-in JSON was not modified.
-- No UAT or browser request was made.
-- Every explicitly scraped predefined answer is stored as a hard lookup value.
-- Every scraped free-entry field has a schema column.
-- One profile supports both flows.
-- Existing data is preserved through additive migration and exact backfill.
+- The checked-in JSON is the only option-value source.
+- No UAT/browser access occurs.
+- One generic catalog replaces dedicated option tables.
+- Every known profile field remains typed.
+- Database constraints reject wrong sets, versions, and dependencies.
+- One profile supports both flows with separate flow-specific data.
+- Relatives, addresses, documents, readiness, and multi-selects are relational.
+- JSONB is limited to raw snapshots and option metadata.
+- Migrations are generated entirely by Drizzle and remain unedited.
+- Seed and fixture writes use Drizzle transactions.
+- Existing committed migrations and unrelated user work are preserved.
+- Tests, lint, typecheck, build, migration, and repeated seed pass.

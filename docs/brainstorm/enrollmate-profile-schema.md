@@ -1,6 +1,6 @@
 # EnrollMate Profile Schema Design
 
-**Status:** Approved architecture; awaiting written-spec review
+**Status:** Approved
 
 **Date:** 2026-07-09
 
@@ -362,6 +362,8 @@ UNIQUE (bachelor_data_id, role)
 ```
 
 Roles are father, mother, and guardian. Mother suffix remains null because the scraped form has no mother-suffix field.
+
+Father and mother living-status fields retain distinct option-set keys. A role-aware check constraint ensures father rows use the father set, mother rows use the mother set, and guardian rows leave living status null.
 
 ### `profile_related_person_addresses`
 
