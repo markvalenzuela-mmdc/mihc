@@ -1,0 +1,12 @@
+{
+  "name": "@mihc/enrollmate-contract",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/server.ts"
+  },
+  "peerDependencies": {
+    "zod": "^4.4.3"
+  }
+}
