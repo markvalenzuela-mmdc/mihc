@@ -7,6 +7,14 @@ documented in the current project/package READMEs.
 > also consumed by Playwright server-only Node unit tests. The browser suite
 > under `playwright/tests/` remains unchanged and does not run contract tests.
 
+> **Implementation amendment (2026-07-11):** The original multi-flow-per-
+> profile rule is superseded. Each profile now has one canonical
+> `profiles.flow_type` and one form: `profile_forms.profile_id` is unique and
+> the redundant child `profile_forms.flow_type` column is removed. The form's
+> existing `id` remains the snapshot identity. See the [profile flow
+> cardinality amendment](2026-07-11-profile-flow-cardinality.md) for the
+> approved decision and implementation boundary.
+
 ## Context
 
 The EnrollMate application is scraped from an externally controlled site. Its

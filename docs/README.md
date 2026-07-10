@@ -19,6 +19,8 @@ surfaces; read the relevant project instructions before editing.
 
 - `brainstorm/enrollmate-jsonb-profile-model.md` — approved JSONB profile
   design and its implementation amendment for the shared option-set API.
+- `brainstorm/2026-07-11-profile-flow-cardinality.md` — approved profile flow
+  cardinality amendment governing the one-profile/one-flow/one-form boundary.
 - `plans/2026-07-10-enrollmate-jsonb-profile-model.md` — implementation plan
   and follow-up addendum for shared package consumers.
 - `../packages/enrollmate-contract/README.md` — concrete package API and
