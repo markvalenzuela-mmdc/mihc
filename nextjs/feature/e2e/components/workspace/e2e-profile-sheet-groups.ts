@@ -17,23 +17,25 @@ export type ProfileSheetGroup = { label: string; fields: ProfileSheetField[] };
 type ProfileForm = E2eProfileWorkspaceProfile["profileForms"][number];
 
 function getDisplayValue(value: unknown): ProfileSheetFieldValue {
-  if (
-    value === null ||
-    value === undefined ||
-    typeof value === "string" ||
-    typeof value === "number" ||
-    typeof value === "boolean"
-  )
-    return value;
+  if (value === null || value === undefined) return "Not provided";
+  if (typeof value === "string") {
+    return value.trim().length === 0 ? "Not provided" : value;
+  }
+  if (typeof value === "number" || typeof value === "boolean") return value;
 
-  if (Array.isArray(value)) return value.map(String).join(", ");
+  if (Array.isArray(value)) {
+    const displayValue = value.map(String).join(", ");
+    return displayValue.length === 0 ? "Not provided" : displayValue;
+  }
 
   if (
     typeof value === "object" &&
     "filename" in value &&
     typeof value.filename === "string"
   )
-    return value.filename;
+    return value.filename.trim().length === 0
+      ? "Not provided"
+      : value.filename;
 
   return JSON.stringify(value);
 }
@@ -44,11 +46,11 @@ function getProfileGroup(
   return {
     label: "Profile",
     fields: [
-      { label: "Name", value: profile.name },
-      { label: "Middle name", value: profile.middleName },
-      { label: "Email", value: profile.email },
-      { label: "Program", value: profile.flowType },
-      { label: "Status", value: profile.status },
+      { label: "Name", value: getDisplayValue(profile.name) },
+      { label: "Middle name", value: getDisplayValue(profile.middleName) },
+      { label: "Email", value: getDisplayValue(profile.email) },
+      { label: "Program", value: getDisplayValue(profile.flowType) },
+      { label: "Status", value: getDisplayValue(profile.status) },
     ],
   };
 }
@@ -72,12 +74,10 @@ function getActiveFormGroups(profileForm: ProfileForm): ProfileSheetGroup[] {
 
   for (const step of getEnrollmateFlowDefinition(profileForm.flowType).steps) {
     for (const section of step.sections) {
-      const fields = section.fields
-        .filter((field) => field.name in profileForm.data)
-        .map((field) => ({
-          label: field.label,
-          value: getDisplayValue(profileForm.data[field.name]),
-        }));
+      const fields = section.fields.map((field) => ({
+        label: field.label,
+        value: getDisplayValue(profileForm.data[field.name]),
+      }));
 
       if (fields.length > 0) {
         groups.push({ label: section.label, fields });
