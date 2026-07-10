@@ -1,5 +1,7 @@
 # EnrollMate Profile Schema Design
 
+> **Superseded:** The JSONB profile model approved on 2026-07-10 replaces this relational option-catalog design. See `docs/brainstorm/enrollmate-jsonb-profile-model.md` and `docs/plans/2026-07-10-enrollmate-jsonb-profile-model.md`.
+
 **Status:** Approved
 
 **Date:** 2026-07-09

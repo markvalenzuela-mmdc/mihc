@@ -1,17 +1,16 @@
 import {
-  boolean,
-  date,
   index,
   integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
   unique,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { ProfileOperationalData } from "@mihc/enrollmate-contract";
 
 import { users } from "./users";
-import { enrollmateCatalogVersions } from "./enrollmate-catalog";
 
 export const profiles = pgTable(
   "profiles",
@@ -22,9 +21,10 @@ export const profiles = pgTable(
     email: text("email").notNull().unique(),
     program: text("program"),
     cohort: text("cohort"),
-    catalogVersionId: uuid("catalog_version_id").references(
-      () => enrollmateCatalogVersions.id,
-    ),
+    operationalData: jsonb("operational_data")
+      .$type<ProfileOperationalData>()
+      .notNull()
+      .default({}),
     status: text("status")
       .notNull()
       .default("new")
@@ -49,93 +49,7 @@ export const profiles = pgTable(
       .notNull()
       .$onUpdate(() => new Date()),
   },
-  (table) => [unique().on(table.id, table.catalogVersionId)],
 );
-
-export const profilePaymentDetails = pgTable("profile_payment_details", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  profileId: uuid("profile_id").notNull().unique().references(() => profiles.id),
-  programFee: text("program_fee"),
-  needOfficialReceipt: boolean("need_official_receipt").notNull().default(false),
-  promoCode: text("promo_code"),
-  tinNumber: text("tin_number"),
-  discountedFee: text("discounted_fee"),
-  businessName: text("business_name"),
-  paymentMethod: text("payment_method"),
-  businessTinNumber: text("business_tin_number"),
-  proofOfPayment: text("proof_of_payment"),
-  businessAddress: text("business_address"),
-  isRenewalPayment: boolean("is_renewal_payment").notNull().default(false),
-  businessBir2303GDriveLink: text("business_bir_2303_gdrive_link"),
-  proofOfPaymentGDriveLink: text("proof_of_payment_gdrive_link"),
-  businessBir2303SubmittedDate: date("business_bir_2303_submitted_date"),
-  proofOfPaymentSubmittedDate: date("proof_of_payment_submitted_date"),
-  proofOfPaymentAaRemarks: text("proof_of_payment_aa_remarks"),
-  timestampInPaymentVerification: timestamp("timestamp_in_payment_verification", {
-    withTimezone: true,
-  }),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .defaultNow()
-    .notNull()
-    .$onUpdate(() => new Date()),
-});
-
-export const profileStudyBuddy = pgTable("profile_study_buddy", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  profileId: uuid("profile_id").notNull().unique().references(() => profiles.id),
-  sbNominator: text("sb_nominator"),
-  sbNomineeName: text("sb_nominee_name"),
-  sbPromoCode: text("sb_promo_code"),
-  sbNomineeEmail: text("sb_nominee_email"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .defaultNow()
-    .notNull()
-    .$onUpdate(() => new Date()),
-});
-
-export const profileAdditionalInfo = pgTable("profile_additional_info", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  profileId: uuid("profile_id").notNull().unique().references(() => profiles.id),
-  howDidYouFindOut: text("how_did_you_find_out"),
-  courseraInviteSent: boolean("coursera_invite_sent").notNull().default(false),
-  hasAppFormEdits: boolean("has_app_form_edits").notNull().default(false),
-  courseraInviteSentDate: date("coursera_invite_sent_date"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .defaultNow()
-    .notNull()
-    .$onUpdate(() => new Date()),
-});
-
-export const profileDisclosures = pgTable("profile_disclosures", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  profileId: uuid("profile_id").notNull().unique().references(() => profiles.id),
-  dataPrivacy1: boolean("data_privacy_1").notNull().default(false),
-  marketingNotifConsent: boolean("marketing_notif_consent").notNull().default(false),
-  dataPrivacy2: boolean("data_privacy_2").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .defaultNow()
-    .notNull()
-    .$onUpdate(() => new Date()),
-});
-
-export const profileSystemInfo = pgTable("profile_system_info", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  profileId: uuid("profile_id").notNull().unique().references(() => profiles.id),
-  isSentToApi: boolean("is_sent_to_api").notNull().default(false),
-  lastSentToApi: timestamp("last_sent_to_api", { withTimezone: true }),
-  isApiError: boolean("is_api_error").notNull().default(false),
-  apiErrorMessage: text("api_error_message"),
-  changeRecordType: text("change_record_type"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .defaultNow()
-    .notNull()
-    .$onUpdate(() => new Date()),
-});
 
 export const e2eSteps = pgTable("e2e_steps", {
   id: text("id").primaryKey(),

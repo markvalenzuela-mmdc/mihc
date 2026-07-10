@@ -1,1 +1,0 @@
-ALTER TABLE "profiles" ADD CONSTRAINT "profiles_status_e2e_steps_id_fk" FOREIGN KEY ("status") REFERENCES "public"."e2e_steps"("id") ON DELETE no action ON UPDATE no action;

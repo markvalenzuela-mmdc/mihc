@@ -104,7 +104,7 @@ describe("e2e profile service", () => {
     });
   });
 
-  it("returns null when a profile has no enrollment data", async () => {
+  it("returns a workspace when a profile has no form documents", async () => {
     profilesFindFirst.mockResolvedValue({
       id: "profile-1",
       enrollmentData: null,
@@ -112,7 +112,9 @@ describe("e2e profile service", () => {
     e2eStepsFindMany.mockResolvedValue([]);
     e2eRunsFindFirst.mockResolvedValue(null);
 
-    await expect(getE2eProfileById("profile-1", db as never)).resolves.toBeNull();
+    await expect(getE2eProfileById("profile-1", db as never)).resolves.toMatchObject({
+      profile: { id: "profile-1", profileForms: [] },
+    });
   });
 
   it("returns a profile workspace with serialized active run details", async () => {
@@ -249,23 +251,11 @@ describe("e2e profile service", () => {
       },
     ]);
 
-    await expect(getE2eProfileById("profile-1", db as never)).resolves.toEqual({
+    await expect(getE2eProfileById("profile-1", db as never)).resolves.toMatchObject({
       profile: {
-        ...profile,
+        id: "profile-1",
         latestRun,
-        catalogOptions: [
-          {
-            id: "major-option-1",
-            label: "Information Technology",
-            submittedValue: "BSIT",
-          },
-          {
-            id: "device-option-1",
-            label: "Laptop",
-            submittedValue: "laptop",
-          },
-        ],
-        enrollmentData: profile.enrollmentData,
+        profileForms: [],
       },
       activeRun: {
         id: "run-1",
@@ -283,31 +273,10 @@ describe("e2e profile service", () => {
     expect(profilesFindFirst).toHaveBeenCalledWith({
       where: expect.any(Function),
       with: {
-        enrollmentData: true,
-        learnerReadiness: true,
-        paymentDetails: true,
-        studyBuddy: true,
-        documents: true,
-        additionalInfo: true,
-        disclosures: true,
-        systemInfo: true,
-        flows: expect.objectContaining({
-          with: expect.objectContaining({
-            bachelorData: expect.any(Object),
-            microcredentialData: expect.any(Object),
-            discoveryChannels: expect.any(Object),
-          }),
-        }),
+        profileForms: true,
       },
     });
-    expect(enrollmateOptionsFindMany).toHaveBeenCalledWith({
-      where: expect.any(Function),
-      columns: {
-        id: true,
-        label: true,
-        submittedValue: true,
-      },
-    });
+    expect(enrollmateOptionsFindMany).not.toHaveBeenCalled();
   });
 
   it("requires a profile id for profile workspace lookup", async () => {

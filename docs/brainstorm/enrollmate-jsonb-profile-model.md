@@ -1,6 +1,6 @@
 # EnrollMate JSONB Profile Model
 
-**Status:** Approved design — implementation planning pending
+**Status:** Implemented — verified by the Next.js validation commands below
 
 ## Context
 

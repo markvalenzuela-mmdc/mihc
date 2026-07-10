@@ -1,5 +1,5 @@
 {
-  "id": "f2a4666f-65b9-4a34-b7c3-1c35f564ce9d",
+  "id": "96eb1bef-5ec9-4499-97ef-fdb897ada99b",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1028,358 +1028,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.profile_enrollment_data": {
-      "name": "profile_enrollment_data",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "profile_id": {
-          "name": "profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "given_name": {
-          "name": "given_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "family_name": {
-          "name": "family_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "birthplace": {
-          "name": "birthplace",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "birthdate": {
-          "name": "birthdate",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "gender": {
-          "name": "gender",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "nationality": {
-          "name": "nationality",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "civil_status": {
-          "name": "civil_status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "monthly_income": {
-          "name": "monthly_income",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "mobile": {
-          "name": "mobile",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "preferred_learning_hub": {
-          "name": "preferred_learning_hub",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "student_type": {
-          "name": "student_type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "sub_student_type": {
-          "name": "sub_student_type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "student_status": {
-          "name": "student_status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "religion": {
-          "name": "religion",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "strand": {
-          "name": "strand",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "last_school_attended": {
-          "name": "last_school_attended",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "term_applied": {
-          "name": "term_applied",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "program_focus": {
-          "name": "program_focus",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "program_applied": {
-          "name": "program_applied",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "current_address_country": {
-          "name": "current_address_country",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "current_address_line1": {
-          "name": "current_address_line1",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "current_address_line2": {
-          "name": "current_address_line2",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "current_address_province": {
-          "name": "current_address_province",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "current_address_city": {
-          "name": "current_address_city",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "current_address_barangay": {
-          "name": "current_address_barangay",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "current_address_zip_code": {
-          "name": "current_address_zip_code",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "permanent_address_country": {
-          "name": "permanent_address_country",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "permanent_address_line1": {
-          "name": "permanent_address_line1",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "permanent_address_line2": {
-          "name": "permanent_address_line2",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "permanent_address_province": {
-          "name": "permanent_address_province",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "permanent_address_city": {
-          "name": "permanent_address_city",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "permanent_address_barangay": {
-          "name": "permanent_address_barangay",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "permanent_address_zip_code": {
-          "name": "permanent_address_zip_code",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "interested_in_scholarship": {
-          "name": "interested_in_scholarship",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "with_medical_condition": {
-          "name": "with_medical_condition",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "father_status": {
-          "name": "father_status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "mother_status": {
-          "name": "mother_status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "guardian_type": {
-          "name": "guardian_type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "guardian_given_name": {
-          "name": "guardian_given_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "guardian_family_name": {
-          "name": "guardian_family_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "guardian_suffix": {
-          "name": "guardian_suffix",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "guardian_birthdate": {
-          "name": "guardian_birthdate",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "guardian_mobile": {
-          "name": "guardian_mobile",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "guardian_email": {
-          "name": "guardian_email",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "guardian_occupation": {
-          "name": "guardian_occupation",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "guardian_relationship": {
-          "name": "guardian_relationship",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "copy_guardian_address": {
-          "name": "copy_guardian_address",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": false
-        },
-        "copy_permanent_guardian_address": {
-          "name": "copy_permanent_guardian_address",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "profile_enrollment_data_profile_id_profiles_id_fk": {
-          "name": "profile_enrollment_data_profile_id_profiles_id_fk",
-          "tableFrom": "profile_enrollment_data",
-          "tableTo": "profiles",
-          "columnsFrom": [
-            "profile_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "profile_enrollment_data_profile_id_unique": {
-          "name": "profile_enrollment_data_profile_id_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "profile_id"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.profiles": {
       "name": "profiles",
       "schema": "",
@@ -1397,6 +1045,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "middle_name": {
+          "name": "middle_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "email": {
           "name": "email",
           "type": "text",
@@ -1407,20 +1061,27 @@
           "name": "program",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "cohort": {
           "name": "cohort",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
+        },
+        "operational_data": {
+          "name": "operational_data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
         },
         "status": {
           "name": "status",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'ready'"
+          "default": "'new'"
         },
         "created_by": {
           "name": "created_by",
@@ -1451,6 +1112,19 @@
       },
       "indexes": {},
       "foreignKeys": {
+        "profiles_status_e2e_steps_id_fk": {
+          "name": "profiles_status_e2e_steps_id_fk",
+          "tableFrom": "profiles",
+          "tableTo": "e2e_steps",
+          "columnsFrom": [
+            "status"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
         "profiles_created_by_users_id_fk": {
           "name": "profiles_created_by_users_id_fk",
           "tableFrom": "profiles",
@@ -1485,6 +1159,171 @@
           "nullsNotDistinct": false,
           "columns": [
             "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.profile_e2e_snapshots": {
+      "name": "profile_e2e_snapshots",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "profile_form_id": {
+          "name": "profile_form_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "e2e_run_id": {
+          "name": "e2e_run_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "definition_hash": {
+          "name": "definition_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload_hash": {
+          "name": "payload_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "raw_payload": {
+          "name": "raw_payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "captured_at": {
+          "name": "captured_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "profile_e2e_snapshots_profile_form_id_profile_forms_id_fk": {
+          "name": "profile_e2e_snapshots_profile_form_id_profile_forms_id_fk",
+          "tableFrom": "profile_e2e_snapshots",
+          "tableTo": "profile_forms",
+          "columnsFrom": [
+            "profile_form_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "profile_e2e_snapshots_e2e_run_id_e2e_runs_id_fk": {
+          "name": "profile_e2e_snapshots_e2e_run_id_e2e_runs_id_fk",
+          "tableFrom": "profile_e2e_snapshots",
+          "tableTo": "e2e_runs",
+          "columnsFrom": [
+            "e2e_run_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.profile_forms": {
+      "name": "profile_forms",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "profile_id": {
+          "name": "profile_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "flow_type": {
+          "name": "flow_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "definition_hash": {
+          "name": "definition_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data": {
+          "name": "data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "profile_forms_profile_id_profiles_id_fk": {
+          "name": "profile_forms_profile_id_profiles_id_fk",
+          "tableFrom": "profile_forms",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "profile_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "profile_forms_profile_id_flow_type_unique": {
+          "name": "profile_forms_profile_id_flow_type_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "profile_id",
+            "flow_type"
           ]
         }
       },

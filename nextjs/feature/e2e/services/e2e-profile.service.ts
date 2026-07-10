@@ -5,6 +5,7 @@ import {
   getDb,
   profiles,
 } from "@/lib/drizzle/db";
+import { getEnrollmateDefinitionHash } from "@mihc/enrollmate-contract/server";
 import { paginateByQuery } from "@/lib/drizzle/pagination";
 import { count, eq, sql } from "drizzle-orm";
 import {
@@ -78,55 +79,7 @@ export async function getE2eProfileById(
     db.query.profiles.findFirst({
       where: (profiles, { eq }) => eq(profiles.id, profileId),
       with: {
-        enrollmentData: true,
-        learnerReadiness: true,
-        paymentDetails: true,
-        studyBuddy: true,
-        documents: true,
-        additionalInfo: true,
-        disclosures: true,
-        systemInfo: true,
-        flows: {
-          with: {
-            bachelorData: {
-              with: {
-                relatedPeople: {
-                  with: {
-                    addresses: true,
-                  },
-                },
-                studyReasons: {
-                  with: {
-                    option: {
-                      columns: {
-                        id: true,
-                        label: true,
-                        submittedValue: true,
-                      },
-                    },
-                  },
-                },
-                documents: true,
-              },
-            },
-            microcredentialData: {
-              with: {
-                learnerReadiness: true,
-              },
-            },
-            discoveryChannels: {
-              with: {
-                option: {
-                  columns: {
-                    id: true,
-                    label: true,
-                    submittedValue: true,
-                  },
-                },
-              },
-            },
-          },
-        },
+        profileForms: true,
       },
     }),
     db.query.e2eSteps.findMany({
@@ -153,20 +106,7 @@ export async function getE2eProfileById(
     }),
   ]);
 
-  if (!profile || !profile.enrollmentData) return null;
-
-  const catalogVersionId = profile.catalogVersionId;
-  const catalogOptions = catalogVersionId
-    ? await db.query.enrollmateOptions.findMany({
-        where: (enrollmateOptions, { eq }) =>
-          eq(enrollmateOptions.catalogVersionId, catalogVersionId),
-        columns: {
-          id: true,
-          label: true,
-          submittedValue: true,
-        },
-      })
-    : [];
+  if (!profile) return null;
 
   const activeRunSerialized = activeRun ? serializeE2eRun(activeRun) : null;
 
@@ -174,8 +114,10 @@ export async function getE2eProfileById(
     profile: {
       ...profile,
       latestRun: latestRun ?? null,
-      catalogOptions,
-      enrollmentData: profile.enrollmentData,
+      profileForms: (profile.profileForms ?? []).map((form) => ({
+        ...form,
+        isDeprecated: form.definitionHash !== getEnrollmateDefinitionHash(),
+      })),
     },
     activeRun: activeRunSerialized,
     stepDefinitions,

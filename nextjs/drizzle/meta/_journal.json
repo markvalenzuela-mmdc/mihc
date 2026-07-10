@@ -5,43 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1782819369158,
-      "tag": "0000_true_exodus",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1782824141757,
-      "tag": "0001_free_old_lace",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1783107055993,
-      "tag": "0002_bouncy_annihilus",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1783598419654,
-      "tag": "0003_enrollmate_generic_catalog",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1783598431004,
-      "tag": "0004_enrollmate_profile_catalog_guards",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1783611920526,
-      "tag": "0005_polite_bullseye",
+      "when": 1783665960762,
+      "tag": "0000_profile_jsonb_baseline",
       "breakpoints": true
     }
   ]

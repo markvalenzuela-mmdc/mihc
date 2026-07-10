@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { drizzle } from "drizzle-orm/node-postgres";
 
-import { requireOptionId, seedEnrollmateCatalog } from "./seed/seed-enrollmate-catalog";
 import { seedE2eRuns } from "./seed/seed-e2e-runs";
 import { seedE2eSteps } from "./seed/seed-e2e-steps";
 import { seedOperatorAndApps } from "./seed/seed-operator";
@@ -26,14 +25,10 @@ export async function seedDatabase() {
 
   try {
     await seedDb.transaction(async (tx) => {
-      const { catalogVersionId, optionIndex } = await seedEnrollmateCatalog(tx);
-      const optionId = (setKey: string, submittedValue: string | null) =>
-        requireOptionId(optionIndex, setKey, submittedValue);
-
       successMessages.push(...await seedOperatorAndApps(tx));
       successMessages.push(...await seedSmokeRuns(tx));
       successMessages.push(...await seedE2eSteps(tx));
-      successMessages.push(...await seedProfiles(tx, catalogVersionId, optionId));
+      successMessages.push(...await seedProfiles(tx));
       successMessages.push(...await seedE2eRuns(tx));
     });
 

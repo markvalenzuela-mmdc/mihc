@@ -133,74 +133,41 @@ CREATE TABLE "e2e_steps" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "profile_enrollment_data" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"profile_id" uuid NOT NULL,
-	"given_name" text,
-	"family_name" text,
-	"birthplace" text,
-	"birthdate" date,
-	"gender" text,
-	"nationality" text,
-	"civil_status" text,
-	"monthly_income" text,
-	"mobile" text,
-	"preferred_learning_hub" text,
-	"student_type" text,
-	"sub_student_type" text,
-	"student_status" text,
-	"religion" text,
-	"strand" text,
-	"last_school_attended" text,
-	"term_applied" text,
-	"program_focus" text,
-	"program_applied" text,
-	"current_address_country" text,
-	"current_address_line1" text,
-	"current_address_line2" text,
-	"current_address_province" text,
-	"current_address_city" text,
-	"current_address_barangay" text,
-	"current_address_zip_code" text,
-	"permanent_address_country" text,
-	"permanent_address_line1" text,
-	"permanent_address_line2" text,
-	"permanent_address_province" text,
-	"permanent_address_city" text,
-	"permanent_address_barangay" text,
-	"permanent_address_zip_code" text,
-	"interested_in_scholarship" text,
-	"with_medical_condition" text,
-	"father_status" text,
-	"mother_status" text,
-	"guardian_type" text,
-	"guardian_given_name" text,
-	"guardian_family_name" text,
-	"guardian_suffix" text,
-	"guardian_birthdate" date,
-	"guardian_mobile" text,
-	"guardian_email" text,
-	"guardian_occupation" text,
-	"guardian_relationship" text,
-	"copy_guardian_address" boolean DEFAULT false,
-	"copy_permanent_guardian_address" boolean DEFAULT false,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "profile_enrollment_data_profile_id_unique" UNIQUE("profile_id")
-);
---> statement-breakpoint
 CREATE TABLE "profiles" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
+	"middle_name" text,
 	"email" text NOT NULL,
-	"program" text NOT NULL,
-	"cohort" text NOT NULL,
-	"status" text DEFAULT 'ready' NOT NULL,
+	"program" text,
+	"cohort" text,
+	"operational_data" jsonb DEFAULT '{}'::jsonb NOT NULL,
+	"status" text DEFAULT 'new' NOT NULL,
 	"created_by" uuid,
 	"updated_by" uuid,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "profiles_email_unique" UNIQUE("email")
+);
+--> statement-breakpoint
+CREATE TABLE "profile_e2e_snapshots" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"profile_form_id" uuid NOT NULL,
+	"e2e_run_id" uuid,
+	"definition_hash" text NOT NULL,
+	"payload_hash" text NOT NULL,
+	"raw_payload" jsonb NOT NULL,
+	"captured_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "profile_forms" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"profile_id" uuid NOT NULL,
+	"flow_type" text NOT NULL,
+	"definition_hash" text NOT NULL,
+	"data" jsonb NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "profile_forms_profile_id_flow_type_unique" UNIQUE("profile_id","flow_type")
 );
 --> statement-breakpoint
 ALTER TABLE "apps" ADD CONSTRAINT "apps_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -215,9 +182,12 @@ ALTER TABLE "e2e_run_steps" ADD CONSTRAINT "e2e_run_steps_step_id_e2e_steps_id_f
 ALTER TABLE "e2e_run_tests" ADD CONSTRAINT "e2e_run_tests_run_step_id_e2e_run_steps_id_fk" FOREIGN KEY ("run_step_id") REFERENCES "public"."e2e_run_steps"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "e2e_runs" ADD CONSTRAINT "e2e_runs_profile_id_profiles_id_fk" FOREIGN KEY ("profile_id") REFERENCES "public"."profiles"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "e2e_runs" ADD CONSTRAINT "e2e_runs_started_by_users_id_fk" FOREIGN KEY ("started_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "profile_enrollment_data" ADD CONSTRAINT "profile_enrollment_data_profile_id_profiles_id_fk" FOREIGN KEY ("profile_id") REFERENCES "public"."profiles"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "profiles" ADD CONSTRAINT "profiles_status_e2e_steps_id_fk" FOREIGN KEY ("status") REFERENCES "public"."e2e_steps"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "profiles" ADD CONSTRAINT "profiles_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "profiles" ADD CONSTRAINT "profiles_updated_by_users_id_fk" FOREIGN KEY ("updated_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "profile_e2e_snapshots" ADD CONSTRAINT "profile_e2e_snapshots_profile_form_id_profile_forms_id_fk" FOREIGN KEY ("profile_form_id") REFERENCES "public"."profile_forms"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "profile_e2e_snapshots" ADD CONSTRAINT "profile_e2e_snapshots_e2e_run_id_e2e_runs_id_fk" FOREIGN KEY ("e2e_run_id") REFERENCES "public"."e2e_runs"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "profile_forms" ADD CONSTRAINT "profile_forms_profile_id_profiles_id_fk" FOREIGN KEY ("profile_id") REFERENCES "public"."profiles"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "idx_smoke_runs_app_run" ON "smoke_runs" USING btree ("app_id","run_number" DESC NULLS LAST);--> statement-breakpoint
 CREATE INDEX "idx_smoke_results_run_id" ON "smoke_runs_test_results" USING btree ("run_id");--> statement-breakpoint
 CREATE INDEX "idx_e2e_run_steps_run_id" ON "e2e_run_steps" USING btree ("run_id");--> statement-breakpoint
