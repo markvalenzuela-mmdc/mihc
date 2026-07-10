@@ -5,50 +5,30 @@ import {
   parseEnrollmateDefinition,
   parseEnrollmateDefinitionSource,
   profileOperationalDataSchema,
+  type EnrollmateField,
 } from "@mihc/enrollmate-contract";
 import { getEnrollmateDefinitionHash } from "@mihc/enrollmate-contract/server";
+import { createEnrollmateFixture } from "@mihc/enrollmate-contract/testing";
+import { describe, expect, it } from "vitest";
 import source from "../../../../packages/enrollmate-contract/src/definitions/enrollmate-form-fields.json";
 
+function resolveContractFixtureField(field: EnrollmateField) {
+  if (field.type === "email") return "applicant@example.edu";
+  if (field.type === "date") return "2000-01-01";
+  if (field.type === "tel") return "09170000000";
+  if (field.type === "text" || field.type === "textarea") {
+    return "Example value";
+  }
+  if (field.name.toLowerCase().includes("citymun")) return "Tanay";
+  if (field.name.toLowerCase().includes("barangay")) return "Sampaloc";
+  if (field.optionSource?.kind === "external") return "Example value";
+  return undefined;
+}
+
 function createValidBachelorData() {
-  const data: Record<string, unknown> = { email: "applicant@example.edu" };
-  const fields = getEnrollmateFlowDefinition("bachelors").steps.flatMap((step) =>
-    step.sections.flatMap((section) => section.fields),
-  );
-
-  function setField(field: (typeof fields)[number]) {
-    if (data[field.name] !== undefined) return;
-    if (field.type === "checkbox") data[field.name] = false;
-    else if (field.type === "file") {
-      data[field.name] = {
-        fixtureUri: `fixtures/${field.name}.pdf`,
-        filename: `${field.name}.pdf`,
-        mimeType: "application/pdf",
-        sizeBytes: 1,
-      };
-    } else if (field.type === "email") data[field.name] = "applicant@example.edu";
-    else if (field.type === "date") data[field.name] = "2000-01-01";
-    else if (field.options.length) data[field.name] = field.options[0]!.value;
-    else if (Object.keys(field.optionsByDependency).length) {
-      data[field.name] = Object.values(field.optionsByDependency)[0]![0]!.value;
-    } else data[field.name] = "Seeded value";
-  }
-
-  for (const field of fields) {
-    if (field.required && !field.conditionalOn) setField(field);
-  }
-  for (const field of fields) {
-    if (data[field.name] !== undefined || !field.conditionalOn) continue;
-    const parentValue = data[field.conditionalOn.field];
-    if (
-      (typeof parentValue === "string" || typeof parentValue === "boolean") &&
-      field.conditionalOn.equalsAny.includes(parentValue) &&
-      (field.required || field.requiredWhenConditionMet)
-    ) {
-      setField(field);
-    }
-  }
-
-  return data;
+  return createEnrollmateFixture("bachelors", {
+    resolveField: resolveContractFixtureField,
+  });
 }
 
 describe("EnrollMate contract", () => {
