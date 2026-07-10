@@ -1,6 +1,11 @@
 # EnrollMate JSONB Profile Model
 
-**Status:** Implemented — verified by the Next.js validation commands below
+**Status:** Implemented — Next.js and server-only Playwright validation are
+documented in the current project/package READMEs.
+
+> **Implementation amendment (2026-07-10):** The shared contract package is
+> also consumed by Playwright server-only Node unit tests. The browser suite
+> under `playwright/tests/` remains unchanged and does not run contract tests.
 
 ## Context
 
@@ -80,9 +85,9 @@ definition. Required fields, field types, select values, checkbox groups,
 uploads, and captured dependencies are derived from the scrape.
 
 The frontend and Next.js API import the same contract package. The API parses
-again before persistence and is the trust boundary. Playwright receives no
-implementation or test changes in this scope, but the package is structured
-for a future runner consumer.
+again before persistence and is the trust boundary. Playwright's browser suite
+receives no implementation or test changes; server-only Node unit tests import
+the package from `playwright/server/__tests__/unit/`.
 
 The current definition hash is computed from the checked-in definition. A
 stored `profile_forms.definition_hash` that differs from the current hash is
@@ -152,7 +157,9 @@ migrates, and seeds the local database through the existing Drizzle commands.
 
 ## Explicit non-goals
 
-- Do not change Playwright code, dependencies, or tests.
+- Do not change the Playwright browser suite or its browser result/reporting
+  contract. Server-only Node tests may depend on and validate the shared
+  contract package.
 - Do not retain old form definitions or validators to execute deprecated
   profiles.
 - Do not add a database-backed form-version or option catalog table.
@@ -163,12 +170,14 @@ migrates, and seeds the local database through the existing Drizzle commands.
 ## Validation requirements
 
 - Unit-test the contract package's scrape parsing, hash generation, generated
-  Zod validation, dependency rules, and unsupported-field failure.
+  Zod validation, dependency rules, reusable option-set getter, and
+  unsupported-field failure.
 - Unit-test the Next.js E2E service's workspace shape and derived deprecation
   state.
 - Generate the replacement baseline with Drizzle Kit, reset the local
   database, then integration-test JSONB persistence and the
   `UNIQUE(profile_id, flow_type)` constraint.
 - Run Next.js lint, typecheck, unit tests, relevant database integration tests,
-  and the Drizzle migration/seed commands. No Playwright tests are added or
-  required.
+  the Playwright server-only unit tests/typecheck, and the Drizzle
+  migration/seed commands. No browser Playwright tests are added or required
+  for the contract package.

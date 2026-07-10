@@ -2,11 +2,15 @@
 
 > **Superseded:** The JSONB profile model approved on 2026-07-10 replaces this relational option-catalog design. See `docs/brainstorm/enrollmate-jsonb-profile-model.md` and `docs/plans/2026-07-10-enrollmate-jsonb-profile-model.md`.
 
+> **Historical only:** Use this document to understand the rejected relational
+> approach. Do not use its `playwright/enrollmate-form-fields.json` path,
+> catalog tables, or profile schema as current implementation guidance.
+
 **Status:** Approved
 
 **Date:** 2026-07-09
 
-**Authoritative source:** `playwright/enrollmate-form-fields.json`
+**Historical source in the rejected design:** `playwright/enrollmate-form-fields.json`
 
 ## Context
 
@@ -23,7 +27,8 @@ The agreed replacement is a hybrid:
 
 ## Guardrails
 
-- Treat `playwright/enrollmate-form-fields.json` as authoritative input.
+- The rejected design treated `playwright/enrollmate-form-fields.json` as
+  authoritative input; the current source is documented in `docs/README.md`.
 - Do not re-scrape or access EnrollMate UAT.
 - Do not modify the scraped JSON.
 - Do not use JSONB as the source of truth for profile fields.

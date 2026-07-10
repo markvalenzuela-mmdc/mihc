@@ -1,9 +1,14 @@
 # Agent Instructions — `playwright/`
 
-The testing layer that replaces Ghost Inspector. Two targets:
+The `playwright/` project contains two deliberately separate test targets:
 
-- **MMDC website** → smoke tests (implemented).
-- **EnrollMate** (enrollment platform) → e2e tests (future; not yet here).
+- **Browser suite:** Playwright specs for the MMDC website under `tests/`.
+- **Server tests:** Node-only unit/integration tests under `server/__tests__/`; these
+  must not be run through the Playwright browser runner.
+
+The EnrollMate browser target is future work. The shared
+`@mihc/enrollmate-contract` package is already consumed by server-side tests
+and can also be consumed by the Next.js application.
 
 ## Layout
 
@@ -19,6 +24,11 @@ The testing layer that replaces Ghost Inspector. Two targets:
   `results/`. Registered in `playwright.config.ts`.
 - `tests/*.spec.ts` — 4 single-page specs + 2 looped detail specs (college
   programs, certifications).
+- `server/__tests__/unit/` — server-only Node unit tests, including shared
+  EnrollMate contract checks.
+- `server/__tests__/integration/` — reserved for server/database integration tests;
+  do not place browser specs here.
+- `server/` — Hono/Inngest consumer server and co-located runner helpers.
 - `results/` — generated per-run JSON (git-ignored).
 
 ## Running
@@ -27,6 +37,7 @@ The testing layer that replaces Ghost Inspector. Two targets:
 pnpm install
 npx playwright install chromium     # first time
 pnpm test:smoke                     # chromium only
+pnpm test:unit                      # Node server unit tests, no browser
 ```
 
 ## Run mode (automated vs manual)
@@ -39,11 +50,27 @@ A single test reports how it was invoked, via env vars read by the reporter:
 
 `TEST_TARGET` overrides the target (default `mmdc-website`).
 
+These environment variables apply to browser-run test reports. Server unit
+tests use Node's test runner and do not create Playwright browser result
+records.
+
 ## Conventions
 
 - A smoke test passes when: HTTP 200, key content visible, all declared CTAs
   present/visible/enabled with valid href, and the primary CTA click reaches its
   expected destination.
 - Do NOT assert on console errors — the live site emits third-party noise.
-- For e2e later: reuse `TestResult` and the reporter; set `type='e2e'` and
-  `target='enrollmate'` (per-project `metadata` in `playwright.config.ts`).
+- For future browser E2E: reuse `TestResult` and the reporter; set `type='e2e'`
+  and `target='enrollmate'` (per-project `metadata` in
+  `playwright.config.ts`).
+
+## Shared EnrollMate contract
+
+Server-side Playwright code imports the shared package by name:
+
+```ts
+import { getEnrollmateReusableOptionSets } from "@mihc/enrollmate-contract";
+```
+
+Do not copy `enrollmate-form-fields.json` into this project or put contract
+tests under `tests/`, because that would make them browser-suite tests.

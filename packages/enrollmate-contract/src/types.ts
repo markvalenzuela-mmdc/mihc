@@ -16,6 +16,10 @@ export type EnrollmateOption = {
   value: string;
 };
 
+export type EnrollmateReusableOptionSets = Readonly<
+  Record<string, readonly EnrollmateOption[]>
+>;
+
 export type EnrollmateConditionValue = string | boolean;
 
 export type EnrollmateConditionalRule = {

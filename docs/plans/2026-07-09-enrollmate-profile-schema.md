@@ -2,6 +2,10 @@
 
 > **Superseded:** The JSONB profile model approved on 2026-07-10 replaces this relational option-catalog design. See `docs/brainstorm/enrollmate-jsonb-profile-model.md` and `docs/plans/2026-07-10-enrollmate-jsonb-profile-model.md`.
 
+> **Historical only:** This plan is retained for decision history. Do not
+> execute its relational catalog, migration, or `playwright/` source-file
+> instructions; follow the current source-of-truth map in `docs/README.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the uncommitted dedicated lookup-table design with typed shared/flow-specific profile tables backed by one versioned generic option catalog, declarative composite foreign-key integrity, and immutable JSONB snapshots.
@@ -14,7 +18,9 @@
 
 ## Scope and preservation rules
 
-- `playwright/enrollmate-form-fields.json` is authoritative and immutable.
+- The rejected design treated `playwright/enrollmate-form-fields.json` as
+  authoritative and immutable; current consumers use
+  `packages/enrollmate-contract/` instead.
 - Do not access UAT or use browser automation.
 - Do not modify `repomix-output.xml`.
 - Preserve committed migrations `0000–0002`.

@@ -4,7 +4,11 @@ export {
   enrollmateFlowTypes,
 } from "./form-definition.schema";
 export type { EnrollmateDefinitionSource } from "./form-definition.schema";
-export { enrollmateDefinition, getEnrollmateFlowDefinition } from "./registry";
+export {
+  enrollmateDefinition,
+  getEnrollmateFlowDefinition,
+  getEnrollmateReusableOptionSets,
+} from "./registry";
 export { getEnrollmateValidator } from "./registry";
 export { profileOperationalDataSchema } from "./form-data.schema";
 export type {
@@ -13,5 +17,6 @@ export type {
   EnrollmateFieldType,
   EnrollmateFlowDefinition,
   EnrollmateFlowType,
+  EnrollmateReusableOptionSets,
   ProfileOperationalData,
 } from "./types";

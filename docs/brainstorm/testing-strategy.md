@@ -2,7 +2,7 @@
 
 ## Context
 
-The MMDC Testing Dashboard (`nextjs/`) has zero automated tests. It's a Next.js 16 App Router app with server actions, route handlers, Drizzle ORM, feature services, repositories, and React components. The separate `playwright/` package already has a mature Playwright setup with a custom reporter and `TestResult` schema — but it only tests the external MMDC website.
+The MMDC Testing Dashboard (`nextjs/`) has zero automated tests. It's a Next.js 16 App Router app with server actions, route handlers, Drizzle ORM, feature services, repositories, and React components. The separate `playwright/` package has a mature browser setup with a custom reporter and `TestResult` schema for the external MMDC website. It also contains a separate Node-only server test area for consumer/server helpers; those tests do not use the browser runner or reporter.
 
 Goal: build a test suite covering the Next.js backend and frontend.
 
@@ -38,6 +38,11 @@ Components use TanStack Query hooks for data. Mock the query hooks with `vi.mock
 ### E2E Tests → Playwright (extend existing playwright/ package)
 
 Add a Next.js-specific project to the existing `playwright/playwright.config.ts` with `baseURL: 'http://localhost:3000'`. Reuse the custom reporter and `TestResult` schema. Auto-start the dev server via `webServer` config.
+
+Server-only unit and integration tests belong under
+`playwright/server/__tests__/unit` and `playwright/server/__tests__/integration`.
+They use Node's test runner and are
+kept separate from browser specs under `playwright/tests/`.
 
 ### Test DB Strategy: Both Mocks and Real DB
 

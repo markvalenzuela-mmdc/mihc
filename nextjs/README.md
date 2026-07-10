@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MMDC Testing Dashboard
 
-## Getting Started
+This is the Next.js App Router application for profile management, smoke-test
+operations, and the E2E workspace. It consumes the shared
+`@mihc/enrollmate-contract` package for the canonical EnrollMate definition,
+validators, and reusable option sets.
 
-First, run the development server:
+## Development
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+From `nextjs/`:
+
+```powershell
+npx --yes pnpm@10.29.2 install
+npx --yes pnpm@10.29.2 dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Validation commands
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```powershell
+npx --yes pnpm@10.29.2 test
+npx --yes pnpm@10.29.2 exec tsc --noEmit --types vitest/globals
+npx --yes pnpm@10.29.2 lint
+```
 
-## Learn More
+Tests are organized under `__tests__/unit` and `__tests__/integration`.
+Unit tests do not require a database; integration tests use the configured
+test database helpers.
 
-To learn more about Next.js, take a look at the following resources:
+## Shared EnrollMate contract
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The source of truth is:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```text
+packages/enrollmate-contract/src/definitions/enrollmate-form-fields.json
+```
 
-## Deploy on Vercel
+Import the package rather than importing that JSON directly:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```ts
+import {
+  getEnrollmateFlowDefinition,
+  getEnrollmateReusableOptionSets,
+  getEnrollmateValidator,
+} from "@mihc/enrollmate-contract";
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `getEnrollmateFlowDefinition(flowType)` returns ordered steps, sections, and
+  fields with resolved field options.
+- `getEnrollmateReusableOptionSets()` returns every dynamically named reusable
+  option set as a detached read-only record.
+- `getEnrollmateValidator(flowType)` validates submitted form data.
+- `getEnrollmateDefinitionHash()` is available from
+  `@mihc/enrollmate-contract/server` for server-side version checks.
+
+The package is declared as a local dependency in `package.json` and listed in
+`next.config.ts` under `transpilePackages`. When the definition changes, run
+the contract tests and typecheck before updating consumers.
+
+## Repository architecture
+
+- `app/` — App Router pages and API routes.
+- `feature/e2e/` — profile workspace and E2E workflow services.
+- `feature/smoke/` — smoke-test UI and services.
+- `lib/drizzle/` — database schema, migrations, and seed code.
+- `__tests__/unit/` — fast unit tests.
+- `__tests__/integration/` — database/API integration tests.
+
+The JSONB profile model stores flow documents in `profile_forms.data` and
+internal sections in `profiles.operational_data`. The current implementation
+and migration decisions are documented in
+`docs/brainstorm/enrollmate-jsonb-profile-model.md` and
+`docs/plans/2026-07-10-enrollmate-jsonb-profile-model.md`.
+
+Read the repository `AGENTS.md`, this project’s `AGENTS.md`, and
+`docs/README.md` before making changes.

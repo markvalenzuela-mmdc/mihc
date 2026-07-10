@@ -33,6 +33,9 @@ Agents must not introduce code that violates `code-style.md`.
 
 Agents must treat `../docs/` as the repository source of truth for shared project references, brainstorms, plans, agreements, and other durable working notes.
 
+Start with `../docs/README.md` for the current source-of-truth map and to
+distinguish active JSONB/package guidance from historical relational designs.
+
 Agents must check relevant files under `../docs/` before planning or implementing changes.
 
 Brainstorms must be saved under `../docs/brainstorm/`. Capture the full useful conversation trail, including context, options considered, decisions, rejected paths, and open questions. Do not rely on chat history as the only audit trail.

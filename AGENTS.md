@@ -24,3 +24,8 @@ runs report automated vs. manual mode.
 
 - Root commands are managed via `justfile`. Run `just` to see available commands.
 - For justfile conventions, read `docs/justfile-conventions.md`.
+- Read `docs/README.md` before making cross-project changes. It maps current
+  source-of-truth files, test boundaries, package usage, and historical docs.
+- The EnrollMate source of truth is the shared
+  `packages/enrollmate-contract/` package. Do not recreate its definition or
+  reusable options under `nextjs/` or `playwright/`.

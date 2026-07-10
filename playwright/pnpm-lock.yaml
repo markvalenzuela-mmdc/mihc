@@ -210,6 +210,9 @@ importers:
       '@hono/node-server':
         specifier: ^2.0.6
         version: 2.0.6(hono@4.12.27)
+      '@mihc/enrollmate-contract':
+        specifier: file:../packages/enrollmate-contract
+        version: file:../packages/enrollmate-contract(zod@4.4.3)
       '@playwright/test':
         specifier: ^1.61.1
         version: 1.61.1
@@ -430,6 +433,11 @@ packages:
 
   '@js-sdsl/ordered-map@4.4.2':
     resolution: {integrity: sha512-iUKgm52T8HOE/makSxjqoWhe95ZJA1/G1sYsGev2JDKUSS14KAgg1LHb+Ba+IPow0xflbnSkOsZcO08C7w1gYw==}
+
+  '@mihc/enrollmate-contract@file:../packages/enrollmate-contract':
+    resolution: {directory: ../packages/enrollmate-contract, type: directory}
+    peerDependencies:
+      zod: ^4.4.3
 
   '@opentelemetry/api-logs@0.203.0':
     resolution: {integrity: sha512-9B9RU0H7Ya1Dx/Rkyc4stuBZSGVQF27WigitInx2QQoj6KUpEFYPKoWjdFTunJYxmXmh17HeBvbMa1EhGyPmqQ==}
@@ -1715,6 +1723,10 @@ snapshots:
   '@jpwilliams/waitgroup@2.1.1': {}
 
   '@js-sdsl/ordered-map@4.4.2': {}
+
+  '@mihc/enrollmate-contract@file:../packages/enrollmate-contract(zod@4.4.3)':
+    dependencies:
+      zod: 4.4.3
 
   '@opentelemetry/api-logs@0.203.0':
     dependencies:

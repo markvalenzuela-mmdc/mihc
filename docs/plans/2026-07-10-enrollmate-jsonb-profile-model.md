@@ -10,6 +10,22 @@
 
 **Scope boundary:** Do not add or change Playwright runner code, dependencies, or tests. Move the checked-in EnrollMate definition from `playwright/` into the shared contract package; this asset move is the only change below `playwright/`.
 
+## Follow-up amendment: shared option-set consumers
+
+The implementation plan above records the original JSONB migration scope. A
+follow-up contract change on 2026-07-10 added
+`getEnrollmateReusableOptionSets()` to the shared package and declared that
+package as a dependency of Playwright. Its validation lives in the
+server-only Node test at
+`playwright/server/__tests__/unit/enrollmate-contract.test.ts`; it is not a
+browser Playwright spec and does not run through `playwright test`.
+
+The original “only the asset move below `playwright/`” boundary is therefore
+superseded by this focused consumer addendum. The browser suite under
+`playwright/tests/`, its reporter, and its run-mode contract remain unchanged.
+See `packages/enrollmate-contract/README.md`, `playwright/README.md`, and
+`docs/README.md` for the current usage map.
+
 ---
 
 ## Final file structure
@@ -787,7 +803,9 @@ pnpm db:seed
 ```
 
 Expected: lint, typecheck, all Next.js tests, and seeding pass. Do not run or
-add Playwright tests for this work.
+add browser Playwright tests for this migration. The later shared-contract
+follow-up has separate server-only Node unit tests documented in the addendum
+above.
 
 - [ ] **Step 4: Review the final scope and commit documentation**
 
@@ -827,4 +845,19 @@ git commit -m "docs: supersede relational EnrollMate schema"
   blocks the future edit/run paths; no old validator is retained.
 - All migration history is replaced with one Drizzle-generated baseline after a
   database reset.
-- Playwright test and runner code remain unchanged.
+- The browser Playwright test and runner contracts remain unchanged. The
+  shared-contract follow-up adds only a server-only Node unit test and package
+  dependency; it does not add a browser spec.
+
+## Current implementation status
+
+The JSONB migration and shared contract are implemented. The reusable
+option-set consumer follow-up is implemented alongside this repository state:
+
+- `getEnrollmateReusableOptionSets()` is exported from
+  `@mihc/enrollmate-contract`.
+- Next.js and Playwright server tooling use the same local package dependency.
+- Playwright server unit tests run from `playwright/server/__tests__/unit/` with Node,
+  while browser specs remain under `playwright/tests/`.
+- Current package, project, and AI-agent usage guidance is indexed in
+  `docs/README.md`.

@@ -29,11 +29,14 @@ See [`docs/containerized-infrastructure.md`](docs/containerized-infrastructure.m
 | Directory      | Purpose                                                |
 | -------------- | ------------------------------------------------------ |
 | `nextjs/`      | Main web application (Next.js)                         |
-| `playwright/`  | End-to-end test suite                                  |
+| `packages/`    | Shared application contracts, including EnrollMate     |
+| `playwright/`  | Browser smoke suite plus server consumer/unit tests    |
 | `docker/`      | Docker Compose files for containers                    |
 | `docs/`        | Documentation, design docs, and project references     |
 
 See [`docs/docker-commands.md`](docs/docker-commands.md) for details on each Docker workflow and the difference between `nextjs/.env` and `docker/.env.build`.
+See [`docs/README.md`](docs/README.md) for the source-of-truth map, AI-agent
+workflow, and current versus historical design documents.
 
 ## Commands
 
@@ -59,7 +62,7 @@ Run `just` to see all available commands grouped by project:
 
   playwright
     test-playwright       Run smoke tests (live MMDC website)
-    test-playwright-unit  Run consumer unit tests
+    test-playwright-unit  Run server-only Node unit tests (no browser)
     serve-playwright      Start the Inngest consumer server
 
   all
@@ -101,6 +104,9 @@ This starts the Hono server on `http://localhost:3939` that handles Inngest even
 ### Before committing
 
 ```bash
+git status --short --branch
+git diff
+
 just lint        # check for lint errors
 just typecheck   # verify types
 
