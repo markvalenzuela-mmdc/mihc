@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const contractMocks = vi.hoisted(() => ({
+  getEnrollmateValidator: vi.fn(() => ({ safeParse: contractMocks.safeParse })),
   safeParse: vi.fn(),
 }));
 
 vi.mock("@mihc/enrollmate-contract", () => ({
-  getEnrollmateValidator: () => ({ safeParse: contractMocks.safeParse }),
+  getEnrollmateValidator: contractMocks.getEnrollmateValidator,
 }));
 
 vi.mock("@mihc/enrollmate-contract/server", () => ({
@@ -59,10 +60,11 @@ describe("e2e profile service", () => {
     where.mockReset();
     from.mockClear();
     select.mockClear();
+    contractMocks.getEnrollmateValidator.mockClear();
     contractMocks.safeParse.mockReset();
   });
 
-  function mockWorkspaceProfile(profileForms: Array<Record<string, unknown>>) {
+  function mockWorkspaceProfile(profileForm?: Record<string, unknown>) {
     profilesFindFirst.mockResolvedValue({
       id: "profile-1",
       name: "Alex Student",
@@ -71,7 +73,7 @@ describe("e2e profile service", () => {
       flowType: "bachelors",
       status: "new",
       operationalData: {},
-      profileForms,
+      profileForm,
     });
     e2eStepsFindMany.mockResolvedValue([]);
     e2eRunsFindFirst.mockResolvedValue(null);
@@ -132,7 +134,7 @@ describe("e2e profile service", () => {
     });
   });
 
-  it("returns a workspace when a profile has no form documents", async () => {
+  it("fails when a profile has no form document", async () => {
     profilesFindFirst.mockResolvedValue({
       id: "profile-1",
       enrollmentData: null,
@@ -140,21 +142,18 @@ describe("e2e profile service", () => {
     e2eStepsFindMany.mockResolvedValue([]);
     e2eRunsFindFirst.mockResolvedValue(null);
 
-    await expect(getE2eProfileById("profile-1", db as never)).resolves.toMatchObject({
-      profile: { id: "profile-1", profileForms: [] },
-    });
+    await expect(getE2eProfileById("profile-1", db as never)).rejects.toThrow(
+      "Profile form is required for profile workspace",
+    );
   });
 
   it("returns parsed current-hash forms as active", async () => {
-    mockWorkspaceProfile([
-      {
-        id: "form-1",
-        profileId: "profile-1",
-        flowType: "bachelors",
-        definitionHash: "current-hash",
-        data: { email: "raw@example.edu" },
-      },
-    ]);
+    mockWorkspaceProfile({
+      id: "form-1",
+      profileId: "profile-1",
+      definitionHash: "current-hash",
+      data: { email: "raw@example.edu" },
+    });
     contractMocks.safeParse.mockReturnValue({
       success: true,
       data: { email: "parsed@example.edu" },
@@ -162,26 +161,24 @@ describe("e2e profile service", () => {
 
     const result = await getE2eProfileById("profile-1", db as never);
 
-    expect(result?.profile.profileForms[0]).toMatchObject({
+    expect(result?.profile.profileForm).toMatchObject({
       state: "active",
       data: { email: "parsed@example.edu" },
     });
+    expect(contractMocks.getEnrollmateValidator).toHaveBeenCalledWith("bachelors");
   });
 
   it("returns mismatched-hash forms as deprecated without parsing them", async () => {
-    mockWorkspaceProfile([
-      {
-        id: "form-1",
-        profileId: "profile-1",
-        flowType: "bachelors",
-        definitionHash: "old-hash",
-        data: { legacy: true },
-      },
-    ]);
+    mockWorkspaceProfile({
+      id: "form-1",
+      profileId: "profile-1",
+      definitionHash: "old-hash",
+      data: { legacy: true },
+    });
 
     const result = await getE2eProfileById("profile-1", db as never);
 
-    expect(result?.profile.profileForms[0]).toMatchObject({
+    expect(result?.profile.profileForm).toMatchObject({
       state: "deprecated",
       data: { legacy: true },
     });
@@ -189,15 +186,12 @@ describe("e2e profile service", () => {
   });
 
   it("returns current-hash validation failures as invalid serializable forms", async () => {
-    mockWorkspaceProfile([
-      {
-        id: "form-1",
-        profileId: "profile-1",
-        flowType: "bachelors",
-        definitionHash: "current-hash",
-        data: { email: "invalid" },
-      },
-    ]);
+    mockWorkspaceProfile({
+      id: "form-1",
+      profileId: "profile-1",
+      definitionHash: "current-hash",
+      data: { email: "invalid" },
+    });
     contractMocks.safeParse.mockReturnValue({
       success: false,
       error: {
@@ -210,7 +204,7 @@ describe("e2e profile service", () => {
 
     const result = await getE2eProfileById("profile-1", db as never);
 
-    expect(result?.profile.profileForms[0]).toMatchObject({
+    expect(result?.profile.profileForm).toMatchObject({
       state: "invalid",
       data: { email: "invalid" },
       validationIssues: [
@@ -226,12 +220,19 @@ describe("e2e profile service", () => {
       id: "profile-1",
       name: "Alex Student",
       email: "alex@example.com",
+      flowType: "bachelors",
       program: "BSIT",
       cohort: "2026",
       status: "in_progress",
       middleName: null,
       catalogVersionId: "catalog-version-1",
       e2eRuns: [],
+      profileForm: {
+        id: "form-1",
+        profileId: "profile-1",
+        definitionHash: "legacy-hash",
+        data: { legacy: true },
+      },
       enrollmentData: {
         id: "enrollment-1",
         currentProvinceOptionId: "province-option-1",
@@ -358,7 +359,10 @@ describe("e2e profile service", () => {
       profile: {
         id: "profile-1",
         latestRun,
-        profileForms: [],
+        profileForm: {
+          state: "deprecated",
+          data: { legacy: true },
+        },
       },
       activeRun: {
         id: "run-1",
@@ -376,7 +380,7 @@ describe("e2e profile service", () => {
     expect(profilesFindFirst).toHaveBeenCalledWith({
       where: expect.any(Function),
       with: {
-        profileForms: true,
+        profileForm: true,
       },
     });
     expect(enrollmateOptionsFindMany).not.toHaveBeenCalled();

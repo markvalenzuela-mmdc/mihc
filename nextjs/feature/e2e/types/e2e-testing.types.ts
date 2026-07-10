@@ -25,7 +25,7 @@ export type E2eProfileForm =
       state: "invalid";
       validationIssues: ProfileFormValidationIssue[];
     });
-export interface E2eProfileWorkspaceProfile extends E2eProfileSummary { middleName: string | null; operationalData: ProfileOperationalData; profileForms: E2eProfileForm[]; }
+export interface E2eProfileWorkspaceProfile extends E2eProfileSummary { middleName: string | null; operationalData: ProfileOperationalData; profileForm: E2eProfileForm; }
 export type E2eStepDefinition = typeof e2eSteps.$inferSelect;
 export type E2eRunTest = Pick<E2eRunTestSelect, "id" | "testName" | "status" | "durationMs" | "errorMessage">;
 export interface E2eRunStep extends Pick<E2eRunStepSelect, "id" | "stepId" | "status" | "durationSeconds" | "note"> { e2eStep: E2eStepDefinition; tests: E2eRunTest[]; }

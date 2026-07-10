@@ -79,7 +79,7 @@ export async function getE2eProfileById(
     db.query.profiles.findFirst({
       where: (profiles, { eq }) => eq(profiles.id, profileId),
       with: {
-        profileForms: true,
+        profileForm: true,
       },
     }),
     db.query.e2eSteps.findMany({
@@ -110,14 +110,20 @@ export async function getE2eProfileById(
 
   const currentDefinitionHash = getEnrollmateDefinitionHash();
 
+  if (!profile.profileForm) {
+    throw new Error("Profile form is required for profile workspace");
+  }
+
   const activeRunSerialized = activeRun ? serializeE2eRun(activeRun) : null;
 
   return {
     profile: {
       ...profile,
       latestRun: latestRun ?? null,
-      profileForms: (profile.profileForms ?? []).map((form) =>
-        serializeE2eProfileForm(form, currentDefinitionHash),
+      profileForm: serializeE2eProfileForm(
+        profile.profileForm,
+        profile.flowType,
+        currentDefinitionHash,
       ),
     },
     activeRun: activeRunSerialized,
