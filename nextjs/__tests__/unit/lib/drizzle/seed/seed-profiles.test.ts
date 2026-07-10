@@ -3,11 +3,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   createProfileFormData,
-  profiles,
 } from "@/lib/drizzle/seed/seed-profiles";
+import { profileFixtures } from "@/lib/drizzle/seed/profile-fixtures";
 
 describe("profile seed form data", () => {
-  it.each(profiles)(
+  it.each(profileFixtures)(
     "creates realistic, valid form data for $name",
     (profile) => {
       const data = createProfileFormData(
