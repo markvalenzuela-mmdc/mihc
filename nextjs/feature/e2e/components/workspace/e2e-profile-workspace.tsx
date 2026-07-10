@@ -68,6 +68,7 @@ export default function E2eProfileWorkspace({
 
   const runDetails = selectedRun;
   const selectionLocked = Boolean(activeRun);
+  const canRun = profile.profileForms.some((form) => form.state === "active");
   const runPagination = runs?.meta ?? null;
 
   if (runDetails) {
@@ -91,6 +92,7 @@ export default function E2eProfileWorkspace({
           activeRun={activeRun}
           selectedStepCount={effectiveStepCount}
           selectionLocked={selectionLocked}
+          canRun={canRun}
           onSelectedStepCountChange={setSelectedStepCount}
           onAutomated={onAutomated}
           onManual={onManual}

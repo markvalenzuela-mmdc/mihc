@@ -89,6 +89,7 @@ export function ProfileWorkspaceControls({
   activeRun,
   selectedStepCount,
   selectionLocked,
+  canRun,
   onSelectedStepCountChange,
   onAutomated,
   onManual,
@@ -97,6 +98,7 @@ export function ProfileWorkspaceControls({
   activeRun: E2eRunHistoryItem | null;
   selectedStepCount: number;
   selectionLocked: boolean;
+  canRun: boolean;
   onSelectedStepCountChange: (count: number) => void;
   onAutomated: () => void;
   onManual: () => void;
@@ -115,11 +117,20 @@ export function ProfileWorkspaceControls({
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button type="button" onClick={onAutomated} disabled={selectionLocked}>
+        <Button
+          type="button"
+          onClick={onAutomated}
+          disabled={selectionLocked || !canRun}
+        >
           <PlayIcon className="size-4" />
           Run selected steps locally
         </Button>
-        <Button type="button" variant="outline" onClick={onManual}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onManual}
+          disabled={!canRun}
+        >
           <StepForwardIcon className="size-4" />
           {activeRun
             ? `Advance run #${activeRun.runNumber}`
@@ -127,9 +138,11 @@ export function ProfileWorkspaceControls({
         </Button>
       </div>
       <p id="step-selection-help" className="text-xs text-muted-foreground">
-        {activeRun
-          ? `Run #${activeRun.runNumber} is locked to ${selectedRange} until it completes.`
-          : "Remove steps from the end of the sequence, or add the next excluded step."}
+        {!canRun
+          ? "This profile has no active validated application to run."
+          : activeRun
+            ? `Run #${activeRun.runNumber} is locked to ${selectedRange} until it completes.`
+            : "Remove steps from the end of the sequence, or add the next excluded step."}
       </p>
       <ol className="space-y-2">
         <ProfileWorkspaceControlsStepSelector
