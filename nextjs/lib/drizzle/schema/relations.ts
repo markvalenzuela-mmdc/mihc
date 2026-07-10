@@ -37,9 +37,9 @@ export const smokeRunsTestResultsRelations = relations(smokeRunsTestResults, ({ 
   smokeRun: one(smokeRuns, { fields: [smokeRunsTestResults.runId], references: [smokeRuns.id] }),
 }));
 
-export const profilesRelations = relations(profiles, ({ many }) => ({
+export const profilesRelations = relations(profiles, ({ many, one }) => ({
   e2eRuns: many(e2eRuns),
-  profileForms: many(profileForms),
+  profileForm: one(profileForms),
 }));
 
 export const profileFormsRelations = relations(profileForms, ({ one, many }) => ({

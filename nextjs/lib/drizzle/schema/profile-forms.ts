@@ -7,13 +7,12 @@ export const profileForms = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     profileId: uuid("profile_id").notNull().references(() => profiles.id),
-    flowType: text("flow_type").notNull().$type<"bachelors" | "microcredentials">(),
     definitionHash: text("definition_hash").notNull(),
     data: jsonb("data").$type<Record<string, unknown>>().notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull().$onUpdate(() => new Date()),
   },
-  (table) => [unique().on(table.profileId, table.flowType)],
+  (table) => [unique().on(table.profileId)],
 );
 
 export const profileE2eSnapshots = pgTable("profile_e2e_snapshots", {

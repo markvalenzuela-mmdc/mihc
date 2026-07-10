@@ -138,8 +138,7 @@ CREATE TABLE "profiles" (
 	"name" text NOT NULL,
 	"middle_name" text,
 	"email" text NOT NULL,
-	"program" text,
-	"cohort" text,
+	"flow_type" text NOT NULL,
 	"operational_data" jsonb DEFAULT '{}'::jsonb NOT NULL,
 	"status" text DEFAULT 'new' NOT NULL,
 	"created_by" uuid,
@@ -162,12 +161,11 @@ CREATE TABLE "profile_e2e_snapshots" (
 CREATE TABLE "profile_forms" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"profile_id" uuid NOT NULL,
-	"flow_type" text NOT NULL,
 	"definition_hash" text NOT NULL,
 	"data" jsonb NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "profile_forms_profile_id_flow_type_unique" UNIQUE("profile_id","flow_type")
+	CONSTRAINT "profile_forms_profile_id_unique" UNIQUE("profile_id")
 );
 --> statement-breakpoint
 ALTER TABLE "apps" ADD CONSTRAINT "apps_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint

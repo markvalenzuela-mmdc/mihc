@@ -1,5 +1,5 @@
 {
-  "id": "96eb1bef-5ec9-4499-97ef-fdb897ada99b",
+  "id": "687384a3-7965-441d-b80b-33323702ead3",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1057,17 +1057,11 @@
           "primaryKey": false,
           "notNull": true
         },
-        "program": {
-          "name": "program",
+        "flow_type": {
+          "name": "flow_type",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
-        },
-        "cohort": {
-          "name": "cohort",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "operational_data": {
           "name": "operational_data",
@@ -1267,12 +1261,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "flow_type": {
-          "name": "flow_type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "definition_hash": {
           "name": "definition_hash",
           "type": "text",
@@ -1318,12 +1306,11 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "profile_forms_profile_id_flow_type_unique": {
-          "name": "profile_forms_profile_id_flow_type_unique",
+        "profile_forms_profile_id_unique": {
+          "name": "profile_forms_profile_id_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "profile_id",
-            "flow_type"
+            "profile_id"
           ]
         }
       },
