@@ -8,19 +8,28 @@ WORKDIR /app
 
 FROM base AS deps
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/enrollmate-contract ./packages/enrollmate-contract
+COPY playwright/package.json playwright/pnpm-lock.yaml playwright/pnpm-workspace.yaml ./playwright/
+
+WORKDIR /app/playwright
 RUN pnpm install --frozen-lockfile --ignore-scripts
 
 FROM deps AS verified
 
-COPY . .
-# The Hono consumer runs TypeScript through tsx at runtime; this stage verifies
-# the source before the production runner copies only runtime deps and app files.
+WORKDIR /app
+
+COPY packages/enrollmate-contract ./packages/enrollmate-contract
+COPY playwright ./playwright
+
+WORKDIR /app/playwright
 RUN pnpm typecheck
 
 FROM base AS prod-deps
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/enrollmate-contract ./packages/enrollmate-contract
+COPY playwright/package.json playwright/pnpm-lock.yaml playwright/pnpm-workspace.yaml ./playwright/
+
+WORKDIR /app/playwright
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 
 FROM base AS runner
@@ -28,15 +37,22 @@ FROM base AS runner
 ENV NODE_ENV="production"
 ENV PORT="3939"
 
-COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=verified /app/package.json ./package.json
-COPY --from=verified /app/playwright.config.ts ./playwright.config.ts
-COPY --from=verified /app/tsconfig.json ./tsconfig.json
-COPY --from=verified /app/config ./config
-COPY --from=verified /app/lib ./lib
-COPY --from=verified /app/reporters ./reporters
-COPY --from=verified /app/server ./server
-COPY --from=verified /app/tests ./tests
+WORKDIR /app
+
+COPY --from=prod-deps /app/packages ./packages
+COPY --from=prod-deps /app/playwright/node_modules ./playwright/node_modules
+
+COPY --from=verified /app/playwright/package.json ./playwright/package.json
+COPY --from=verified /app/playwright/playwright.config.ts ./playwright/playwright.config.ts
+COPY --from=verified /app/playwright/tsconfig.json ./playwright/tsconfig.json
+COPY --from=verified /app/playwright/config ./playwright/config
+COPY --from=verified /app/playwright/lib ./playwright/lib
+COPY --from=verified /app/playwright/reporters ./playwright/reporters
+COPY --from=verified /app/playwright/server ./playwright/server
+COPY --from=verified /app/playwright/tests ./playwright/tests
+
+WORKDIR /app/playwright
+
 RUN touch .env
 
 EXPOSE 3939

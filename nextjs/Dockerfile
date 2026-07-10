@@ -8,7 +8,9 @@ WORKDIR /app
 
 FROM base AS deps
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/enrollmate-contract ./packages/enrollmate-contract
+COPY nextjs/package.json nextjs/pnpm-lock.yaml nextjs/pnpm-workspace.yaml ./nextjs/
+WORKDIR /app/nextjs
 RUN pnpm install --frozen-lockfile --ignore-scripts
 
 FROM base AS builder
@@ -27,8 +29,10 @@ ENV BETTER_AUTH_URL=$BETTER_AUTH_URL
 ENV INNGEST_EVENT_KEY=$INNGEST_EVENT_KEY
 ENV INNGEST_BASE_URL=$INNGEST_BASE_URL
 
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY --from=deps /app/nextjs/node_modules ./nextjs/node_modules
+COPY packages ./packages
+COPY nextjs ./nextjs
+WORKDIR /app/nextjs
 RUN pnpm build
 
 FROM node:24-alpine AS runner
@@ -42,9 +46,9 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder /app/nextjs/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/nextjs/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/nextjs/.next/static ./.next/static
 
 USER nextjs
 

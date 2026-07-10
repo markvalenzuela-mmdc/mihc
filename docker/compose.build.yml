@@ -10,8 +10,8 @@ services:
   nextjs:
     image: mihc-nextjs:build
     build:
-      context: ../nextjs
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: nextjs/Dockerfile
     env_file: .env.build
     ports:
       - "3000:3000"
@@ -24,8 +24,8 @@ services:
   playwright:
     image: mihc-playwright:build
     build:
-      context: ../playwright
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: playwright/Dockerfile
     env_file: .env.build
     environment:
       INNGEST_DEV: "0"
