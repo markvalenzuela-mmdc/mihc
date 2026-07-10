@@ -5,12 +5,26 @@ type ProfileSelect = typeof profiles.$inferSelect;
 type E2eRunSelect = typeof e2eRuns.$inferSelect;
 type E2eRunStepSelect = typeof e2eRunSteps.$inferSelect;
 type E2eRunTestSelect = typeof e2eRunTests.$inferSelect;
+type ProfileFormSelect = typeof profileForms.$inferSelect;
+type E2eProfileFormBase = Omit<ProfileFormSelect, "data"> & {
+  data: Record<string, unknown>;
+};
 
 export type ProfileStatus = ProfileSelect["status"];
 export type OperatorSummary = Pick<typeof users.$inferSelect, "id" | "name" | "email">;
 export type E2eProfileLatestRun = Pick<E2eRunSelect, "id" | "runNumber" | "status">;
 export interface E2eProfileSummary extends Pick<ProfileSelect, "id" | "name" | "email" | "flowType" | "status"> { latestRun: E2eProfileLatestRun | null; }
-export type E2eProfileForm = typeof profileForms.$inferSelect & { isDeprecated: boolean };
+export type ProfileFormValidationIssue = {
+  path: string;
+  message: string;
+};
+export type E2eProfileForm =
+  | (E2eProfileFormBase & { state: "active" })
+  | (E2eProfileFormBase & { state: "deprecated" })
+  | (E2eProfileFormBase & {
+      state: "invalid";
+      validationIssues: ProfileFormValidationIssue[];
+    });
 export interface E2eProfileWorkspaceProfile extends E2eProfileSummary { middleName: string | null; operationalData: ProfileOperationalData; profileForms: E2eProfileForm[]; }
 export type E2eStepDefinition = typeof e2eSteps.$inferSelect;
 export type E2eRunTest = Pick<E2eRunTestSelect, "id" | "testName" | "status" | "durationMs" | "errorMessage">;
