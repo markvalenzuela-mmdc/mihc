@@ -14,7 +14,7 @@ export type ProfileSheetField = {
   value: ProfileSheetFieldValue;
 };
 export type ProfileSheetGroup = { label: string; fields: ProfileSheetField[] };
-type ProfileForm = E2eProfileWorkspaceProfile["profileForms"][number];
+type ProfileForm = E2eProfileWorkspaceProfile["profileForm"];
 
 function getDisplayValue(value: unknown): ProfileSheetFieldValue {
   if (value === null || value === undefined) return "Not provided";
@@ -57,9 +57,10 @@ function getProfileGroup(
 
 function getDeprecatedFormGroup(
   profileForm: Extract<ProfileForm, { state: "deprecated" }>,
+  flowType: E2eProfileWorkspaceProfile["flowType"],
 ): ProfileSheetGroup {
   return {
-    label: `Deprecated ${profileForm.flowType} application`,
+    label: `Deprecated ${flowType} application`,
     fields: [
       { label: "Definition hash", value: profileForm.definitionHash },
       {
@@ -73,9 +74,10 @@ function getDeprecatedFormGroup(
 
 function getInvalidFormGroup(
   profileForm: Extract<ProfileForm, { state: "invalid" }>,
+  flowType: E2eProfileWorkspaceProfile["flowType"],
 ): ProfileSheetGroup {
   return {
-    label: `Invalid ${profileForm.flowType} application`,
+    label: `Invalid ${flowType} application`,
     fields: [
       { label: "Definition hash", value: profileForm.definitionHash },
       {
@@ -93,10 +95,11 @@ function getInvalidFormGroup(
 
 function getActiveFormGroups(
   profileForm: Extract<ProfileForm, { state: "active" }>,
+  flowType: E2eProfileWorkspaceProfile["flowType"],
 ): ProfileSheetGroup[] {
   const groups: ProfileSheetGroup[] = [];
 
-  for (const step of getEnrollmateFlowDefinition(profileForm.flowType).steps) {
+  for (const step of getEnrollmateFlowDefinition(flowType).steps) {
     for (const section of step.sections) {
       const fields = section.fields.map((field) => ({
         label: field.label,
@@ -112,14 +115,17 @@ function getActiveFormGroups(
   return groups;
 }
 
-function getFormGroups(profileForm: ProfileForm): ProfileSheetGroup[] {
+function getFormGroups(
+  profileForm: ProfileForm,
+  flowType: E2eProfileWorkspaceProfile["flowType"],
+): ProfileSheetGroup[] {
   switch (profileForm.state) {
     case "deprecated":
-      return [getDeprecatedFormGroup(profileForm)];
+      return [getDeprecatedFormGroup(profileForm, flowType)];
     case "invalid":
-      return [getInvalidFormGroup(profileForm)];
+      return [getInvalidFormGroup(profileForm, flowType)];
     case "active":
-      return getActiveFormGroups(profileForm);
+      return getActiveFormGroups(profileForm, flowType);
   }
 }
 
@@ -148,7 +154,7 @@ export function getProfileSheetGroups(
 ): ProfileSheetGroup[] {
   return [
     getProfileGroup(profile),
-    ...profile.profileForms.flatMap(getFormGroups),
+    ...getFormGroups(profile.profileForm, profile.flowType),
     ...getOperationalGroups(profile),
   ];
 }

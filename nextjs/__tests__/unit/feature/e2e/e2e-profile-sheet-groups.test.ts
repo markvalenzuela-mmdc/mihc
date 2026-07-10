@@ -27,26 +27,17 @@ vi.mock("@mihc/enrollmate-contract", () => ({
 }));
 
 describe("getProfileSheetGroups", () => {
-  it("preserves profile, form, deprecated, and operational group order", () => {
+  it("preserves profile, form, and operational group order", () => {
     const profile = {
       name: "Ari Santos",
       middleName: null,
       email: "ari@example.edu",
-      flowType: "BSIT",
+      flowType: "bachelors",
       status: "new",
-      profileForms: [
-        {
-          flowType: "bachelors",
-          data: { firstName: "Ari" },
-          state: "active",
-        },
-        {
-          flowType: "microcredentials",
-          definitionHash: "old-hash",
-          data: {},
-          state: "deprecated",
-        },
-      ],
+      profileForm: {
+        data: { firstName: "Ari" },
+        state: "active",
+      },
       operationalData: {
         payment: { method: "Card" },
         disclosures: undefined,
@@ -67,19 +58,36 @@ describe("getProfileSheetGroups", () => {
           { label: "Attempts", value: "Not provided" },
         ],
       },
-      {
-        label: "Deprecated microcredentials application",
-        fields: [
-          { label: "Definition hash", value: "old-hash" },
-          {
-            label: "Status",
-            value:
-              "This profile form does not match the active EnrollMate definition.",
-          },
-        ],
-      },
       { label: "payment", fields: [{ label: "method", value: "Card" }] },
     ]);
+  });
+
+  it("labels deprecated forms with the parent profile flow", () => {
+    const profile = {
+      name: "Ari Santos",
+      middleName: null,
+      email: "ari@example.edu",
+      flowType: "microcredentials",
+      status: "new",
+      profileForm: {
+        definitionHash: "old-hash",
+        data: {},
+        state: "deprecated",
+      },
+      operationalData: {},
+    } as unknown as E2eProfileWorkspaceProfile;
+
+    expect(getProfileSheetGroups(profile)[1]).toEqual({
+      label: "Deprecated microcredentials application",
+      fields: [
+        { label: "Definition hash", value: "old-hash" },
+        {
+          label: "Status",
+          value:
+            "This profile form does not match the active EnrollMate definition.",
+        },
+      ],
+    });
   });
 
   it("shows every active field and labels empty answers as not provided", () => {
@@ -89,20 +97,17 @@ describe("getProfileSheetGroups", () => {
       email: "ari@example.edu",
       flowType: "bachelors",
       status: "new",
-      profileForms: [
-        {
-          flowType: "bachelors",
-          data: {
-            firstName: "Ari",
-            suffix: null,
-            nickname: "",
-            notes: "   ",
-            isWorking: false,
-            attempts: 0,
-          },
-          state: "active",
+      profileForm: {
+        data: {
+          firstName: "Ari",
+          suffix: null,
+          nickname: "",
+          notes: "   ",
+          isWorking: false,
+          attempts: 0,
         },
-      ],
+        state: "active",
+      },
       operationalData: {},
     } as unknown as E2eProfileWorkspaceProfile;
 
@@ -139,18 +144,15 @@ describe("getProfileSheetGroups", () => {
       email: "ari@example.edu",
       flowType: "bachelors",
       status: "new",
-      profileForms: [
-        {
-          flowType: "bachelors",
-          definitionHash: "current-hash",
-          data: { email: "invalid" },
-          state: "invalid",
-          validationIssues: [
-            { path: "email", message: "Invalid email address" },
-            { path: "birthdate", message: "Expected an ISO date" },
-          ],
-        },
-      ],
+      profileForm: {
+        definitionHash: "current-hash",
+        data: { email: "invalid" },
+        state: "invalid",
+        validationIssues: [
+          { path: "email", message: "Invalid email address" },
+          { path: "birthdate", message: "Expected an ISO date" },
+        ],
+      },
       operationalData: {},
     } as unknown as E2eProfileWorkspaceProfile;
 

@@ -68,7 +68,7 @@ export default function E2eProfileWorkspace({
 
   const runDetails = selectedRun;
   const selectionLocked = Boolean(activeRun);
-  const canRun = profile.profileForms.some((form) => form.state === "active");
+  const canRun = profile.profileForm.state === "active";
   const runPagination = runs?.meta ?? null;
 
   if (runDetails) {
