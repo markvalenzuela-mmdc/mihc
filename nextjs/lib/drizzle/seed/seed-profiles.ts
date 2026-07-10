@@ -8,8 +8,8 @@ import type { EnrollmateFlowType } from "@mihc/enrollmate-contract";
 
 import { profileForms, profiles } from "../schema";
 import type * as schema from "../schema";
-import { profileFixtures } from "./profile-fixtures";
-import { createProfileFormValueResolver } from "./profile-form-value-policy";
+import { profileFixtures } from "./profile/profile-fixtures";
+import { createProfileFormValueResolver } from "./profile/profile-form-value-policy";
 
 export function createProfileFormData(flowType: EnrollmateFlowType, email: string, overrides?: Record<string, unknown>) {
   return createEnrollmateFixture(flowType, {
@@ -76,4 +76,4 @@ export async function seedProfiles(tx: NodePgDatabase<typeof schema>) {
   return messages;
 }
 
-export { profileFixtures as profiles } from "./profile-fixtures";
+export { profileFixtures as profiles } from "./profile/profile-fixtures";

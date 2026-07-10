@@ -16,8 +16,8 @@
 - Create: `packages/enrollmate-contract/src/testing.ts` — own deterministic validator-ready payload construction.
 - Create: `nextjs/__tests__/unit/lib/enrollmate-fixture.test.ts` — cover the shared builder with real flow definitions.
 - Modify: `nextjs/__tests__/unit/lib/enrollmate-contract.test.ts` — replace its duplicate valid-data traversal.
-- Create: `nextjs/lib/drizzle/seed/profile-fixtures.ts` — own realistic persisted profile scenarios.
-- Create: `nextjs/lib/drizzle/seed/profile-form-value-policy.ts` — resolve realistic values the contract cannot infer.
+- Create: `nextjs/lib/drizzle/seed/profile/profile-fixtures.ts` — own realistic persisted profile scenarios.
+- Create: `nextjs/lib/drizzle/seed/profile/profile-form-value-policy.ts` — resolve realistic values the contract cannot infer.
 - Modify: `nextjs/lib/drizzle/seed/seed-profiles.ts` — retain form assembly and database upserts only.
 - Modify: `nextjs/__tests__/unit/lib/drizzle/seed/seed-profiles.test.ts` — import fixtures from their canonical module if needed.
 - Modify: `playwright/server/__tests__/unit/enrollmate-contract.test.ts` — prove the server consumer can load the testing subpath.
@@ -310,14 +310,14 @@ git commit -m "test(enrollmate): reuse shared fixture generation"
 
 **Files:**
 
-- Create: `nextjs/lib/drizzle/seed/profile-fixtures.ts`
-- Create: `nextjs/lib/drizzle/seed/profile-form-value-policy.ts`
+- Create: `nextjs/lib/drizzle/seed/profile/profile-fixtures.ts`
+- Create: `nextjs/lib/drizzle/seed/profile/profile-form-value-policy.ts`
 - Modify: `nextjs/lib/drizzle/seed/seed-profiles.ts`
 - Modify: `nextjs/__tests__/unit/lib/drizzle/seed/seed-profiles.test.ts`
 
 - [ ] **Step 1: Move profile scenarios into a fixture module**
 
-Create `nextjs/lib/drizzle/seed/profile-fixtures.ts` with the existing five
+Create `nextjs/lib/drizzle/seed/profile/profile-fixtures.ts` with the existing five
 scenarios:
 
 ```ts
@@ -413,7 +413,7 @@ existing parameterized seed test after Step 4.
 
 - [ ] **Step 2: Extract the realistic field-value policy**
 
-Create `nextjs/lib/drizzle/seed/profile-form-value-policy.ts`:
+Create `nextjs/lib/drizzle/seed/profile/profile-form-value-policy.ts`:
 
 ```ts
 import type { EnrollmateField } from "@mihc/enrollmate-contract";
@@ -469,8 +469,8 @@ import { createEnrollmateFixture } from "@mihc/enrollmate-contract/testing";
 Import the new local modules:
 
 ```ts
-import { profileFixtures } from "./profile-fixtures";
-import { createProfileFormValueResolver } from "./profile-form-value-policy";
+import { profileFixtures } from "./profile/profile-fixtures";
+import { createProfileFormValueResolver } from "./profile/profile-form-value-policy";
 ```
 
 Delete the local fixture array, `getRequiredTextSeedValue`, field traversal, and
@@ -556,7 +556,7 @@ export async function seedProfiles(tx: NodePgDatabase<typeof schema>) {
 Keep the compatibility export:
 
 ```ts
-export { profileFixtures as profiles } from "./profile-fixtures";
+export { profileFixtures as profiles } from "./profile/profile-fixtures";
 ```
 
 - [ ] **Step 4: Update the seed test to use the canonical fixtures**
@@ -564,7 +564,7 @@ export { profileFixtures as profiles } from "./profile-fixtures";
 Change its imports to:
 
 ```ts
-import { profileFixtures } from "@/lib/drizzle/seed/profile-fixtures";
+import { profileFixtures } from "@/lib/drizzle/seed/profile/profile-fixtures";
 import { createProfileFormData } from "@/lib/drizzle/seed/seed-profiles";
 ```
 
@@ -592,7 +592,7 @@ Expected: all five realistic profile cases and both shared flows validate; no se
 - [ ] **Step 6: Commit the seed decomposition**
 
 ```powershell
-git add -- nextjs/lib/drizzle/seed/profile-fixtures.ts nextjs/lib/drizzle/seed/profile-form-value-policy.ts nextjs/lib/drizzle/seed/seed-profiles.ts nextjs/__tests__/unit/lib/drizzle/seed/seed-profiles.test.ts
+git add -- nextjs/lib/drizzle/seed/profile/profile-fixtures.ts nextjs/lib/drizzle/seed/profile/profile-form-value-policy.ts nextjs/lib/drizzle/seed/seed-profiles.ts nextjs/__tests__/unit/lib/drizzle/seed/seed-profiles.test.ts
 git commit -m "refactor(enrollmate): separate profile seed concerns"
 ```
 
@@ -616,7 +616,7 @@ Expected: exit code 0 with no package lint errors. React/pages environment notic
 
 ```powershell
 Set-Location nextjs
-pnpm lint lib/drizzle/seed/profile-fixtures.ts lib/drizzle/seed/profile-form-value-policy.ts lib/drizzle/seed/seed-profiles.ts __tests__/unit/lib/drizzle/seed/seed-profiles.test.ts __tests__/unit/lib/enrollmate-fixture.test.ts __tests__/unit/lib/enrollmate-contract.test.ts
+pnpm lint lib/drizzle/seed/profile/profile-fixtures.ts lib/drizzle/seed/profile/profile-form-value-policy.ts lib/drizzle/seed/seed-profiles.ts __tests__/unit/lib/drizzle/seed/seed-profiles.test.ts __tests__/unit/lib/enrollmate-fixture.test.ts __tests__/unit/lib/enrollmate-contract.test.ts
 ```
 
 Expected: no lint errors in touched files. Existing warnings elsewhere remain out of scope.

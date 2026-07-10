@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   createProfileFormData,
 } from "@/lib/drizzle/seed/seed-profiles";
-import { profileFixtures } from "@/lib/drizzle/seed/profile-fixtures";
+import { profileFixtures } from "@/lib/drizzle/seed/profile/profile-fixtures";
 
 describe("profile seed form data", () => {
   it("defines one parent flow and no form-level flow override per profile", () => {
