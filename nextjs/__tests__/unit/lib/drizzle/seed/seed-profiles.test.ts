@@ -7,6 +7,13 @@ import {
 import { profileFixtures } from "@/lib/drizzle/seed/profile-fixtures";
 
 describe("profile seed form data", () => {
+  it("defines one parent flow and no form-level flow override per profile", () => {
+    for (const profile of profileFixtures) {
+      expect(profile.flowType).toBeDefined();
+      expect(profile.formOverrides).not.toHaveProperty("flowType");
+    }
+  });
+
   it.each(profileFixtures)(
     "creates realistic, valid form data for $name",
     (profile) => {

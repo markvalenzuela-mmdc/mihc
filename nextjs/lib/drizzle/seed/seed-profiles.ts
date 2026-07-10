@@ -59,12 +59,11 @@ export async function seedProfiles(tx: NodePgDatabase<typeof schema>) {
       .insert(profileForms)
       .values({
         profileId: profile.id,
-        flowType,
         definitionHash: getEnrollmateDefinitionHash(),
         data,
       })
       .onConflictDoUpdate({
-        target: [profileForms.profileId, profileForms.flowType],
+        target: profileForms.profileId,
         set: {
           definitionHash: getEnrollmateDefinitionHash(),
           data,
