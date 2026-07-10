@@ -6,221 +6,336 @@ import type {
   EnrollmateFieldType,
   EnrollmateFlowDefinition,
   EnrollmateFlowType,
-  EnrollmateOption,
   EnrollmateSection,
   EnrollmateStep,
 } from "./types";
 
-const actionableFieldTypes = new Set<EnrollmateFieldType>([
-  "text",
-  "textarea",
-  "email",
-  "tel",
-  "date",
-  "select",
-  "combobox",
-  "checkbox",
-  "file",
-]);
+const conditionValueSchema = z.union([z.string(), z.boolean()]);
 
 const optionSchema = z.object({
-  label: z.string(),
+  label: z.string().min(1),
   value: z.string(),
+}).strict();
+
+const visibleWhenSchema = z.object({
+  field: z.string().min(1),
+  equalsAny: z.array(conditionValueSchema).min(1),
+}).strict();
+
+const cascadeSchema = z.object({
+  dependsOn: z.string().min(1).optional(),
+  triggers: z.array(z.string().min(1)).min(1).optional(),
+}).strict().refine((cascade) => cascade.dependsOn !== undefined || cascade.triggers !== undefined, {
+  message: "A cascade must declare dependsOn or triggers.",
 });
 
-const rawFieldSchema = z
-  .object({
-    id: z.string().optional(),
-    name: z.string(),
-    label: z.string().optional(),
-    type: z.string(),
-    required: z.boolean().optional(),
-    options: z.array(optionSchema).optional(),
-    options_ref: z.string().optional(),
-    options_by_dependency: z.record(z.string(), z.array(optionSchema)).optional(),
-    conditional_on: z
-      .object({ field: z.string(), values: z.array(z.string()) })
-      .optional(),
-    accepted_formats: z.union([z.array(z.string()), z.string()]).optional(),
-    max_size: z.union([z.number().int().positive(), z.string()]).optional(),
-  })
-  .passthrough();
+const automationSchema = z.object({
+  isCascadeParent: z.boolean().optional(),
+  triggers: z.array(z.string().min(1)).min(1).optional(),
+  exampleOptionsByParent: z.record(z.string(), z.array(z.string().min(1)).min(1)).optional(),
+}).strict();
 
-const rawSectionSchema = z.object({
-  section: z.string().optional(),
-  title: z.string().optional(),
-  fields: z.array(rawFieldSchema),
-});
+const inlineOptionSourceSchema = z.object({
+  kind: z.literal("inline"),
+  options: z.array(optionSchema).min(1),
+}).strict();
 
-const rawFlowSchema = z.object({
-  steps: z.array(
-    z.object({
-      step: z.number().int().positive(),
-      title: z.string(),
-      sections: z.array(rawSectionSchema).optional().default([]),
-    }),
-  ),
-});
+const reusableOptionSourceSchema = z.object({
+  kind: z.literal("reusable"),
+  optionSet: z.string().min(1),
+}).strict();
 
-const rawDefinitionSchema = z.object({
-  application_types: z.object({
-    bachelors: z.object({ title: z.string(), endpoint: z.string() }),
-    microcredentials: z.object({ title: z.string(), endpoint: z.string() }),
-  }),
-  bachelors: rawFlowSchema,
-  microcredentials: rawFlowSchema,
-  reusable_option_sets: z
-    .record(z.string(), z.union([z.array(optionSchema), z.object({}).passthrough()]))
-    .optional(),
-});
+const dependentOptionSourceSchema = z.object({
+  kind: z.literal("dependent"),
+  field: z.string().min(1),
+  optionsByValue: z.record(z.string(), z.array(optionSchema).min(1)),
+}).strict();
 
-type RawDefinition = z.infer<typeof rawDefinitionSchema>;
+const cascadeOptionSourceSchema = z.object({ kind: z.literal("cascade") }).strict();
+const externalOptionSourceSchema = z.object({ kind: z.literal("external") }).strict();
 
-function resolveOptions(field: z.infer<typeof rawFieldSchema>, source: RawDefinition) {
-  if (field.options) return field.options;
-  if (!field.options_ref) return [];
+const optionSourceSchema = z.discriminatedUnion("kind", [
+  inlineOptionSourceSchema,
+  reusableOptionSourceSchema,
+  dependentOptionSourceSchema,
+  cascadeOptionSourceSchema,
+  externalOptionSourceSchema,
+]);
 
-  const referenceKey = Object.keys(source.reusable_option_sets ?? {}).find(
-    (key) => field.options_ref?.includes(key),
-  );
-  const optionSet = referenceKey
-    ? source.reusable_option_sets?.[referenceKey]
-    : undefined;
-  if (!optionSet || !Array.isArray(optionSet)) {
-    throw new z.ZodError([
-      {
-        code: "custom",
-        path: ["reusable_option_sets", field.options_ref],
-        message: `Missing options_ref target: ${field.options_ref}`,
-      },
-    ]);
+const commonFieldShape = {
+  id: z.string().min(1),
+  name: z.string().min(1),
+  label: z.string().min(1),
+  required: z.boolean(),
+  description: z.string().min(1).optional(),
+  htmlInputType: z.string().min(1).optional(),
+  placeholder: z.string().optional(),
+  placeholderValue: z.string().optional(),
+  defaultValue: conditionValueSchema.optional(),
+  visibleWhen: visibleWhenSchema.optional(),
+  requiredWhenVisible: z.boolean().optional(),
+  cascade: cascadeSchema.optional(),
+  automation: automationSchema.optional(),
+};
+
+const textFieldSchema = z.object({
+  ...commonFieldShape,
+  type: z.enum(["text", "textarea", "email", "tel", "date"]),
+}).strict();
+
+const choiceFieldSchema = z.object({
+  ...commonFieldShape,
+  type: z.enum(["select", "combobox"]),
+  optionSource: optionSourceSchema,
+}).strict().superRefine((field, context) => {
+  if (field.optionSource.kind === "cascade" && !field.cascade?.dependsOn) {
+    context.addIssue({
+      code: "custom",
+      path: ["cascade"],
+      message: "A cascade option source requires cascade.dependsOn.",
+    });
   }
+});
 
-  return optionSet;
+const checkboxFieldSchema = z.object({
+  ...commonFieldShape,
+  type: z.literal("checkbox"),
+}).strict();
+
+const fileFieldSchema = z.object({
+  ...commonFieldShape,
+  type: z.literal("file"),
+  upload: z.object({
+    acceptedFormats: z.array(z.string().min(1)).min(1),
+    maxSizeBytes: z.number().int().positive(),
+  }).strict(),
+}).strict();
+
+const fieldSchema = z.discriminatedUnion("type", [
+  textFieldSchema,
+  choiceFieldSchema,
+  checkboxFieldSchema,
+  fileFieldSchema,
+]);
+
+const sectionSchema = z.object({
+  label: z.string().min(1),
+  description: z.string().min(1).optional(),
+  notes: z.string().min(1).optional(),
+  prefix: z.string().min(1).optional(),
+  type: z.literal("checkboxGroup").optional(),
+  required: z.boolean().optional(),
+  fields: z.array(fieldSchema),
+}).strict();
+
+const flowSchema = z.object({
+  steps: z.array(z.object({
+    step: z.number().int().positive(),
+    title: z.string().min(1),
+    sections: z.array(sectionSchema),
+  }).strict()).min(1),
+}).strict();
+
+const addressFieldTemplateSchema = z.object({
+  name: z.string().min(1),
+  type: z.enum(["text", "select"]),
+  required: z.boolean(),
+  label: z.string().min(1).optional(),
+  defaultValue: z.string().optional(),
+  cascade: cascadeSchema.optional(),
+}).strict();
+
+const definitionSourceSchema = z.object({
+  $schema: z.literal("./enrollmate-form-definition.schema.json"),
+  schemaVersion: z.literal(1),
+  metadata: z.object({
+    application: z.string().min(1),
+    version: z.string().min(1),
+    referenceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    source: z.string().min(1),
+    sourceNotes: z.array(z.string().min(1)),
+  }).strict(),
+  applicationTypes: z.object({
+    bachelors: z.object({ title: z.string().min(1), endpoint: z.string().min(1), totalSteps: z.number().int().positive() }).strict(),
+    microcredentials: z.object({ title: z.string().min(1), endpoint: z.string().min(1), totalSteps: z.number().int().positive() }).strict(),
+  }).strict(),
+  reusableOptionSets: z.record(
+    z.string().min(1),
+    z.array(optionSchema).min(1),
+  ).refine(
+    (optionSets) => Object.keys(optionSets).length > 0,
+    "At least one reusable option set is required.",
+  ),
+  templates: z.object({
+    addressFieldsPattern: z.object({
+      description: z.string().min(1),
+      fields: z.array(addressFieldTemplateSchema).min(1),
+    }).strict(),
+  }).strict(),
+  flows: z.object({
+    bachelors: flowSchema,
+    microcredentials: flowSchema,
+  }).strict(),
+}).strict();
+
+export type EnrollmateDefinitionSource = z.infer<typeof definitionSourceSchema>;
+
+function normalizeOptionSource(
+  optionSource: z.infer<typeof optionSourceSchema>,
+  source: EnrollmateDefinitionSource,
+): Pick<EnrollmateField, "options" | "optionsByDependency" | "optionSource"> {
+  switch (optionSource.kind) {
+    case "inline":
+      return { options: optionSource.options, optionsByDependency: {}, optionSource: { kind: "inline" } };
+    case "reusable": {
+      const options = source.reusableOptionSets[optionSource.optionSet];
+      if (!options) {
+        throw new z.ZodError([{
+          code: "custom",
+          path: ["reusableOptionSets", optionSource.optionSet],
+          message: `Missing reusable option set: ${optionSource.optionSet}`,
+        }]);
+      }
+      return {
+        options,
+        optionsByDependency: {},
+        optionSource: { kind: "reusable", optionSet: optionSource.optionSet },
+      };
+    }
+    case "dependent":
+      return {
+        options: [],
+        optionsByDependency: optionSource.optionsByValue,
+        optionSource: { kind: "dependent", field: optionSource.field },
+      };
+    case "cascade":
+    case "external":
+      return { options: [], optionsByDependency: {}, optionSource: { kind: optionSource.kind } };
+  }
 }
 
 function normalizeField(
-  field: z.infer<typeof rawFieldSchema>,
-  source: RawDefinition,
-): EnrollmateField | null {
-  if (field.type === "button" || field.name.includes("{prefix}")) return null;
-  if (!actionableFieldTypes.has(field.type as EnrollmateFieldType)) {
-    throw new z.ZodError([
-      {
-        code: "custom",
-        path: ["fields", field.name],
-        message: `Unsupported EnrollMate field type: ${field.type}`,
-      },
-    ]);
-  }
-  if (!field.id) {
-    throw new z.ZodError([
-      {
-        code: "custom",
-        path: ["fields", field.name],
-        message: `Actionable field is missing an id: ${field.name}`,
-      },
-    ]);
-  }
+  field: z.infer<typeof fieldSchema>,
+  source: EnrollmateDefinitionSource,
+): EnrollmateField {
+  const optionDetails = "optionSource" in field
+    ? normalizeOptionSource(field.optionSource, source)
+    : { options: [], optionsByDependency: {}, optionSource: undefined };
+  const upload = "upload" in field ? field.upload : undefined;
 
   return {
     id: field.id,
     name: field.name,
-    label: field.label ?? field.name,
+    label: field.label,
     type: field.type as EnrollmateFieldType,
-    required: field.required ?? false,
-    options: resolveOptions(field, source),
-    optionsByDependency: field.options_by_dependency ?? {},
-    conditionalOn: field.conditional_on ?? null,
-    acceptedFormats: normalizeAcceptedFormats(field.accepted_formats),
-    maxSizeBytes: normalizeMaxSize(field.max_size),
+    required: field.required,
+    description: field.description,
+    htmlInputType: field.htmlInputType,
+    placeholder: field.placeholder,
+    placeholderValue: field.placeholderValue,
+    defaultValue: field.defaultValue,
+    ...optionDetails,
+    conditionalOn: field.visibleWhen ?? null,
+    requiredWhenConditionMet: field.requiredWhenVisible ?? false,
+    cascade: field.cascade,
+    automation: field.automation,
+    acceptedFormats: upload?.acceptedFormats ?? [],
+    maxSizeBytes: upload?.maxSizeBytes ?? null,
   };
 }
 
 function normalizeSection(
-  section: z.infer<typeof rawSectionSchema>,
-  source: RawDefinition,
+  section: z.infer<typeof sectionSchema>,
+  source: EnrollmateDefinitionSource,
 ): EnrollmateSection {
   return {
-    label: section.section ?? section.title ?? "Enrollment details",
-    fields: section.fields
-      .map((field) => normalizeField(field, source))
-      .filter((field): field is EnrollmateField => field !== null),
+    label: section.label,
+    description: section.description,
+    notes: section.notes,
+    prefix: section.prefix,
+    type: section.type,
+    required: section.required,
+    fields: section.fields.map((field) => normalizeField(field, source)),
   };
 }
 
+function getFieldReferences(field: EnrollmateField) {
+  return [
+    field.conditionalOn?.field,
+    field.cascade?.dependsOn,
+    ...(field.cascade?.triggers ?? []),
+    field.optionSource?.kind === "dependent" ? field.optionSource.field : undefined,
+  ].filter((reference): reference is string => reference !== undefined);
+}
+
+function assertKnownFieldReference(
+  field: EnrollmateField,
+  reference: string,
+  fieldsByName: Map<string, EnrollmateField>,
+) {
+  if (reference !== field.name && fieldsByName.has(reference)) return;
+  throw new z.ZodError([{
+    code: "custom",
+    path: ["fields", field.name],
+    message: `Unknown field reference: ${reference}`,
+  }]);
+}
+
+function validateDependentOptions(
+  field: EnrollmateField,
+  fieldsByName: Map<string, EnrollmateField>,
+) {
+  if (field.optionSource?.kind !== "dependent") return;
+
+  const parent = fieldsByName.get(field.optionSource.field)!;
+  const parentOptions = new Set(parent.options.map((option) => option.value));
+  for (const value of Object.keys(field.optionsByDependency)) {
+    if (parentOptions.has(value)) continue;
+    throw new z.ZodError([{
+      code: "custom",
+      path: ["fields", field.name, "optionSource"],
+      message: `Unknown dependent option value: ${value}`,
+    }]);
+  }
+}
+
+function validateFieldReferences(flow: EnrollmateFlowDefinition) {
+  const fields = flow.steps.flatMap((step) => step.sections.flatMap((section) => section.fields));
+  const fieldsByName = new Map(fields.map((field) => [field.name, field]));
+
+  for (const field of fields) {
+    for (const reference of getFieldReferences(field)) {
+      assertKnownFieldReference(field, reference, fieldsByName);
+    }
+    validateDependentOptions(field, fieldsByName);
+  }
+}
+
 function normalizeFlow(
-  flow: z.infer<typeof rawFlowSchema>,
+  flow: z.infer<typeof flowSchema>,
   metadata: { title: string; endpoint: string },
-  source: RawDefinition,
+  source: EnrollmateDefinitionSource,
 ): EnrollmateFlowDefinition {
   const steps: EnrollmateStep[] = flow.steps.map((step) => ({
     step: step.step,
     title: step.title,
     sections: step.sections.map((section) => normalizeSection(section, source)),
   }));
-  const fieldNames = new Set(steps.flatMap((step) => step.sections.flatMap((section) => section.fields.map((field) => field.name))));
-
-  for (const field of steps.flatMap((step) => step.sections.flatMap((section) => section.fields))) {
-    if (field.conditionalOn && !fieldNames.has(field.conditionalOn.field)) {
-      throw new z.ZodError([
-        {
-          code: "custom",
-          path: ["fields", field.name, "conditional_on"],
-          message: `Unknown conditional parent: ${field.conditionalOn.field}`,
-        },
-      ]);
-    }
-  }
-
-  return { title: metadata.title, endpoint: metadata.endpoint, steps };
+  const normalized = { title: metadata.title, endpoint: metadata.endpoint, steps };
+  validateFieldReferences(normalized);
+  return normalized;
 }
 
-function normalizeAcceptedFormats(
-  acceptedFormats: string[] | string | undefined,
-) {
-  if (!acceptedFormats) return [];
-  if (Array.isArray(acceptedFormats)) return acceptedFormats;
-
-  return acceptedFormats
-    .split(",")
-    .map((format) => format.trim())
-    .filter(Boolean);
-}
-
-function normalizeMaxSize(maxSize: number | string | undefined) {
-  if (maxSize === undefined) return null;
-  if (typeof maxSize === "number") return maxSize;
-
-  const match = /^(\d+(?:\.\d+)?)\s*(KB|MB|GB)$/i.exec(maxSize.trim());
-  if (!match) {
-    throw new z.ZodError([
-      {
-        code: "custom",
-        path: ["max_size"],
-        message: `Unsupported file size: ${maxSize}`,
-      },
-    ]);
-  }
-
-  const units = { KB: 1024, MB: 1024 ** 2, GB: 1024 ** 3 };
-  return Math.round(Number(match[1]) * units[match[2].toUpperCase() as keyof typeof units]);
+export function parseEnrollmateDefinitionSource(input: unknown): EnrollmateDefinitionSource {
+  return definitionSourceSchema.parse(input);
 }
 
 export function parseEnrollmateDefinition(input: unknown): EnrollmateDefinition {
-  const source = rawDefinitionSchema.parse(input);
+  const source = parseEnrollmateDefinitionSource(input);
 
   return {
-    bachelors: normalizeFlow(
-      source.bachelors,
-      source.application_types.bachelors,
-      source,
-    ),
-    microcredentials: normalizeFlow(
-      source.microcredentials,
-      source.application_types.microcredentials,
-      source,
-    ),
+    bachelors: normalizeFlow(source.flows.bachelors, source.applicationTypes.bachelors, source),
+    microcredentials: normalizeFlow(source.flows.microcredentials, source.applicationTypes.microcredentials, source),
   };
 }
 

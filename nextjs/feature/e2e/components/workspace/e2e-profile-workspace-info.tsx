@@ -32,7 +32,7 @@ import {
   type ProfileSheetFieldValue,
 } from "./e2e-profile-sheet-groups";
 
-const FIRST_COLLAPSIBLE_PROFILE_SHEET_GROUP_LABEL = "Current address";
+const FIRST_COLLAPSIBLE_PROFILE_SHEET_GROUP_LABEL = "Current Address";
 
 function RunHistorySkeleton() {
   return (
@@ -78,7 +78,7 @@ export function ProfileWorkspaceHeader({
         <StatusBadge status={profile.status} />
       </div>
       <SheetDescription>
-        {profile.email} | {profile.program} | {profile.cohort}
+        {profile.email} | {profile.flowType}
       </SheetDescription>
     </SheetHeader>
   );
@@ -311,20 +311,21 @@ export function ProfileWorkspaceRunHistory({
   );
 }
 
-function formatProfileSheetFieldValue(value: ProfileSheetFieldValue) {
-  if (typeof value === "boolean") return value ? "Yes" : "No";
-  if (value instanceof Date) return value.toISOString();
-  if (value === null || value === undefined || value === "") {
-    return "Not provided";
-  }
-  return String(value);
-}
-
 const ProfileSheetGroupCard = memo(function ProfileSheetGroupCard({
   group,
 }: {
   group: ProfileSheetGroup;
 }) {
+  function formatProfileSheetFieldValue(value: ProfileSheetFieldValue) {
+    if (value == null || value === "") return "Not provided";
+
+    if (value instanceof Date) return value.toISOString();
+
+    if (typeof value === "boolean") return value ? "Yes" : "No";
+
+    return String(value);
+  }
+
   return (
     <div className="space-y-2">
       <h4 className="text-sm font-medium">{group.label}</h4>

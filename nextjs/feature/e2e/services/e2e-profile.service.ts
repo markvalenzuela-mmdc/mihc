@@ -57,8 +57,7 @@ export async function getPaginatedE2eProfiles(
         id: profile.id,
         name: profile.name,
         email: profile.email,
-        program: profile.program,
-        cohort: profile.cohort,
+        flowType: profile.flowType,
         status: profile.status,
         latestRun,
       };

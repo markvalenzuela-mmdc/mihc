@@ -9,7 +9,7 @@ type E2eRunTestSelect = typeof e2eRunTests.$inferSelect;
 export type ProfileStatus = ProfileSelect["status"];
 export type OperatorSummary = Pick<typeof users.$inferSelect, "id" | "name" | "email">;
 export type E2eProfileLatestRun = Pick<E2eRunSelect, "id" | "runNumber" | "status">;
-export interface E2eProfileSummary extends Pick<ProfileSelect, "id" | "name" | "email" | "program" | "cohort" | "status"> { latestRun: E2eProfileLatestRun | null; }
+export interface E2eProfileSummary extends Pick<ProfileSelect, "id" | "name" | "email" | "flowType" | "status"> { latestRun: E2eProfileLatestRun | null; }
 export type E2eProfileForm = typeof profileForms.$inferSelect & { isDeprecated: boolean };
 export interface E2eProfileWorkspaceProfile extends E2eProfileSummary { middleName: string | null; operationalData: ProfileOperationalData; profileForms: E2eProfileForm[]; }
 export type E2eStepDefinition = typeof e2eSteps.$inferSelect;

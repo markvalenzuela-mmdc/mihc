@@ -2,46 +2,126 @@ import { getEnrollmateFlowDefinition } from "@mihc/enrollmate-contract";
 
 import type { E2eProfileWorkspaceProfile } from "../../types/e2e-testing.types";
 
-export type ProfileSheetFieldValue = string | number | boolean | Date | null | undefined;
-export type ProfileSheetField = { label: string; value: ProfileSheetFieldValue };
+export type ProfileSheetFieldValue =
+  | string
+  | number
+  | boolean
+  | Date
+  | null
+  | undefined;
+export type ProfileSheetField = {
+  label: string;
+  value: ProfileSheetFieldValue;
+};
 export type ProfileSheetGroup = { label: string; fields: ProfileSheetField[] };
+type ProfileForm = E2eProfileWorkspaceProfile["profileForms"][number];
 
-function valueForDisplay(value: unknown): ProfileSheetFieldValue {
-  if (value === null || value === undefined || typeof value === "string" || typeof value === "number" || typeof value === "boolean") return value;
+function getDisplayValue(value: unknown): ProfileSheetFieldValue {
+  if (
+    value === null ||
+    value === undefined ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  )
+    return value;
+
   if (Array.isArray(value)) return value.map(String).join(", ");
-  if (typeof value === "object" && "filename" in value && typeof value.filename === "string") return value.filename;
+
+  if (
+    typeof value === "object" &&
+    "filename" in value &&
+    typeof value.filename === "string"
+  )
+    return value.filename;
+
   return JSON.stringify(value);
 }
 
-function formGroups(profileForm: E2eProfileWorkspaceProfile["profileForms"][number]) {
-  if (profileForm.isDeprecated) {
-    return [{ label: `Deprecated ${profileForm.flowType} application`, fields: [
+function getProfileGroup(
+  profile: E2eProfileWorkspaceProfile,
+): ProfileSheetGroup {
+  return {
+    label: "Profile",
+    fields: [
+      { label: "Name", value: profile.name },
+      { label: "Middle name", value: profile.middleName },
+      { label: "Email", value: profile.email },
+      { label: "Program", value: profile.flowType },
+      { label: "Status", value: profile.status },
+    ],
+  };
+}
+
+function getDeprecatedFormGroup(profileForm: ProfileForm): ProfileSheetGroup {
+  return {
+    label: `Deprecated ${profileForm.flowType} application`,
+    fields: [
       { label: "Definition hash", value: profileForm.definitionHash },
-      { label: "Status", value: "This profile form does not match the active EnrollMate definition." },
-    ] }];
+      {
+        label: "Status",
+        value:
+          "This profile form does not match the active EnrollMate definition.",
+      },
+    ],
+  };
+}
+
+function getActiveFormGroups(profileForm: ProfileForm): ProfileSheetGroup[] {
+  const groups: ProfileSheetGroup[] = [];
+
+  for (const step of getEnrollmateFlowDefinition(profileForm.flowType).steps) {
+    for (const section of step.sections) {
+      const fields = section.fields
+        .filter((field) => field.name in profileForm.data)
+        .map((field) => ({
+          label: field.label,
+          value: getDisplayValue(profileForm.data[field.name]),
+        }));
+
+      if (fields.length > 0) {
+        groups.push({ label: section.label, fields });
+      }
+    }
   }
-  const data = profileForm.data;
-  return getEnrollmateFlowDefinition(profileForm.flowType).steps.flatMap((step) => step.sections.map((section) => ({
-    label: section.label,
-    fields: section.fields.filter((field) => field.name in data).map((field) => ({ label: field.label, value: valueForDisplay(data[field.name]) })),
-  })).filter((group) => group.fields.length > 0));
+
+  return groups;
 }
 
-function operationalGroups(profile: E2eProfileWorkspaceProfile) {
-  return Object.entries(profile.operationalData).flatMap(([section, data]) => {
-    if (!data) return [];
-    return [{ label: section, fields: Object.entries(data).map(([label, value]) => ({ label, value: valueForDisplay(value) })) }];
-  });
+function getFormGroups(profileForm: ProfileForm): ProfileSheetGroup[] {
+  if (profileForm.isDeprecated) {
+    return [getDeprecatedFormGroup(profileForm)];
+  }
+
+  return getActiveFormGroups(profileForm);
 }
 
-export function getProfileSheetGroups(profile: E2eProfileWorkspaceProfile): ProfileSheetGroup[] {
+function getOperationalGroups(
+  profile: E2eProfileWorkspaceProfile,
+): ProfileSheetGroup[] {
+  const groups: ProfileSheetGroup[] = [];
+
+  for (const [label, data] of Object.entries(profile.operationalData)) {
+    if (!data) continue;
+
+    groups.push({
+      label,
+      fields: Object.entries(data).map(([fieldLabel, value]) => ({
+        label: fieldLabel,
+        value: getDisplayValue(value),
+      })),
+    });
+  }
+
+  return groups;
+}
+
+export function getProfileSheetGroups(
+  profile: E2eProfileWorkspaceProfile,
+): ProfileSheetGroup[] {
   return [
-    { label: "Profile", fields: [
-      { label: "Name", value: profile.name }, { label: "Middle name", value: profile.middleName },
-      { label: "Email", value: profile.email }, { label: "Program", value: profile.program },
-      { label: "Cohort", value: profile.cohort }, { label: "Status", value: profile.status },
-    ] },
-    ...profile.profileForms.flatMap(formGroups),
-    ...operationalGroups(profile),
+    getProfileGroup(profile),
+    ...profile.profileForms.flatMap(getFormGroups),
+    ...getOperationalGroups(profile),
   ];
 }

@@ -1,11 +1,24 @@
 import { z } from "zod";
 
-import type { EnrollmateField, EnrollmateFlowDefinition, ProfileOperationalData } from "./types";
+import type {
+  EnrollmateConditionalRule,
+  EnrollmateField,
+  EnrollmateFlowDefinition,
+  ProfileOperationalData,
+} from "./types";
 
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 
-function optionalWhen<T extends z.ZodType>(schema: T, required: boolean) {
+function optionalWhen<T extends z.ZodType>(schema: T, required: boolean, hasCondition: boolean) {
+  if (hasCondition) return schema.optional();
   return required ? schema : schema.optional();
+}
+
+function conditionMatches(value: unknown, rule: EnrollmateConditionalRule) {
+  return (
+    (typeof value === "string" || typeof value === "boolean") &&
+    rule.equalsAny.includes(value)
+  );
 }
 
 function fileSchema(field: EnrollmateField) {
@@ -39,27 +52,72 @@ function fileSchema(field: EnrollmateField) {
 }
 
 function fieldSchema(field: EnrollmateField) {
-  if (field.type === "checkbox") {
-    return optionalWhen(z.boolean(), field.required);
+  const hasCondition = field.conditionalOn !== null;
+  switch (field.type) {
+    case "checkbox":
+      return optionalWhen(z.boolean(), field.required, hasCondition);
+    case "email":
+      return optionalWhen(z.string().email(), field.required, hasCondition);
+    case "date":
+      return optionalWhen(z.string().regex(datePattern, "Expected an ISO date."), field.required, hasCondition);
+    case "file":
+      return optionalWhen(fileSchema(field), field.required, hasCondition);
+    default:
+      return optionalWhen(stringFieldSchema(field), field.required, hasCondition);
   }
-  if (field.type === "email") {
-    return optionalWhen(z.string().email(), field.required);
-  }
-  if (field.type === "date") {
-    return optionalWhen(z.string().regex(datePattern, "Expected an ISO date."), field.required);
-  }
-  if (field.type === "file") {
-    return optionalWhen(fileSchema(field), field.required);
-  }
+}
 
+function stringFieldSchema(field: EnrollmateField) {
   const validValues = field.options.map((option) => option.value);
-  const scalar = validValues.length === 0
+  return validValues.length === 0
     ? z.string()
     : z.string().refine((value) => validValues.includes(value), {
       message: `${field.label} is not a captured option.`,
     });
+}
 
-  return optionalWhen(scalar, field.required);
+function isEmptyValue(field: EnrollmateField, value: unknown) {
+  if (value === undefined || value === null) return true;
+  if (typeof value === "string") return value.trim() === "";
+  return field.type === "file" && typeof value !== "object";
+}
+
+function hasValue(value: unknown) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") return value.trim() !== "";
+  return value !== undefined && value !== null;
+}
+
+function validateConditionalField(
+  field: EnrollmateField,
+  data: Record<string, unknown>,
+  context: z.RefinementCtx,
+) {
+  if (!field.conditionalOn) return;
+
+  const parentValue = data[field.conditionalOn.field];
+  const isVisible = conditionMatches(parentValue, field.conditionalOn);
+  if (isVisible) {
+    if (!(field.required || field.requiredWhenConditionMet) || !isEmptyValue(field, data[field.name])) return;
+    context.addIssue({
+      code: "custom",
+      path: [field.name],
+      message: `${field.label} is required when ${field.conditionalOn.field} is set to "${parentValue}".`,
+    });
+    return;
+  }
+
+  if (!hasValue(data[field.name])) return;
+  context.addIssue({
+    code: "custom",
+    path: [field.name],
+    message: `${field.label} is not available for the selected ${field.conditionalOn.field}.`,
+  });
+}
+
+function getDependentOptions(field: EnrollmateField, data: Record<string, unknown>) {
+  if (field.optionSource?.kind !== "dependent") return undefined;
+  return field.optionsByDependency[data[field.optionSource.field] as string];
 }
 
 export function buildEnrollmateValidator(flow: EnrollmateFlowDefinition) {
@@ -71,23 +129,11 @@ export function buildEnrollmateValidator(flow: EnrollmateFlowDefinition) {
   return schema.superRefine((data, context) => {
     for (const field of fields) {
       const value = data[field.name];
+      validateConditionalField(field, data, context);
+
       if (value === undefined || typeof value !== "string") continue;
 
-      if (field.conditionalOn) {
-        const parentValue = data[field.conditionalOn.field];
-        if (
-          typeof parentValue === "string" &&
-          !field.conditionalOn.values.includes(parentValue)
-        ) {
-          context.addIssue({
-            code: "custom",
-            path: [field.name],
-            message: `${field.label} is not available for the selected ${field.conditionalOn.field}.`,
-          });
-        }
-      }
-
-      const dependentOptions = field.optionsByDependency[data.programFocus as string];
+      const dependentOptions = getDependentOptions(field, data);
       if (dependentOptions && !dependentOptions.some((option) => option.value === value)) {
         context.addIssue({
           code: "custom",

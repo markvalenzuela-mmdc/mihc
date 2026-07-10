@@ -8,7 +8,7 @@ import {
   unique,
   uuid,
 } from "drizzle-orm/pg-core";
-import type { ProfileOperationalData } from "@mihc/enrollmate-contract";
+import type { EnrollmateFlowType, ProfileOperationalData } from "@mihc/enrollmate-contract";
 
 import { users } from "./users";
 
@@ -19,8 +19,7 @@ export const profiles = pgTable(
     name: text("name").notNull(),
     middleName: text("middle_name"),
     email: text("email").notNull().unique(),
-    program: text("program"),
-    cohort: text("cohort"),
+    flowType: text("flow_type").notNull().$type<EnrollmateFlowType>(),
     operationalData: jsonb("operational_data")
       .$type<ProfileOperationalData>()
       .notNull()

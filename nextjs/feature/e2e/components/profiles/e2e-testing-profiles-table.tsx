@@ -51,20 +51,11 @@ function createColumns(openProfile: (profileId: string) => void) {
       },
     }),
 
-    columnHelper.accessor("program", {
-      header: "Program",
-      size: 180,
-      meta: {
-        mobile: { align: "right" },
-        sort: { enabled: false },
-      },
-    }),
-
-    columnHelper.accessor("cohort", {
-      header: "Cohort",
+    columnHelper.accessor("flowType", {
+      header: "Flow",
       size: 160,
       meta: {
-        mobile: { align: "right", hidden: true },
+        mobile: { align: "right" },
         sort: { enabled: false },
       },
     }),
