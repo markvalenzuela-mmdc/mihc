@@ -1,4 +1,5 @@
 import { getEnrollmateValidator } from "@mihc/enrollmate-contract";
+import { describe, expect, it } from "vitest";
 
 import {
   createProfileFormData,
