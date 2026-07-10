@@ -55,7 +55,9 @@ function getProfileGroup(
   };
 }
 
-function getDeprecatedFormGroup(profileForm: ProfileForm): ProfileSheetGroup {
+function getDeprecatedFormGroup(
+  profileForm: Extract<ProfileForm, { state: "deprecated" }>,
+): ProfileSheetGroup {
   return {
     label: `Deprecated ${profileForm.flowType} application`,
     fields: [
@@ -69,7 +71,29 @@ function getDeprecatedFormGroup(profileForm: ProfileForm): ProfileSheetGroup {
   };
 }
 
-function getActiveFormGroups(profileForm: ProfileForm): ProfileSheetGroup[] {
+function getInvalidFormGroup(
+  profileForm: Extract<ProfileForm, { state: "invalid" }>,
+): ProfileSheetGroup {
+  return {
+    label: `Invalid ${profileForm.flowType} application`,
+    fields: [
+      { label: "Definition hash", value: profileForm.definitionHash },
+      {
+        label: "Status",
+        value:
+          "This profile form does not satisfy the active EnrollMate definition.",
+      },
+      ...profileForm.validationIssues.map((issue) => ({
+        label: issue.path,
+        value: issue.message,
+      })),
+    ],
+  };
+}
+
+function getActiveFormGroups(
+  profileForm: Extract<ProfileForm, { state: "active" }>,
+): ProfileSheetGroup[] {
   const groups: ProfileSheetGroup[] = [];
 
   for (const step of getEnrollmateFlowDefinition(profileForm.flowType).steps) {
@@ -89,11 +113,14 @@ function getActiveFormGroups(profileForm: ProfileForm): ProfileSheetGroup[] {
 }
 
 function getFormGroups(profileForm: ProfileForm): ProfileSheetGroup[] {
-  if (profileForm.isDeprecated) {
-    return [getDeprecatedFormGroup(profileForm)];
+  switch (profileForm.state) {
+    case "deprecated":
+      return [getDeprecatedFormGroup(profileForm)];
+    case "invalid":
+      return [getInvalidFormGroup(profileForm)];
+    case "active":
+      return getActiveFormGroups(profileForm);
   }
-
-  return getActiveFormGroups(profileForm);
 }
 
 function getOperationalGroups(

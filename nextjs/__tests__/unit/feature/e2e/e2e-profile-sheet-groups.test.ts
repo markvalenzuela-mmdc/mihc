@@ -38,13 +38,13 @@ describe("getProfileSheetGroups", () => {
         {
           flowType: "bachelors",
           data: { firstName: "Ari" },
-          isDeprecated: false,
+          state: "active",
         },
         {
           flowType: "microcredentials",
           definitionHash: "old-hash",
           data: {},
-          isDeprecated: true,
+          state: "deprecated",
         },
       ],
       operationalData: {
@@ -100,7 +100,7 @@ describe("getProfileSheetGroups", () => {
             isWorking: false,
             attempts: 0,
           },
-          isDeprecated: false,
+          state: "active",
         },
       ],
       operationalData: {},
@@ -128,6 +128,43 @@ describe("getProfileSheetGroups", () => {
         { label: "Notes", value: "Not provided" },
         { label: "Working student", value: false },
         { label: "Attempts", value: 0 },
+      ],
+    });
+  });
+
+  it("renders invalid forms as validation summaries", () => {
+    const profile = {
+      name: "Ari Santos",
+      middleName: null,
+      email: "ari@example.edu",
+      flowType: "bachelors",
+      status: "new",
+      profileForms: [
+        {
+          flowType: "bachelors",
+          definitionHash: "current-hash",
+          data: { email: "invalid" },
+          state: "invalid",
+          validationIssues: [
+            { path: "email", message: "Invalid email address" },
+            { path: "birthdate", message: "Expected an ISO date" },
+          ],
+        },
+      ],
+      operationalData: {},
+    } as unknown as E2eProfileWorkspaceProfile;
+
+    expect(getProfileSheetGroups(profile)[1]).toEqual({
+      label: "Invalid bachelors application",
+      fields: [
+        { label: "Definition hash", value: "current-hash" },
+        {
+          label: "Status",
+          value:
+            "This profile form does not satisfy the active EnrollMate definition.",
+        },
+        { label: "email", value: "Invalid email address" },
+        { label: "birthdate", value: "Expected an ISO date" },
       ],
     });
   });
