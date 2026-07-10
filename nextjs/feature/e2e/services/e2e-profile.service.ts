@@ -3,16 +3,13 @@ import {
   e2eRunSteps,
   e2eSteps,
   getDb,
-  profileForms,
   profiles,
 } from "@/lib/drizzle/db";
-import { getEnrollmateValidator } from "@mihc/enrollmate-contract";
 import { getEnrollmateDefinitionHash } from "@mihc/enrollmate-contract/server";
 import { paginateByQuery } from "@/lib/drizzle/pagination";
 import { count, eq, sql } from "drizzle-orm";
 import {
   E2eProfileSummary,
-  E2eProfileForm,
   E2eProfileWorkspaceData,
   E2eRunHistoryItem,
   E2eSelectedRun,
@@ -21,32 +18,8 @@ import {
   serializeE2eRun,
   serializeE2eRunHistoryItem,
 } from "../serializers/e2e-run.serializer";
+import { serializeE2eProfileForm } from "../serializers/e2e-profile-form.serializer";
 import { DbExecutor } from "@/types/db-transaction";
-
-type ProfileFormRecord = typeof profileForms.$inferSelect;
-
-function serializeProfileForm(
-  form: ProfileFormRecord,
-  currentDefinitionHash: string,
-): E2eProfileForm {
-  if (form.definitionHash !== currentDefinitionHash) {
-    return { ...form, state: "deprecated" };
-  }
-
-  const result = getEnrollmateValidator(form.flowType).safeParse(form.data);
-  if (result.success) {
-    return { ...form, data: result.data, state: "active" };
-  }
-
-  return {
-    ...form,
-    state: "invalid",
-    validationIssues: result.error.issues.map((issue) => ({
-      path: issue.path.map(String).join(".") || "form",
-      message: issue.message,
-    })),
-  };
-}
 
 export async function getPaginatedE2eProfiles(
   {
@@ -144,7 +117,7 @@ export async function getE2eProfileById(
       ...profile,
       latestRun: latestRun ?? null,
       profileForms: (profile.profileForms ?? []).map((form) =>
-        serializeProfileForm(form, currentDefinitionHash),
+        serializeE2eProfileForm(form, currentDefinitionHash),
       ),
     },
     activeRun: activeRunSerialized,
