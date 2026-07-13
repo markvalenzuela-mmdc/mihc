@@ -26,6 +26,20 @@ surfaces; read the relevant project instructions before editing.
 - `../packages/enrollmate-contract/README.md` — concrete package API and
   source-update workflow.
 
+## E2E profile form delivery
+
+- `brainstorm/2026-07-13-e2e-profile-form-phased-delivery.md` — current approved
+  UI-first, two-phase design.
+- `plans/2026-07-13-e2e-profile-form-phased-delivery.md` — current execution
+  plan: client-only creation UX first, pair-programmed backend wiring second.
+
+The older `brainstorm/2026-07-13-e2e-profile-form.md`,
+`plans/2026-07-13-e2e-profile-form.md`,
+`plans/2026-07-13-e2e-profile-form-structure-rewrite.md`, and
+`plans/2026-07-13-e2e-profile-form-page-rewrite.md` describe the discarded
+backend-first rendition and its later rewrites. They are retained as historical
+decision records; do not execute them instead of the phased plan.
+
 The older `brainstorm/enrollmate-profile-schema.md` and
 `plans/2026-07-09-enrollmate-profile-schema.md` are retained as historical
 records only. They describe the superseded relational option-catalog model;
