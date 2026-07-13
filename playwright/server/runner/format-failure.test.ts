@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { describeCheck, formatFailure, type PwAnnotation } from "./format-failure";
 
-/** Build a `check` annotation as `lib/smoke.ts` `assertCheck` serializes it. */
+/** Build a `check` annotation as `lib/checks.ts` `assertCheck` serializes it. */
 function check(name: string, status: "pass" | "fail", message?: string): PwAnnotation {
   return { type: "check", description: JSON.stringify({ name, status, ...(message ? { message } : {}) }) };
 }

@@ -52,7 +52,7 @@ function report(
   };
 }
 
-/** Build a `check` annotation as `lib/smoke.ts` serializes it. */
+/** Build a `check` annotation as `lib/checks.ts` serializes it. */
 function check(name: string, status: "pass" | "fail"): Annotation {
   return { type: "check", description: JSON.stringify({ name, status }) };
 }

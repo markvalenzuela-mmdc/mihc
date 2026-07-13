@@ -8,8 +8,8 @@ import {
   checkCta,
   checkKeyContent,
   checkPageLoads,
-  initSmoke,
 } from '../../lib/smoke';
+import { initSmoke } from '../../lib/checks';
 
 // Standalone content pages: standard smoke check (200 + key content + header CTA).
 const pages = [ABOUT, SEARCH, STATE_OF_WORKING_STUDENTS];

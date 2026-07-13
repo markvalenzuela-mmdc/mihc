@@ -1,6 +1,7 @@
 import { test } from '@playwright/test';
 import { FAQ } from '../../config/pages.config';
-import { assertCheck, checkCta, checkPageLoads, initSmoke } from '../../lib/smoke';
+import { checkCta, checkPageLoads } from '../../lib/smoke';
+import { assertCheck, initSmoke } from '../../lib/checks';
 
 test('smoke: FAQ page', async ({ page }, testInfo) => {
   const response = await page.goto(FAQ.path);

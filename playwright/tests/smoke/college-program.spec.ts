@@ -5,8 +5,8 @@ import {
   checkKeyContent,
   checkPageLoads,
   exercisePrimaryCta,
-  initSmoke,
 } from '../../lib/smoke';
+import { initSmoke } from '../../lib/checks';
 
 for (const slug of collegePrograms) {
   test(`smoke: college program ${slug}`, async ({ page, context }, testInfo) => {

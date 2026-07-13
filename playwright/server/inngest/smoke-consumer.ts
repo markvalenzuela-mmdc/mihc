@@ -49,8 +49,6 @@ export const smokeConsumer = inngest.createFunction(
     const run = await step.run("run-suite", async () => {
       const { report } = await runSmoke({
         correlationId: data.correlationId,
-        trigger: data.trigger,
-        requestedBy: data.requestedBy ?? null,
         target,
         logger,
       });

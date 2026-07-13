@@ -7,7 +7,7 @@
  * without spawning a browser. Consumed by `map-results.ts` at the mapping
  * boundary; the raw error is not persisted.
  *
- * The curated data comes from annotations our smoke helpers push (`lib/smoke.ts`):
+ * The curated data comes from annotations our check helpers push (`lib/checks.ts`):
  * a `url` annotation (the page under test) and one `check` annotation per check
  * (`{name, status, message}`). We build the message from the `url` plus the
  * *names* of failed checks — never the check `message`, which carries the

@@ -1,12 +1,11 @@
 import { test } from '@playwright/test';
 import { COLLEGE_OVERVIEW, collegePrograms } from '../../config/pages.config';
 import {
-  assertCheck,
   checkKeyContent,
   checkPageLoads,
   exercisePrimaryCta,
-  initSmoke,
 } from '../../lib/smoke';
+import { assertCheck, initSmoke } from '../../lib/checks';
 
 test('smoke: college programs overview', async ({ page, context }, testInfo) => {
   const d = COLLEGE_OVERVIEW;

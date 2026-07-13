@@ -5,8 +5,8 @@ import {
   checkKeyContent,
   checkPageLoads,
   exercisePrimaryCta,
-  initSmoke,
 } from '../../lib/smoke';
+import { initSmoke } from '../../lib/checks';
 
 test('smoke: landing page', async ({ page, context }, testInfo) => {
   const response = await page.goto(LANDING.path);

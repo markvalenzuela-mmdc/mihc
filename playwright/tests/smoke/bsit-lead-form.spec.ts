@@ -1,6 +1,7 @@
 import { test } from '@playwright/test';
 import { BSIT_LEAD_FORM } from '../../config/pages.config';
-import { assertCheck, checkCta, checkPageLoads, initSmoke } from '../../lib/smoke';
+import { checkCta, checkPageLoads } from '../../lib/smoke';
+import { assertCheck, initSmoke } from '../../lib/checks';
 
 test('smoke: BSIT lead form', async ({ page }, testInfo) => {
   const d = BSIT_LEAD_FORM;

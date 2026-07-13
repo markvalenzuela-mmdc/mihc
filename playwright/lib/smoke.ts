@@ -1,46 +1,21 @@
 /**
- * Reusable smoke-test check helpers.
+ * Reusable smoke-test page/CTA check helpers.
  *
  * Each check records a named pass/fail into the test's annotations (read later by
  * the results reporter) AND drives the test status via a soft assertion — so a
  * single test runs all its checks and still ends "failed" if any check failed.
+ *
+ * The underlying `assertCheck`/`initSmoke` primitives live in `checks.ts` because
+ * both the smoke and e2e targets depend on them.
  */
-import {
-  expect,
-  type BrowserContext,
-  type Page,
-  type Response,
-  type TestInfo,
+import type {
+  BrowserContext,
+  Page,
+  Response,
+  TestInfo,
 } from '@playwright/test';
 import type { Cta, PageDescriptor } from '../config/pages.config';
-
-/** Stamp test-level metadata used by the reporter to build the result. */
-export function initSmoke(
-  testInfo: TestInfo,
-  opts: { testId: string; url: string; type?: 'smoke' | 'e2e' },
-): void {
-  testInfo.annotations.push({ type: 'testId', description: opts.testId });
-  testInfo.annotations.push({ type: 'testType', description: opts.type ?? 'smoke' });
-  testInfo.annotations.push({ type: 'url', description: opts.url });
-}
-
-/** Record a single named check and propagate its result to the test status. */
-export function assertCheck(
-  testInfo: TestInfo,
-  name: string,
-  condition: boolean,
-  message?: string,
-): void {
-  testInfo.annotations.push({
-    type: 'check',
-    description: JSON.stringify({
-      name,
-      status: condition ? 'pass' : 'fail',
-      ...(condition ? {} : { message }),
-    }),
-  });
-  expect.soft(condition, message ?? name).toBeTruthy();
-}
+import { assertCheck } from './checks';
 
 /** Page returned HTTP 200 with no navigation error. */
 export function checkPageLoads(testInfo: TestInfo, response: Response | null): void {

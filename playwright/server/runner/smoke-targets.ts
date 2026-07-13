@@ -2,7 +2,6 @@ export const SMOKE_TARGETS = {
   website: {
     appId: "website",
     suite: "smoke",
-    testTarget: "mmdc-website",
     testPath: "tests/smoke",
     project: "chromium",
     baseUrl: "https://www.mmdc.mcl.edu.ph",

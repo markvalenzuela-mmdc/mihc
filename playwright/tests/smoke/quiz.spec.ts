@@ -1,12 +1,11 @@
 import { test } from '@playwright/test';
 import { QUIZ } from '../../config/pages.config';
 import {
-  assertCheck,
   checkCta,
   checkKeyContent,
   checkPageLoads,
-  initSmoke,
 } from '../../lib/smoke';
+import { assertCheck, initSmoke } from '../../lib/checks';
 
 test('smoke: quiz page', async ({ page }, testInfo) => {
   const d = QUIZ;

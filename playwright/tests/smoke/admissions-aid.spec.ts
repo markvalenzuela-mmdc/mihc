@@ -10,8 +10,8 @@ import {
   checkKeyContent,
   checkPageLoads,
   exercisePrimaryCta,
-  initSmoke,
 } from '../../lib/smoke';
+import { initSmoke } from '../../lib/checks';
 
 // Scholarship/discount + financial-tool pages under /admissions/, plus the two
 // root-level financing programs. All share the same content + CTA shape.

@@ -5,12 +5,11 @@ import {
   newsCategoryDescriptor,
 } from '../../config/pages.config';
 import {
-  assertCheck,
   checkCta,
   checkKeyContent,
   checkPageLoads,
-  initSmoke,
 } from '../../lib/smoke';
+import { assertCheck, initSmoke } from '../../lib/checks';
 
 test('smoke: news & events overview', async ({ page }, testInfo) => {
   const d = NEWS_OVERVIEW;

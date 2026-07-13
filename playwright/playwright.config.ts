@@ -21,8 +21,9 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
-  /* Reporters: keep the HTML report, plus our per-run JSON result writer. */
-  reporter: [['html'], ['./reporters/results-reporter.ts']],
+  /* HTML report for local debugging. DB-persisted runs override this via the
+   * CLI `--reporter=json` flag (see server/runner/run-smoke.ts). */
+  reporter: [['html']],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */

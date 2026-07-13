@@ -23,9 +23,6 @@ const PLAYWRIGHT_BIN = join(PACKAGE_ROOT, "node_modules", ".bin", `playwright${p
 
 export interface RunSmokeOptions {
   correlationId: string;
-  trigger: "manual" | "scheduled";
-  /** Operator identity threaded to the suite via TRIGGERED_BY (null in v1). */
-  requestedBy?: string | null;
   target: SmokeTarget;
   logger: Logger;
 }
@@ -36,14 +33,11 @@ export interface RunSmokeResult {
 }
 
 export async function runSmoke(opts: RunSmokeOptions): Promise<RunSmokeResult> {
-  const { correlationId, trigger, requestedBy, target, logger } = opts;
+  const { correlationId, target, logger } = opts;
   const reportPath = join(tmpdir(), `smoke-report-${correlationId}.json`);
 
   const env: NodeJS.ProcessEnv = {
     ...process.env,
-    TEST_MODE: trigger === "manual" ? "manual" : "automated",
-    TRIGGERED_BY: requestedBy ?? (trigger === "manual" ? "manual-dashboard" : "scheduler"),
-    TEST_TARGET: target.testTarget,
     PLAYWRIGHT_BASE_URL: target.baseUrl,
     PLAYWRIGHT_JSON_OUTPUT_FILE: reportPath,
   };

@@ -15,13 +15,11 @@ and can also be consumed by the Next.js application.
 - `config/pages.config.ts` — canonical catalog of MMDC pages + their CTAs.
   Enumeration of individual cert/program pages is **hardcoded** (slug arrays),
   not scraped. Update the slug arrays when the live catalog changes.
-- `lib/smoke.ts` — reusable check helpers. Each records a named pass/fail into
-  test annotations AND drives test status via `expect.soft`, so every check runs
-  and the test still fails if any check failed.
-- `lib/results.ts` — the shared `TestResult` schema (serves smoke and future e2e)
-  and env-based run context.
-- `reporters/results-reporter.ts` — writes one timestamped JSON per test run to
-  `results/`. Registered in `playwright.config.ts`.
+- `lib/checks.ts` — shared check/annotation primitives (`initSmoke`,
+  `assertCheck`) used by both the smoke and e2e targets. Each records a named
+  pass/fail into test annotations AND drives test status via `expect.soft`, so
+  every check runs and the test still fails if any check failed.
+- `lib/smoke.ts` — smoke-specific page/CTA check helpers built on `checks.ts`.
 - `tests/*.spec.ts` — 4 single-page specs + 2 looped detail specs (college
   programs, certifications).
 - `server/__tests__/unit/` — server-only Node unit tests, including shared
@@ -29,7 +27,9 @@ and can also be consumed by the Next.js application.
 - `server/__tests__/integration/` — reserved for server/database integration tests;
   do not place browser specs here.
 - `server/` — Hono/Inngest consumer server and co-located runner helpers.
-- `results/` — generated per-run JSON (git-ignored).
+  Results are persisted to the database: `server/runner/run-smoke.ts` spawns the
+  suite with `--reporter=json`, `server/runner/map-results.ts` maps that report,
+  and `server/db/persist-run.ts` writes the run + per-test rows.
 
 ## Running
 
@@ -42,17 +42,13 @@ pnpm test:unit                      # Node server unit tests, no browser
 
 ## Run mode (automated vs manual)
 
-A single test reports how it was invoked, via env vars read by the reporter:
+Run context is carried on the Inngest event (`trigger`, `requestedBy`) and
+threaded as function arguments through `smoke-consumer.ts` → `persistRun`, which
+records it on the `smoke_runs` row (`trigger`, `started_by`). It is NOT derived
+from env vars inside the suite. The child suite receives only
+`PLAYWRIGHT_BASE_URL` and `PLAYWRIGHT_JSON_OUTPUT_FILE` (see `run-smoke.ts`).
 
-- **Automated** (CI/scheduled) — defaults: `mode=automated`, `triggeredBy=ci`.
-- **Manual** (Next.js frontend) — spawn with:
-  `TEST_MODE=manual TRIGGERED_BY=<user> npx playwright test <filter>`
-
-`TEST_TARGET` overrides the target (default `mmdc-website`).
-
-These environment variables apply to browser-run test reports. Server unit
-tests use Node's test runner and do not create Playwright browser result
-records.
+Server unit tests use Node's test runner and do not create smoke run records.
 
 ## Conventions
 
