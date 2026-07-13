@@ -37,20 +37,42 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testMatch: /smoke\//,
       use: { ...devices['Desktop Chrome'] },
       metadata: { target: 'mmdc-website', type: 'smoke' },
     },
 
     {
       name: 'firefox',
+      testMatch: /smoke\//,
       use: { ...devices['Desktop Firefox'] },
       metadata: { target: 'mmdc-website', type: 'smoke' },
     },
 
     {
       name: 'webkit',
+      testMatch: /smoke\//,
       use: { ...devices['Desktop Safari'] },
       metadata: { target: 'mmdc-website', type: 'smoke' },
+    },
+
+    /* EnrollMate Apply Now e2e — drives the live UAT enrollment wizard. */
+    {
+      name: 'enrollmate',
+      testMatch: /e2e\//,
+      /* The wizard is long (100+ fields across steps) with async address
+       * cascades and a file upload, so it needs far longer than the default. */
+      timeout: 420_000,
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL:
+          process.env.PLAYWRIGHT_BASE_URL ??
+          'https://uat.enrollmate.mmdc.mcl.edu.ph',
+        /* Bound each action so a single missing field fails fast with a clear
+         * message instead of consuming the whole (long) test timeout. */
+        actionTimeout: 20_000,
+      },
+      metadata: { target: 'enrollmate', type: 'e2e' },
     },
 
     /* Test against mobile viewports. */

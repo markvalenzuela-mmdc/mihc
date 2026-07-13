@@ -56,9 +56,9 @@ Server unit tests use Node's test runner and do not create smoke run records.
   present/visible/enabled with valid href, and the primary CTA click reaches its
   expected destination.
 - Do NOT assert on console errors — the live site emits third-party noise.
-- For future browser E2E: reuse `TestResult` and the reporter; set `type='e2e'`
-  and `target='enrollmate'` (per-project `metadata` in
-  `playwright.config.ts`).
+- Browser E2E lives under `tests/e2e/` with its own project (`type='e2e'`,
+  `target='enrollmate'`) set via per-project `metadata` in
+  `playwright.config.ts`.
 
 ## Shared EnrollMate contract
 
