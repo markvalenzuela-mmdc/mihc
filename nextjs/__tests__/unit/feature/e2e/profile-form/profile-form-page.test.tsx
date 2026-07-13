@@ -1,4 +1,7 @@
-import { getEnrollmateFlowDefinition } from "@mihc/enrollmate-contract";
+import {
+  getEnrollmateFlowDefinition,
+  getEnrollmateStepValidator,
+} from "@mihc/enrollmate-contract";
 import {
   fireEvent,
   render,
@@ -6,17 +9,149 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { NuqsTestingAdapter, type UrlUpdateEvent } from "nuqs/adapters/testing";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useAppForm } from "@/components/blocks/Form/use-form.hook";
 import { E2eProfileCoreFields, e2eProfileFormOptions } from "@/feature/e2e/components/profile-form/e2e-profile-core-fields";
 import { E2eProfileFormActions } from "@/feature/e2e/components/profile-form/e2e-profile-form-actions";
+import { E2eProfileFormPage } from "@/feature/e2e/components/profile-form/e2e-profile-form-page";
 import { E2eProfileFormProgress } from "@/feature/e2e/components/profile-form/e2e-profile-form-progress";
 import { serializeE2eProfileFormEditorSteps } from "@/feature/e2e/serializers/e2e-profile-form-editor.serializer";
+import type {
+  E2eProfileFixture,
+  E2eProfileFormEditorStep,
+  FinalizeE2eProfileForm,
+  SaveE2eProfileDraft,
+} from "@/feature/e2e/types/e2e-profile-form.types";
+
+const contractValidation = vi.hoisted(() => ({
+  stepSafeParse: vi.fn(),
+  fullSafeParse: vi.fn(),
+  realGetStepValidator: undefined as
+    | undefined
+    | ((
+        flowType: "bachelors" | "microcredentials",
+        stepNumber: number,
+      ) => { safeParse: (values: Record<string, unknown>) => unknown }),
+}));
+
+vi.mock("@mihc/enrollmate-contract", async (importOriginal) => {
+  const actual = await importOriginal<
+    typeof import("@mihc/enrollmate-contract")
+  >();
+  contractValidation.realGetStepValidator = actual.getEnrollmateStepValidator;
+
+  return {
+    ...actual,
+    getEnrollmateStepValidator: vi.fn(() => ({
+      safeParse: contractValidation.stepSafeParse,
+    })),
+    getEnrollmateValidator: vi.fn(() => ({
+      safeParse: contractValidation.fullSafeParse,
+    })),
+  };
+});
 
 const bachelorSteps = serializeE2eProfileFormEditorSteps(
   getEnrollmateFlowDefinition("bachelors"),
 );
+const microcredentialSteps = serializeE2eProfileFormEditorSteps(
+  getEnrollmateFlowDefinition("microcredentials"),
+);
+const flows: Record<
+  "bachelors" | "microcredentials",
+  E2eProfileFormEditorStep[]
+> = {
+  bachelors: bachelorSteps,
+  microcredentials: microcredentialSteps,
+};
+const fixtures: E2eProfileFixture[] = [
+  {
+    fixtureUri: "test://fixtures/sample.pdf",
+    filename: "sample.pdf",
+    mimeType: "application/pdf",
+    sizeBytes: 1024,
+  },
+];
+
+function successfulDraft(profileId = "profile-1"): SaveE2eProfileDraft {
+  return vi.fn(async (input) => ({
+    ok: true as const,
+    data: { profileId, nextStep: input.stepNumber + 1 },
+  }));
+}
+
+function successfulFinalize(): FinalizeE2eProfileForm {
+  return vi.fn(async (input) => ({
+    ok: true as const,
+    data: { profileId: input.profileId },
+  }));
+}
+
+function renderPage({
+  finalize = successfulFinalize(),
+  onExit,
+  onFinish,
+  onUrlUpdate,
+  saveDraft = successfulDraft(),
+  searchParams,
+}: {
+  finalize?: FinalizeE2eProfileForm;
+  onExit?: (profileId: string) => void;
+  onFinish?: (profileId: string) => void;
+  onUrlUpdate?: (event: UrlUpdateEvent) => void;
+  saveDraft?: SaveE2eProfileDraft;
+  searchParams?: string;
+} = {}) {
+  return render(
+    <NuqsTestingAdapter
+      searchParams={searchParams}
+      onUrlUpdate={onUrlUpdate}
+      hasMemory
+    >
+      <E2eProfileFormPage
+        flows={flows}
+        fixtures={fixtures}
+        saveDraft={saveDraft}
+        finalize={finalize}
+        onExit={onExit}
+        onFinish={onFinish}
+      />
+    </NuqsTestingAdapter>,
+  );
+}
+
+function fillValidCore() {
+  fireEvent.change(screen.getByRole("textbox", { name: "Full name" }), {
+    target: { value: "Example Student" },
+  });
+  fireEvent.change(screen.getAllByRole("textbox", { name: "Email" })[0]!, {
+    target: { value: "student@example.com" },
+  });
+}
+
+async function chooseFlow(name: "Bachelor" | "Microcredential") {
+  await chooseOption("Application flow", name);
+}
+
+async function chooseOption(controlName: string, optionName: string) {
+  fireEvent.click(screen.getByRole("combobox", { name: controlName }));
+  const option = await screen.findByRole("option", { name: optionName });
+  fireEvent.pointerDown(option);
+  fireEvent.pointerUp(option);
+  fireEvent.click(option);
+}
+
+async function chooseFixtureOption(controlName: string, optionName: string) {
+  const input = screen.getByRole("combobox", { name: controlName });
+  const inputGroup = input.closest('[data-slot="input-group"]');
+  if (!(inputGroup instanceof HTMLElement)) {
+    throw new Error(`${controlName} is missing its input group`);
+  }
+  fireEvent.click(within(inputGroup).getByRole("button"));
+  fireEvent.click(await screen.findByRole("option", { name: optionName }));
+}
 
 function CoreFieldsHarness({ isFlowLocked = false }) {
   const form = useAppForm({ ...e2eProfileFormOptions });
@@ -200,5 +335,471 @@ describe("E2eProfileFormActions", () => {
       screen.getByRole("button", { name: "Validate and finish" }),
     );
     expect(onFinalize).toHaveBeenCalledOnce();
+  });
+});
+
+describe("E2eProfileFormPage", () => {
+  beforeEach(() => {
+    vi.mocked(getEnrollmateStepValidator).mockClear();
+    contractValidation.stepSafeParse.mockReset();
+    contractValidation.stepSafeParse.mockReturnValue({
+      success: true,
+      data: {},
+    });
+    contractValidation.fullSafeParse.mockReset();
+    contractValidation.fullSafeParse.mockReturnValue({
+      success: true,
+      data: {},
+    });
+  });
+
+  it("keeps an invalid active step in place and focuses its first error", async () => {
+    contractValidation.stepSafeParse.mockReturnValue({
+      success: false,
+      error: {
+        issues: [{ path: ["email"], message: "Email is required." }],
+      },
+    });
+    const saveDraft = successfulDraft();
+    renderPage({ saveDraft });
+    fillValidCore();
+
+    fireEvent.click(screen.getByRole("button", { name: "Save and continue" }));
+
+    expect(await screen.findAllByText("Email is required.")).not.toHaveLength(0);
+    await waitFor(() =>
+      expect(document.activeElement).toHaveAttribute("name", "enrollmate.email"),
+    );
+    expect(saveDraft).not.toHaveBeenCalled();
+    expect(
+      within(screen.getByRole("navigation", {
+        name: "Profile creation progress",
+      })).getByText(bachelorSteps[0]!.title).closest("li"),
+    ).toHaveAttribute("aria-current", "step");
+  });
+
+  it("saves only active-step keys, advances, stores the profile, and locks flow", async () => {
+    const onUrlUpdate = vi.fn<(event: UrlUpdateEvent) => void>();
+    const saveDraft = successfulDraft("saved-profile");
+    renderPage({ onUrlUpdate, saveDraft });
+    fillValidCore();
+
+    fireEvent.click(screen.getByRole("button", { name: "Save and continue" }));
+
+    await waitFor(() => expect(saveDraft).toHaveBeenCalledOnce());
+    const firstInput = vi.mocked(saveDraft).mock.calls[0]![0];
+    const expectedKeys = bachelorSteps[0]!.sections.flatMap((section) =>
+      section.fields.map((field) => field.name),
+    );
+    expect(firstInput).toMatchObject({
+      mode: "create",
+      stepNumber: 1,
+      core: {
+        name: "Example Student",
+        email: "student@example.com",
+        flowType: "bachelors",
+      },
+    });
+    const validatedValues = contractValidation.stepSafeParse.mock.calls[0]![0];
+    const expectedAvailableKeys = expectedKeys.filter((fieldName) =>
+      Object.hasOwn(validatedValues, fieldName),
+    );
+    expect(Object.keys(firstInput.stepData).sort()).toEqual(
+      expectedAvailableKeys.sort(),
+    );
+    expect(Object.keys(firstInput.stepData).every((fieldName) =>
+      expectedKeys.includes(fieldName),
+    )).toBe(true);
+    await waitFor(() =>
+      expect(
+        screen.getByRole("combobox", { name: "Application flow" }),
+      ).toBeDisabled(),
+    );
+    expect(onUrlUpdate).toHaveBeenLastCalledWith(
+      expect.objectContaining({ queryString: "?step=2" }),
+    );
+    expect(getEnrollmateStepValidator).toHaveBeenCalledWith("bachelors", 1);
+    expect(
+      within(screen.getByRole("navigation", {
+        name: "Profile creation progress",
+      })).getByText(bachelorSteps[1]!.title).closest("li"),
+    ).toHaveAttribute("aria-current", "step");
+  });
+
+  it("moves backward without submitting and exits only after a successful draft", async () => {
+    const saveDraft = successfulDraft();
+    const onExit = vi.fn();
+    renderPage({ onExit, saveDraft, searchParams: "?step=2" });
+    fillValidCore();
+
+    fireEvent.click(screen.getByRole("button", { name: "Previous" }));
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole("navigation", {
+          name: "Profile creation progress",
+        })).getByText(bachelorSteps[0]!.title).closest("li"),
+      ).toHaveAttribute("aria-current", "step"),
+    );
+    expect(saveDraft).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Save draft and exit" }));
+    await waitFor(() => expect(onExit).toHaveBeenCalledWith("profile-1"));
+    expect(saveDraft).toHaveBeenCalledOnce();
+  });
+
+  it("preserves values and exposes injected field errors", async () => {
+    const saveDraft: SaveE2eProfileDraft = vi.fn(async () => ({
+      ok: false as const,
+      error: { "core.email": ["A profile already uses this email."] },
+    }));
+    renderPage({ saveDraft });
+    fillValidCore();
+
+    fireEvent.click(screen.getByRole("button", { name: "Save and continue" }));
+
+    expect(
+      await screen.findAllByText("A profile already uses this email."),
+    ).not.toHaveLength(0);
+    expect(screen.getByRole("textbox", { name: "Full name" })).toHaveValue(
+      "Example Student",
+    );
+    expect(screen.getAllByRole("textbox", { name: "Email" })[0]).toHaveValue(
+      "student@example.com",
+    );
+  });
+
+  it("prevents duplicate submissions while a draft is pending", async () => {
+    let resolveDraft: ((result: Awaited<ReturnType<SaveE2eProfileDraft>>) => void) | undefined;
+    const saveDraft: SaveE2eProfileDraft = vi.fn(
+      () =>
+        new Promise<Awaited<ReturnType<SaveE2eProfileDraft>>>((resolve) => {
+          resolveDraft = resolve;
+        }),
+    );
+    renderPage({ saveDraft, searchParams: "?step=2" });
+    fillValidCore();
+    const nameInput = screen.getByRole("textbox", { name: "Full name" });
+    const continueButton = screen.getByRole("button", {
+      name: "Save and continue",
+    });
+
+    fireEvent.click(continueButton);
+    fireEvent.click(continueButton);
+    fireEvent.change(nameInput, { target: { value: "Changed while pending" } });
+    fireEvent.click(screen.getByRole("button", { name: "Previous" }));
+
+    await waitFor(() => expect(saveDraft).toHaveBeenCalledOnce());
+    expect(continueButton).toBeDisabled();
+    expect(nameInput).toBeDisabled();
+    expect(nameInput).toHaveValue("Example Student");
+    expect(
+      screen.getByRole("combobox", { name: "Application flow" }),
+    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
+    expect(
+      within(screen.getByRole("navigation", {
+        name: "Profile creation progress",
+      })).getByText(bachelorSteps[1]!.title).closest("li"),
+    ).toHaveAttribute("aria-current", "step");
+    resolveDraft?.({
+      ok: true,
+      data: { profileId: "profile-1", nextStep: 2 },
+    });
+    await waitFor(() => expect(continueButton).toBeEnabled());
+    expect(
+      within(screen.getByRole("navigation", {
+        name: "Profile creation progress",
+      })).getByText(bachelorSteps[1]!.title).closest("li"),
+    ).toHaveAttribute("aria-current", "step");
+  });
+
+  it("removes stale hidden values before validation, extraction, or focus", async () => {
+    const medicalQuestion =
+      "Have you ever been diagnosed with any medical, psychological, or learning difficulty?";
+    contractValidation.stepSafeParse.mockImplementation((values) =>
+      Object.hasOwn(values, "DR")
+        ? {
+            success: false,
+            error: {
+              issues: [{ path: ["DR"], message: "Hidden report is stale." }],
+            },
+          }
+        : { success: true, data: values },
+    );
+    const saveDraft = successfulDraft();
+    renderPage({ saveDraft });
+    fillValidCore();
+
+    await chooseOption(medicalQuestion, "Yes");
+    await chooseFixtureOption("Doctor's Report", "sample.pdf");
+    await chooseOption(medicalQuestion, "No");
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("combobox", { name: "Doctor's Report" }),
+      ).not.toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Save and continue" }));
+
+    await waitFor(() => expect(saveDraft).toHaveBeenCalledOnce());
+    expect(contractValidation.stepSafeParse).toHaveBeenCalledWith(
+      expect.not.objectContaining({ DR: expect.anything() }),
+    );
+    expect(vi.mocked(saveDraft).mock.calls[0]![0].stepData).not.toHaveProperty(
+      "DR",
+    );
+    expect(screen.queryByText("Hidden report is stale.")).not.toBeInTheDocument();
+    expect(document.activeElement).not.toHaveAttribute("name", "enrollmate.DR");
+  });
+
+  it.each([
+    ["?step=0", "?step=1"],
+    ["?step=999", "?step=4"],
+  ])("canonicalizes an invalid %s query step", async (searchParams, expected) => {
+    const onUrlUpdate = vi.fn<(event: UrlUpdateEvent) => void>();
+    renderPage({ onUrlUpdate, searchParams });
+
+    await waitFor(() =>
+      expect(onUrlUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ queryString: expected }),
+      ),
+    );
+  });
+
+  it("delegates a confirmation step to the real contract validator", async () => {
+    vi.mocked(getEnrollmateStepValidator).mockImplementationOnce(
+      (flowType, stepNumber) =>
+        contractValidation.realGetStepValidator!(flowType, stepNumber) as ReturnType<
+          typeof getEnrollmateStepValidator
+        >,
+    );
+    renderPage({ searchParams: "?step=4" });
+    fillValidCore();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Validate and finish" }),
+    );
+
+    expect(getEnrollmateStepValidator).toHaveBeenCalledWith("bachelors", 4);
+    expect(
+      await screen.findByText(
+        "Save at least one profile step before validating the complete draft.",
+      ),
+    ).toBeVisible();
+  });
+
+  it("clears incompatible values and returns to step one when flow changes before saving", async () => {
+    renderPage({ searchParams: "?step=2" });
+    fillValidCore();
+
+    await chooseFlow("Microcredential");
+
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole("navigation", {
+          name: "Profile creation progress",
+        })).getByText(microcredentialSteps[0]!.title).closest("li"),
+      ).toHaveAttribute("aria-current", "step"),
+    );
+    expect(screen.queryByText(bachelorSteps[1]!.title)).not.toBeInTheDocument();
+    expect(contractValidation.stepSafeParse).not.toHaveBeenCalled();
+  });
+
+  it("validates the complete microcredential form before finalizing", async () => {
+    const saveDraft = successfulDraft("micro-profile");
+    const finalize = successfulFinalize();
+    const onFinish = vi.fn();
+    renderPage({ finalize, onFinish, saveDraft });
+    fillValidCore();
+    await chooseFlow("Microcredential");
+
+    fireEvent.click(screen.getByRole("button", { name: "Save and continue" }));
+    await screen.findByRole("heading", {
+      name: microcredentialSteps[1]!.title,
+    });
+    const continueButton = screen.getByRole("button", {
+      name: "Save and continue",
+    });
+    await waitFor(() => expect(continueButton).toBeEnabled());
+    fireEvent.click(continueButton);
+    const validateButton = await screen.findByRole("button", {
+      name: "Validate and finish",
+    });
+    await waitFor(() => expect(validateButton).toBeEnabled());
+
+    contractValidation.fullSafeParse.mockReturnValueOnce({
+      success: false,
+      error: {
+        issues: [{ path: ["givenName"], message: "Given name is required." }],
+      },
+    });
+    fireEvent.click(validateButton);
+    expect(await screen.findAllByText("Given name is required.")).not.toHaveLength(0);
+    expect(finalize).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", {
+          name: microcredentialSteps[0]!.title,
+        }),
+      ).toBeVisible(),
+    );
+    await waitFor(() =>
+      expect(document.activeElement).toHaveAttribute(
+        "name",
+        "enrollmate.givenName",
+      ),
+    );
+
+    contractValidation.fullSafeParse.mockReturnValue({
+      success: true,
+      data: {},
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Save and continue" }),
+      ).toBeEnabled(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Save and continue" }));
+    await screen.findByRole("heading", {
+      name: microcredentialSteps[1]!.title,
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Save and continue" }),
+      ).toBeEnabled(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Save and continue" }));
+    const finalValidateButton = await screen.findByRole("button", {
+      name: "Validate and finish",
+    });
+    await waitFor(() => expect(finalValidateButton).toBeEnabled());
+    fireEvent.click(finalValidateButton);
+    await waitFor(() => expect(finalize).toHaveBeenCalledOnce());
+    expect(finalize).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profileId: "micro-profile",
+        core: expect.objectContaining({ flowType: "microcredentials" }),
+      }),
+    );
+    expect(onFinish).toHaveBeenCalledWith("micro-profile");
+  });
+
+  it("subscribes to beforeunload only while the form is dirty", async () => {
+    const addEventListener = vi.spyOn(window, "addEventListener");
+    const removeEventListener = vi.spyOn(window, "removeEventListener");
+    const { unmount } = renderPage();
+
+    expect(addEventListener).not.toHaveBeenCalledWith(
+      "beforeunload",
+      expect.any(Function),
+    );
+    fireEvent.change(screen.getByRole("textbox", { name: "Full name" }), {
+      target: { value: "Dirty profile" },
+    });
+    await waitFor(() =>
+      expect(addEventListener).toHaveBeenCalledWith(
+        "beforeunload",
+        expect.any(Function),
+      ),
+    );
+
+    unmount();
+    expect(removeEventListener).toHaveBeenCalledWith(
+      "beforeunload",
+      expect.any(Function),
+    );
+  });
+
+  it("marks persisted core and active-step fields pristine after a draft save", async () => {
+    const addEventListener = vi.spyOn(window, "addEventListener");
+    const removeEventListener = vi.spyOn(window, "removeEventListener");
+    renderPage();
+    fillValidCore();
+    await waitFor(() =>
+      expect(addEventListener).toHaveBeenCalledWith(
+        "beforeunload",
+        expect.any(Function),
+      ),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Save and continue" }));
+
+    await waitFor(() =>
+      expect(removeEventListener).toHaveBeenCalledWith(
+        "beforeunload",
+        expect.any(Function),
+      ),
+    );
+  });
+
+  it("preserves dirty state for an unsaved field owned by another step", async () => {
+    const addEventListener = vi.spyOn(window, "addEventListener");
+    const removeEventListener = vi.spyOn(window, "removeEventListener");
+    renderPage({ searchParams: "?step=3" });
+    fillValidCore();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Facebook" }));
+    await waitFor(() =>
+      expect(addEventListener).toHaveBeenCalledWith(
+        "beforeunload",
+        expect.any(Function),
+      ),
+    );
+    removeEventListener.mockClear();
+
+    fireEvent.click(screen.getByRole("button", { name: "Previous" }));
+    await screen.findByRole("heading", { name: bachelorSteps[1]!.title });
+    fireEvent.click(screen.getByRole("button", { name: "Save and continue" }));
+    await waitFor(() => expect(screen.getByRole("status")).toBeVisible());
+    await waitFor(() =>
+      expect(screen.queryByRole("status")).not.toBeInTheDocument(),
+    );
+
+    expect(removeEventListener).not.toHaveBeenCalledWith(
+      "beforeunload",
+      expect.any(Function),
+    );
+  });
+
+  it("marks every field pristine after successful finalization", async () => {
+    const addEventListener = vi.spyOn(window, "addEventListener");
+    const removeEventListener = vi.spyOn(window, "removeEventListener");
+    const finalize = successfulFinalize();
+    renderPage({ finalize });
+    fillValidCore();
+    await chooseFlow("Microcredential");
+
+    fireEvent.click(screen.getByRole("button", { name: "Save and continue" }));
+    await screen.findByRole("heading", {
+      name: microcredentialSteps[1]!.title,
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Save and continue" }),
+      ).toBeEnabled(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Save and continue" }));
+    await screen.findByRole("button", { name: "Validate and finish" });
+    fireEvent.change(screen.getByRole("textbox", { name: "Full name" }), {
+      target: { value: "Updated at confirmation" },
+    });
+    await waitFor(() =>
+      expect(addEventListener).toHaveBeenCalledWith(
+        "beforeunload",
+        expect.any(Function),
+      ),
+    );
+    removeEventListener.mockClear();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Validate and finish" }),
+    );
+
+    await waitFor(() => expect(finalize).toHaveBeenCalledOnce());
+    await waitFor(() =>
+      expect(removeEventListener).toHaveBeenCalledWith(
+        "beforeunload",
+        expect.any(Function),
+      ),
+    );
   });
 });
