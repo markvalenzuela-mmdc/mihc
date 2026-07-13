@@ -5,6 +5,7 @@ import {
   getEnrollmateFlowDefinition,
   getEnrollmateReusableOptionSets,
   getEnrollmateStepValidator,
+  getEnrollmateValidator,
 } from "@mihc/enrollmate-contract";
 import { createEnrollmateFixture } from "@mihc/enrollmate-contract/testing";
 
@@ -119,6 +120,72 @@ test("validates only the selected EnrollMate step", () => {
       .success,
     true,
   );
+});
+
+test("accepts untouched empty UI defaults for optional captured choices", () => {
+  const flow = getEnrollmateFlowDefinition("bachelors");
+  const step = flow.steps[0]!;
+  const suffix = step.sections
+    .flatMap((section) => section.fields)
+    .find((field) => field.name === "suffix")!;
+  const values = {
+    ...createFixture("bachelors"),
+    [suffix.name]: suffix.placeholderValue,
+  };
+
+  assert.equal(suffix.required, false);
+  assert.equal(suffix.placeholderValue, "");
+  assert.equal(getEnrollmateValidator("bachelors").safeParse(values).success, true);
+  assert.equal(
+    getEnrollmateStepValidator("bachelors", step.step).safeParse(values).success,
+    true,
+  );
+});
+
+test("accepts empty UI defaults for hidden conditional email and date fields", () => {
+  const flow = getEnrollmateFlowDefinition("bachelors");
+  const step = flow.steps[1]!;
+  const fields = step.sections.flatMap((section) => section.fields);
+  const fatherStatus = fields.find((field) => field.name === "fthrDeceased")!;
+  const fatherEmail = fields.find((field) => field.name === "fthrEmail")!;
+  const fatherBirthdate = fields.find((field) => field.name === "fthrBirthdate")!;
+  const values = {
+    ...createFixture("bachelors", { [fatherStatus.name]: "Deceased" }),
+    [fatherEmail.name]: "",
+    [fatherBirthdate.name]: "",
+  };
+
+  assert.equal(fatherEmail.type, "email");
+  assert.equal(fatherBirthdate.type, "date");
+  assert.equal(getEnrollmateValidator("bachelors").safeParse(values).success, true);
+  assert.equal(
+    getEnrollmateStepValidator("bachelors", step.step).safeParse(values).success,
+    true,
+  );
+});
+
+test("still rejects empty required visible strings and invalid checkbox or file values", () => {
+  const flow = getEnrollmateFlowDefinition("bachelors");
+  const step = flow.steps[0]!;
+  const fields = step.sections.flatMap((section) => section.fields);
+  const programFocus = fields.find((field) => field.name === "programFocus")!;
+  const schoolNotFound = fields.find((field) => field.name === "schoolNotFound")!;
+  const permanentId = fields.find((field) => field.name === "PID")!;
+  const fixture = createFixture("bachelors");
+
+  for (const [fieldName, value] of [
+    [programFocus.name, ""],
+    [schoolNotFound.name, ""],
+    [permanentId.name, ""],
+  ] as const) {
+    assert.equal(
+      getEnrollmateStepValidator("bachelors", step.step).safeParse({
+        ...fixture,
+        [fieldName]: value,
+      }).success,
+      false,
+    );
+  }
 });
 
 test("rejects an invalid captured option on the selected step", () => {

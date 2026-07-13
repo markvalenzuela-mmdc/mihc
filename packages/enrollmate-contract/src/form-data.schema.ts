@@ -15,6 +15,18 @@ function optionalWhen<T extends z.ZodType>(schema: T, required: boolean, hasCond
   return required ? schema : schema.optional();
 }
 
+function optionalStringWhen(
+  schema: z.ZodType<string>,
+  required: boolean,
+  hasCondition: boolean,
+) {
+  if (required && !hasCondition) return schema;
+  return z.preprocess(
+    (value) => typeof value === "string" && value.trim() === "" ? undefined : value,
+    schema.optional(),
+  );
+}
+
 function conditionMatches(value: unknown, rule: EnrollmateConditionalRule) {
   return (
     (typeof value === "string" || typeof value === "boolean") &&
@@ -58,20 +70,22 @@ function fieldSchema(field: EnrollmateField) {
     case "checkbox":
       return optionalWhen(z.boolean(), field.required, hasCondition);
     case "email":
-      return optionalWhen(z.string().email(), field.required, hasCondition);
+      return optionalStringWhen(z.string().email(), field.required, hasCondition);
     case "date":
-      return optionalWhen(z.string().regex(datePattern, "Expected an ISO date."), field.required, hasCondition);
+      return optionalStringWhen(z.string().regex(datePattern, "Expected an ISO date."), field.required, hasCondition);
     case "file":
       return optionalWhen(fileSchema(field), field.required, hasCondition);
     default:
-      return optionalWhen(stringFieldSchema(field), field.required, hasCondition);
+      return optionalStringWhen(stringFieldSchema(field), field.required, hasCondition);
   }
 }
 
 function stringFieldSchema(field: EnrollmateField) {
   const validValues = field.options.map((option) => option.value);
   return validValues.length === 0
-    ? z.string()
+    ? z.string().refine((value) => value.trim() !== "", {
+      message: `${field.label} is required.`,
+    })
     : z.string().refine((value) => validValues.includes(value), {
       message: `${field.label} is not a captured option.`,
     });
