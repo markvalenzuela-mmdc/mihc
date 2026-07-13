@@ -96,6 +96,9 @@ nextjs/feature/e2e/
     enrollmate-section.tsx
     enrollmate-field-renderer.tsx
     e2e-profile-form-controls.tsx
+  mocks/
+    e2e-profile-form.mock.ts
+    README.md
   schema/
     e2e-profile-form.schema.ts
   serializers/
@@ -109,6 +112,11 @@ nextjs/feature/e2e/
 Do not create a `config/` module. Runtime-free contracts live in `types/`, Zod
 input contracts live in `schema/`, pure form-definition behavior lives in
 `utils/`, and contract-to-editor mapping lives in `serializers/`.
+
+`mocks/` is an explicitly temporary Phase 1 boundary, not part of the final
+feature structure. No reusable component, schema, serializer, utility, or test
+may import it. Only the creation composition may use its fallback handlers and
+fixture metadata.
 
 `e2e-profile-form-page.tsx` follows the page rewrite convention. It remains one
 readable module ordered as:
@@ -172,9 +180,15 @@ exiting. Final submission uses the existing
 ### Client-only draft behavior
 
 Phase 1 defines the future action inputs/results in
-`e2e-profile-form.types.ts`. The page controller initially satisfies that seam
-with an in-memory async mock. Do not add `localStorage`, IndexedDB, API routes,
-or a fake server action.
+`e2e-profile-form.types.ts`. A temporary
+`mocks/e2e-profile-form.mock.ts` module satisfies that seam with
+`createInMemoryE2eProfileFormMock()`. The factory owns its draft `Map` in a
+closure and returns typed `saveDraft`, `finalize`, and `dispose` functions plus
+mock fixture metadata. `dispose()` clears all retained draft data.
+
+The page creates one factory instance for its mounted lifetime and disposes it
+on unmount. Tests inject typed handlers directly and do not import the mock.
+Do not add `localStorage`, IndexedDB, API routes, or a fake server action.
 
 Actions behave as follows:
 
@@ -193,6 +207,11 @@ on screen and displays field/error-summary feedback.
 The mock returns the same `ok` plus `data` or `error` result shape used by the
 repository's server-action helpers. It provides a mock profile ID after the
 first successful save so later steps exercise create-to-edit state transitions.
+
+`mocks/README.md` documents the mock's purpose, memory lifetime, limitations,
+allowed import boundary, and exact Phase 2 deletion steps. The permanent phased
+plan repeats the deletion checklist so removing the temporary directory does
+not remove the only disposal documentation.
 
 ### UX requirements
 
@@ -320,7 +339,13 @@ superseded broad `e2e-profile-form.service.ts`, four error classes, or
 
 ### Phase 2 frontend wiring
 
-- Replace only the typed in-memory mock boundary with the two actions.
+- Supply the two real actions and real fixtures through the existing typed page
+  props, then make those props required so no fallback remains.
+- Delete the complete `nextjs/feature/e2e/mocks/` directory after the real
+  boundary is wired.
+- Require
+  `rg "feature/e2e/mocks|createInMemoryE2eProfileFormMock|MOCK_E2E" nextjs`
+  to return no matches before Phase 2 can finish.
 - Preserve the Phase 1 form composition and result handling.
 - Add `/e2e-testing/profiles/[profileId]/edit` for edit/resume.
 - Load real fixture metadata through the editor service.
@@ -356,6 +381,9 @@ made executable only after the user supplies or co-authors the backend code.
   delivery problem the user wants to avoid.
 - Browser-persisted Phase 1 drafts: creates throwaway persistence and migration
   behavior.
+- Inline page mocks: make temporary code harder to identify, test, and remove.
+- A permanent mock/live strategy switch: adds runtime configuration after the
+  mock's Phase 1 purpose ends.
 - Duplicating field schemas/options in Next.js: violates the shared-contract
   boundary.
 - Treating all five imported TypeScript files as the reusable Form block: keeps
@@ -365,6 +393,8 @@ made executable only after the user supplies or co-authors the backend code.
 
 - Phase 1 is creation-only, UI-first, and frontend-validated.
 - Draft mocks are memory-only and use the future action result shape.
+- All mock implementation and fixtures live in one disposable `mocks/`
+  directory with a co-located removal guide and permanent Phase 2 checklist.
 - Every forward/exit transition validates the active step.
 - Persisted drafts in Phase 2 contain validated steps only.
 - Finalization validates the active step and then the complete merged form.
