@@ -160,3 +160,13 @@ export const ProfileIdentityFields = withForm({
 
 Feature submission boundaries must validate again before persisting. The block
 does not provide a server-action adapter or own authorization and persistence.
+
+## Current consumer
+
+The E2E profile creation scaffold is the first production-shaped consumer of
+this block. Its form composition lives in
+`feature/e2e/components/profile-form/`, with the route at
+`app/e2e-testing/profiles/new/page.tsx`. It demonstrates nested typed field
+names, `withForm`, feature-local controls using `useFieldContext`, and
+contract-driven Zod validation without moving feature schemas or actions into
+the reusable block.
