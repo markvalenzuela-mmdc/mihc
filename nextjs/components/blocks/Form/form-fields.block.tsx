@@ -20,21 +20,46 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useFieldContext } from "./use-form.hook";
 
+type FormControlAccessibilityProps = Pick<
+  ComponentPropsWithoutRef<typeof Input>,
+  "aria-describedby" | "aria-errormessage" | "aria-required"
+>;
+
+function getErrorMessages(error: unknown): string[] {
+  if (typeof error === "string") return error ? [error] : [];
+  if (Array.isArray(error)) return error.flatMap(getErrorMessages);
+  if (!error || typeof error !== "object") return [];
+
+  if ("message" in error && typeof error.message === "string") {
+    return [error.message];
+  }
+  if ("issues" in error) return getErrorMessages(error.issues);
+  if ("errors" in error) return getErrorMessages(error.errors);
+  return [];
+}
+
 /**
  * Wrapper component that handles html form semantics and accessibility.
  * Also handles the label and error message.
  */
 export function FormField({
   label,
+  errorId,
+  required = false,
   className,
   children,
   ...props
 }: ComponentPropsWithoutRef<typeof Field> & {
+  errorId?: string;
   label: string;
+  required?: boolean;
 }) {
   const field = useFieldContext();
 
   const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+  const errorMessages = [
+    ...new Set(field.state.meta.errors.flatMap(getErrorMessages)),
+  ];
 
   return (
     <Field
@@ -42,9 +67,18 @@ export function FormField({
       className={cn("gap-0", className)}
       {...props}
     >
-      <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+      <div className="flex items-center gap-2">
+        <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+        {required && (
+          <span className="text-sm font-normal text-muted-foreground">
+            (required)
+          </span>
+        )}
+      </div>
       {children}
-      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+      {isInvalid && errorMessages.length > 0 && (
+        <FieldError id={errorId}>{errorMessages.join(". ")}</FieldError>
+      )}
     </Field>
   );
 }
@@ -58,6 +92,9 @@ export function FormTextInput({
   autoComplete,
   placeholder,
   className,
+  "aria-describedby": ariaDescribedBy,
+  "aria-errormessage": ariaErrorMessage,
+  "aria-required": ariaRequired,
 }: Pick<
   ComponentPropsWithoutRef<typeof Input>,
   | "type"
@@ -65,7 +102,8 @@ export function FormTextInput({
   | "autoComplete"
   | "placeholder"
   | "className"
->) {
+> &
+  FormControlAccessibilityProps) {
   const field = useFieldContext<string>();
 
   const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
@@ -83,6 +121,9 @@ export function FormTextInput({
       onChange={(e) => field.handleChange(e.target.value)}
       onBlur={field.handleBlur}
       aria-invalid={isInvalid}
+      aria-describedby={ariaDescribedBy}
+      aria-errormessage={isInvalid ? ariaErrorMessage : undefined}
+      aria-required={ariaRequired}
     />
   );
 }
@@ -93,7 +134,14 @@ export function FormTextInput({
 export function FormTextarea({
   placeholder,
   className,
-}: Pick<ComponentPropsWithoutRef<typeof Input>, "placeholder" | "className">) {
+  "aria-describedby": ariaDescribedBy,
+  "aria-errormessage": ariaErrorMessage,
+  "aria-required": ariaRequired,
+}: Pick<
+  ComponentPropsWithoutRef<typeof Textarea>,
+  "placeholder" | "className"
+> &
+  FormControlAccessibilityProps) {
   const field = useFieldContext<string>();
 
   const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
@@ -108,6 +156,9 @@ export function FormTextarea({
       onChange={(e) => field.handleChange(e.target.value)}
       onBlur={field.handleBlur}
       aria-invalid={isInvalid}
+      aria-describedby={ariaDescribedBy}
+      aria-errormessage={isInvalid ? ariaErrorMessage : undefined}
+      aria-required={ariaRequired}
     />
   );
 }
@@ -119,12 +170,16 @@ export function FormSelect({
   items,
   placeholder,
   className,
+  "aria-describedby": ariaDescribedBy,
+  "aria-errormessage": ariaErrorMessage,
+  "aria-required": ariaRequired,
 }: Pick<
   ComponentPropsWithoutRef<typeof SelectValue>,
   "placeholder" | "className"
 > & {
   items: readonly { label: string; value: string }[];
-}) {
+} &
+  FormControlAccessibilityProps) {
   const field = useFieldContext<string>();
 
   const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
@@ -137,9 +192,14 @@ export function FormSelect({
         items={items}
         value={field.state.value}
         onValueChange={(val) => val && field.handleChange(val)}
-        aria-invalid={isInvalid}
       >
-        <SelectTrigger className={cn("flex-1", className)}>
+        <SelectTrigger
+          className={cn("flex-1", className)}
+          aria-describedby={ariaDescribedBy}
+          aria-errormessage={isInvalid ? ariaErrorMessage : undefined}
+          aria-invalid={isInvalid}
+          aria-required={ariaRequired}
+        >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
