@@ -22,6 +22,7 @@ duplicate its options in `nextjs/` or `playwright/`.
 import {
   getEnrollmateFlowDefinition,
   getEnrollmateReusableOptionSets,
+  getEnrollmateStepValidator,
   getEnrollmateValidator,
 } from "@mihc/enrollmate-contract";
 ```
@@ -51,6 +52,13 @@ and option objects, so consumers cannot mutate the registry’s source data.
 Returns the Zod validator for submitted flow data. It enforces field types,
 captured choice values, conditional visibility/requirements, dependent options,
 and file extension/size rules.
+
+### `getEnrollmateStepValidator(flowType, stepNumber)`
+
+Returns the Zod validator for one step while accepting values from other known
+fields as optional context for conditional and dependent rules. Pass the current
+EnrollMate value record to the validator, then separately extract the active
+step's keys when persisting a draft.
 
 ### Server-only API
 
