@@ -25,6 +25,11 @@ baseline under `nextjs/components/blocks/Form/`.
 - Remove `react-hook-form` and `@hookform/resolvers` with pnpm.
 - Update the form-handling entry in `nextjs/code-style.md` to name TanStack Form
   and Zod.
+- Document the block beside its source in
+  `nextjs/components/blocks/Form/README.md`. The guide covers the typed
+  `formOptions`/`useAppForm` path, registered fields, Zod validation,
+  `withForm`, server submission, IntelliSense, and the upstream example-path
+  caveat without adding a runnable demonstration.
 - Do not integrate the block into an application form in this change.
 
 ## Consumption and IntelliSense
@@ -37,6 +42,10 @@ for `form.AppField` names and typed field APIs.
 The imported `useGenerateForm` helper remains tied to the copied demonstration
 schema. It is preserved for the 1:1 baseline but is not the recommended entry
 point for feature forms.
+
+The five imported TypeScript files remain the unchanged baseline. The local
+README is repository-owned documentation and is not part of the 1:1 source
+comparison.
 
 ## Validation
 
