@@ -1,21 +1,12 @@
 "use client";
 
-import {
-  createFormHook,
-  createFormHookContexts,
-  mergeForm,
-} from "@tanstack/react-form";
-import { initialFormState, useTransform } from "@tanstack/react-form-nextjs";
-import { useActionState } from "react";
-import type { FormInput } from "./form.schema";
+import { createFormHook, createFormHookContexts } from "@tanstack/react-form";
 import {
   FormField,
   FormSelect,
   FormTextarea,
   FormTextInput,
 } from "./form-fields.block";
-import { generateFormOptions } from "./form-options";
-import { formSubmit } from "./form-submit.action";
 
 /**
  * Helper function for creating form hook contexts.
@@ -39,25 +30,3 @@ export const { useAppForm, withForm } = createFormHook({
   },
   formComponents: {},
 });
-
-/**
- * Main form hook that will be used in pages and components
- */
-export function useGenerateForm({
-  defaultValues,
-}: {
-  defaultValues: FormInput;
-}) {
-  const [state, action] = useActionState(formSubmit, initialFormState);
-
-  const form = useAppForm({
-    ...generateFormOptions(defaultValues),
-    // biome-ignore lint/style/noNonNullAssertion: null
-    transform: useTransform((baseForm) => mergeForm(baseForm, state!), [state]),
-    onSubmitInvalid: (val) => {
-      console.log(val.formApi.getAllErrors());
-    },
-  });
-
-  return { form, action };
-}

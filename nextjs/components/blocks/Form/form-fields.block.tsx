@@ -53,11 +53,18 @@ export function FormField({
  * Text input component
  */
 export function FormTextInput({
+  type,
+  inputMode,
+  autoComplete,
   placeholder,
   className,
 }: Pick<
-  ComponentPropsWithoutRef<typeof Textarea>,
-  "placeholder" | "className"
+  ComponentPropsWithoutRef<typeof Input>,
+  | "type"
+  | "inputMode"
+  | "autoComplete"
+  | "placeholder"
+  | "className"
 >) {
   const field = useFieldContext<string>();
 
@@ -67,6 +74,9 @@ export function FormTextInput({
     <Input
       id={field.name}
       name={field.name}
+      type={type}
+      inputMode={inputMode}
+      autoComplete={autoComplete}
       placeholder={placeholder}
       className={cn("", className)}
       value={field.state.value}
@@ -105,7 +115,7 @@ export function FormTextarea({
 /**
  * Select component
  */
-export function FormSelect<TValue>({
+export function FormSelect({
   items,
   placeholder,
   className,
@@ -113,7 +123,7 @@ export function FormSelect<TValue>({
   ComponentPropsWithoutRef<typeof SelectValue>,
   "placeholder" | "className"
 > & {
-  items: readonly { label: string; value: TValue }[];
+  items: readonly { label: string; value: string }[];
 }) {
   const field = useFieldContext<string>();
 
