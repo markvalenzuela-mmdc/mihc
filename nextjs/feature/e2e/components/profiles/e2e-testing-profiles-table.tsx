@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useTransition } from "react";
 import { ChevronRightIcon } from "lucide-react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
@@ -10,6 +11,7 @@ import {
   useDataTableLimit,
   useDataTablePagination,
 } from "@/components/blocks/DataTable/use-data-table";
+import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
 import { Paginated } from "@/lib/drizzle/pagination";
 import { E2eProfileSummary } from "../../types/e2e-testing.types";
@@ -152,13 +154,21 @@ export function E2eTestingProfilesTable({
 
   return (
     <section className="space-y-3" aria-labelledby="profiles-title">
-      <div>
-        <h2 id="profiles-title" className="text-lg font-medium">
-          Test profiles
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Choose a profile to review enrollment data and run history.
-        </p>
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+        <div>
+          <h2 id="profiles-title" className="text-lg font-medium">
+            Test profiles
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Choose a profile to review enrollment data and run history.
+          </p>
+        </div>
+        <Link
+          href="/e2e-testing/profiles/new"
+          className={buttonVariants()}
+        >
+          New profile
+        </Link>
       </div>
 
       <DataTable.Provider

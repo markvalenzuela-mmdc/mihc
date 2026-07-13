@@ -573,16 +573,6 @@ export function E2eProfileFormPage({
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-8 py-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight text-balance">
-          Create E2E profile
-        </h1>
-        <p className="max-w-2xl text-sm text-pretty text-muted-foreground">
-          Build a reusable student profile one validated application step at a
-          time. Phase 1 drafts remain in this page only.
-        </p>
-      </header>
-
       <E2eProfileFormProgress
         activeStep={controller.activeStepNumber}
         steps={controller.steps}
