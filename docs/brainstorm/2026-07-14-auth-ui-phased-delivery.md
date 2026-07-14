@@ -1,6 +1,6 @@
 # Authentication UI Phased Delivery
 
-**Date:** 2026-07-14  
+**Date:** 2026-07-14
 **Status:** Approved for phase 1 implementation
 
 ## Context
@@ -127,4 +127,3 @@ Phase 1 is complete when:
 - Should failed BetterAuth login show an inline field/form error or a toast?
 - Should successful login preserve an originally requested protected URL, or
   always redirect to `/smoke-testing`?
-
