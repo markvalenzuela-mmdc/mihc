@@ -16,6 +16,10 @@ contains both flow definitions, reusable option sets, field conditions,
 dependent/cascade metadata, upload limits, and automation examples. Do not
 duplicate its options in `nextjs/` or `playwright/`.
 
+Large cascading catalogs are stored once under
+`reusableDependentOptionSets`; fields reference those catalogs and the runtime
+normalizes them to the same `optionsByDependency` shape used by all consumers.
+
 ## Public API
 
 ```ts
