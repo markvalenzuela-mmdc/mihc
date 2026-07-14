@@ -23,11 +23,7 @@ export type E2eProfileFormPendingAction =
 export type E2eProfileFormFieldErrors = Record<string, string[]>;
 export type E2eProfileFormActionError =
   | E2eProfileFormFieldErrors
-  | "notFound"
   | "emailConflict"
-  | "flowConflict"
-  | "definitionConflict"
-  | "locked"
   | "forbidden"
   | "unexpected";
 

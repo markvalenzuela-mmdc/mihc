@@ -61,7 +61,7 @@ function ProfileFormStepIntroduction({
       <h2 className="text-lg font-semibold text-balance">{step.title}</h2>
       {step.sections.length === 0 && (
         <p className="max-w-2xl text-sm text-muted-foreground">
-          Confirm the complete profile is valid before finishing this draft.
+          Confirm the complete profile is valid before finishing.
         </p>
       )}
     </div>

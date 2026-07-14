@@ -1,5 +1,4 @@
 import { StatusBadge } from "@/components/status-badge";
-import { buttonVariants } from "@/components/ui/button";
 import {
   SheetHeader,
   SheetTitle,
@@ -13,7 +12,6 @@ import {
   ChevronRightIcon,
 } from "lucide-react";
 import { memo, useMemo } from "react";
-import Link from "next/link";
 import { PageNumberPaginationMeta } from "@/lib/drizzle/pagination";
 import {
   E2eProfileWorkspaceProfile,
@@ -80,14 +78,6 @@ export function ProfileWorkspaceHeader({
           <SheetTitle>{profile.name}</SheetTitle>
           <StatusBadge status={profile.status} />
         </div>
-        {profile.status === "new" && (
-          <Link
-            href={`/e2e-testing/profiles/${profile.id}/edit`}
-            className={buttonVariants({ variant: "outline", size: "sm" })}
-          >
-            Edit profile
-          </Link>
-        )}
       </div>
       <SheetDescription>
         {profile.email} | {profile.flowType}

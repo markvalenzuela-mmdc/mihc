@@ -161,7 +161,13 @@ async function advanceToStep(
       ).toBeVisible(),
     );
     await waitFor(() =>
-      expect(getProfileFormActionButton("Continue")).toBeEnabled(),
+      expect(
+        getProfileFormActionButton(
+          currentStep + 1 === stepDefinitions.length
+            ? "Validate and finish"
+            : "Continue",
+        ),
+      ).toBeEnabled(),
     );
   }
 }
@@ -685,15 +691,16 @@ describe("E2eProfileFormPage", () => {
   });
 
   it("delegates a confirmation step to the real contract validator", async () => {
+    renderPage();
+    fillValidCore();
+    await advanceToStep(4);
+
     vi.mocked(getEnrollmateStepValidator).mockImplementationOnce(
       (flowType, stepNumber) =>
         contractValidation.realGetStepValidator!(flowType, stepNumber) as ReturnType<
           typeof getEnrollmateStepValidator
         >,
     );
-    renderPage();
-    fillValidCore();
-    await advanceToStep(4);
 
     fireEvent.click(getProfileFormActionButton("Validate and finish"));
 
@@ -824,6 +831,7 @@ describe("E2eProfileFormPage", () => {
         expect.any(Function),
       ),
     );
+    removeEventListener.mockClear();
 
     fireEvent.click(getProfileFormActionButton("Continue"));
 

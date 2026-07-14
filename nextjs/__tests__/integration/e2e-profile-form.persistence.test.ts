@@ -4,10 +4,7 @@ import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 
 import { authUser, getDb, profileForms, profiles } from "@/lib/drizzle/db";
-import {
-  E2eProfileFormError,
-  E2eProfileFormErrorCode,
-} from "@/feature/e2e/errors/e2e-profile-form.error";
+import { E2eProfileFormErrorCode } from "@/feature/e2e/errors/e2e-profile-form.error";
 import { finalizeE2eProfileForm } from "@/feature/e2e/services/e2e-profile-form-finalization.service";
 import { createProfileFormData } from "@/lib/drizzle/seed/seed-profiles";
 import { useIntegrationTestDatabase } from "./helpers/test-db";
@@ -117,11 +114,5 @@ describe("E2E profile form persistence", () => {
         getDb(),
       ),
     ).rejects.toMatchObject({ code: E2eProfileFormErrorCode.EMAIL_CONFLICT });
-  });
-
-  it("keeps the domain error as the only expected service failure type", () => {
-    expect(
-      new E2eProfileFormError(E2eProfileFormErrorCode.NOT_FOUND),
-    ).toBeInstanceOf(E2eProfileFormError);
   });
 });
