@@ -6,6 +6,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 
 import { seedE2eRuns } from "./seed/seed-e2e-runs";
 import { seedE2eSteps } from "./seed/seed-e2e-steps";
+import { seedAuthUser } from "./seed/seed-auth";
 import { seedOperatorAndApps } from "./seed/seed-operator";
 import { seedProfiles } from "./seed/seed-profiles";
 import { seedSmokeRuns } from "./seed/seed-smoke-runs";
@@ -24,6 +25,8 @@ export async function seedDatabase() {
   const successMessages: string[] = [];
 
   try {
+    successMessages.push(...await seedAuthUser(seedDb));
+
     await seedDb.transaction(async (tx) => {
       successMessages.push(...await seedOperatorAndApps(tx));
       successMessages.push(...await seedSmokeRuns(tx));
