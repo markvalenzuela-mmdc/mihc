@@ -23,6 +23,7 @@ _default:
     @echo ""
     @echo "  playwright"
     @echo "    test-playwright       Run smoke tests (live MMDC website)"
+    @echo "    test-playwright-e2e  Run e2e tests (live EnrollMate UAT)"
     @echo "    test-playwright-unit  Run consumer unit tests"
     @echo "    serve-playwright      Start the Inngest consumer server"
     @echo ""
@@ -101,6 +102,10 @@ docker-deploy action="up":
 test-playwright:
     cd {{project_root}}/playwright && pnpm run test:smoke
 
+# Run the e2e suite against the live EnrollMate UAT (enrollmate project)
+test-playwright-e2e:
+    cd {{project_root}}/playwright && pnpm run test:e2e
+
 # Run the consumer unit tests (pure result mapping)
 test-playwright-unit:
     cd {{project_root}}/playwright && pnpm run test:unit
@@ -115,4 +120,4 @@ serve-playwright:
 lint-all: lint
 
 # Run all tests
-test-all: test-playwright-unit test-playwright
+test-all: test-playwright-unit test-playwright test-playwright-e2e
