@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - feat/CU-86d3keu25-github-actions-playwright-image
     tags:
       - "v*.*.*"
     paths:
