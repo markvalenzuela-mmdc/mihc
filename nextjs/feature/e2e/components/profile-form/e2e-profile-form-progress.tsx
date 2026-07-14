@@ -20,7 +20,7 @@ export function E2eProfileFormProgress({
 }: E2eProfileFormProgressProps) {
   return (
     <nav aria-label="Profile creation progress">
-      <ol className="grid gap-2 sm:grid-cols-4 sm:gap-0 sm:divide-x sm:overflow-hidden sm:rounded-lg sm:border sm:bg-card">
+      <ol className="grid gap-2 sm:grid-flow-col sm:auto-cols-fr sm:gap-0 sm:divide-x sm:overflow-hidden sm:rounded-lg sm:border sm:bg-card">
         {steps.map((step) => {
           const isActive = step.step === activeStep;
           const isValidated = validatedSteps.has(step.step);
