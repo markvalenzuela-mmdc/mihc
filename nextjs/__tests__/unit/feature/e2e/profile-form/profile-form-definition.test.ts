@@ -1,4 +1,7 @@
-import { getEnrollmateFlowDefinition } from "@mihc/enrollmate-contract";
+import {
+  getEnrollmateFlowDefinition,
+  getEnrollmateStepValidator,
+} from "@mihc/enrollmate-contract";
 import type {
   EnrollmateField,
   EnrollmateFlowDefinition,
@@ -6,6 +9,7 @@ import type {
 import { describe, expect, it } from "vitest";
 
 import { serializeE2eProfileFormEditorSteps } from "@/feature/e2e/serializers/e2e-profile-form-editor.serializer";
+import type { E2eProfileFormValues } from "@/feature/e2e/types/e2e-profile-form.types";
 import {
   clearUnavailableE2eProfileFormValues,
   extractE2eProfileStepValues,
@@ -15,6 +19,7 @@ import {
   isEnrollmateParentFieldDisabled,
   isEnrollmateFieldVisible,
 } from "@/feature/e2e/utils/e2e-profile-form.util";
+import { getE2eProfileStepMockValues } from "@/feature/e2e/utils/e2e-profile-form-mock.util";
 
 const bachelors = getEnrollmateFlowDefinition("bachelors");
 
@@ -26,6 +31,31 @@ function getBachelorsField(fieldName: string) {
 
   if (!field) throw new Error(`Missing bachelors field: ${fieldName}`);
   return field;
+}
+
+function getFlowFields(flow: EnrollmateFlowDefinition) {
+  return flow.steps.flatMap((step) =>
+    step.sections.flatMap((section) => section.fields),
+  );
+}
+
+function getEmptyFormValues(
+  flowType: "bachelors" | "microcredentials",
+): E2eProfileFormValues {
+  const flow = getEnrollmateFlowDefinition(flowType);
+
+  return {
+    core: {
+      name: "",
+      middleName: "",
+      email: "",
+      flowType,
+    },
+    enrollmate: clearUnavailableE2eProfileFormValues(
+      flow,
+      getDefaultE2eProfileFormValues(flow),
+    ),
+  };
 }
 
 describe("E2E profile form definition adapters", () => {
@@ -213,6 +243,92 @@ describe("E2E profile form definition adapters", () => {
     );
     expect(steps[0]!.sections[0]!.fields[0]!.options).toBe(
       sourceFirstSection.fields[0]!.options,
+    );
+  });
+
+  it.each(["bachelors", "microcredentials"] as const)(
+    "generates valid empty-step values for %s",
+    (flowType) => {
+      const flow = getEnrollmateFlowDefinition(flowType);
+      const current = getEmptyFormValues(flowType);
+
+      for (const step of flow.steps) {
+        const generated = getE2eProfileStepMockValues(
+          flow,
+          step.step,
+          current,
+          [],
+        );
+        const result = getEnrollmateStepValidator(
+          flowType,
+          step.step,
+        ).safeParse({
+          ...current.enrollmate,
+          ...generated.enrollmate,
+        });
+
+        expect(result.success, `${flowType} step ${step.step}`).toBe(true);
+      }
+    },
+  );
+
+  it("uses only contract-resolved options for generated choices", () => {
+    const flow = getEnrollmateFlowDefinition("bachelors");
+    const current = getEmptyFormValues("bachelors");
+
+    for (const step of flow.steps) {
+      const generated = getE2eProfileStepMockValues(
+        flow,
+        step.step,
+        current,
+        [],
+      );
+      const values = { ...current.enrollmate, ...generated.enrollmate };
+
+      for (const field of getFlowFields(flow).filter(
+        (candidate) =>
+          candidate.type === "select" || candidate.type === "combobox",
+      )) {
+        if (!Object.hasOwn(generated.enrollmate, field.name)) continue;
+        if (
+          field.optionSource?.kind === "cascade" ||
+          field.optionSource?.kind === "external"
+        ) {
+          continue;
+        }
+
+        expect(
+          getEnrollmateFieldOptions(field, values).map(
+            (option) => option.value,
+          ),
+        ).toContain(values[field.name]);
+      }
+    }
+  });
+
+  it("fills empty values without overwriting existing values", () => {
+    const flow = getEnrollmateFlowDefinition("bachelors");
+    const current = getEmptyFormValues("bachelors");
+    current.core.name = "Existing Student";
+    current.core.email = "existing.student@example.com";
+    current.enrollmate.programFocus = "BS Information Technology";
+
+    const generated = getE2eProfileStepMockValues(flow, 1, current, []);
+
+    expect(generated.core).not.toHaveProperty("name");
+    expect(generated.core).not.toHaveProperty("email");
+    expect(generated.enrollmate).not.toHaveProperty("programFocus");
+    expect(generated.enrollmate.programApplied).toBeTruthy();
+    expect(
+      getEnrollmateFieldOptions(
+        getBachelorsField("programApplied"),
+        {
+          ...current.enrollmate,
+          ...generated.enrollmate,
+        },
+      ),
+    ).toContainEqual(
+      expect.objectContaining({ value: generated.enrollmate.programApplied }),
     );
   });
 });

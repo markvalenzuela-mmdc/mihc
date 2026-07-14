@@ -87,6 +87,7 @@ export function E2eProfileFormPage({
 }: E2eProfileFormPageProps) {
   const controller = useE2eProfileFormController({
     finalize,
+    fixtures,
     flows,
     initialValues,
     initialStep,
@@ -167,9 +168,11 @@ export function E2eProfileFormPage({
           </fieldset>
 
           <E2eProfileFormActions
+            canMockCurrentStep={controller.activeStep.sections.length > 0}
             currentStep={controller.activeStepNumber}
             totalSteps={controller.steps.length}
             isPending={controller.isPending}
+            onMockCurrentStep={controller.mockCurrentStep}
             onPrevious={controller.goToPreviousStep}
             onContinue={() => void controller.saveAndContinue()}
             onFinalize={() => void controller.finalizeProfile()}

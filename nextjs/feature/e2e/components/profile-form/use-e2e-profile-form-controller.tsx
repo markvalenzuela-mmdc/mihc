@@ -14,6 +14,7 @@ import {
   FinalizeE2eProfileForm,
   SaveE2eProfileDraft,
   E2eProfileFormFieldErrors,
+  E2eProfileFixture,
   E2eProfileFormValues,
   E2eProfileFormActionError,
   E2eProfileFormEditorStep,
@@ -23,6 +24,7 @@ import {
   getDefaultE2eProfileFormValues,
   extractE2eProfileStepValues,
 } from "../../utils/e2e-profile-form.util";
+import { getE2eProfileStepMockValues } from "../../utils/e2e-profile-form-mock.util";
 import { e2eProfileFormOptions } from "./e2e-profile-core-fields";
 import { E2eProfileFormPageBaseProps } from "./e2e-profile-form-page";
 
@@ -124,6 +126,7 @@ function focusElement(id: string) {
 
 function useE2eProfileFormController({
   finalize,
+  fixtures,
   flows,
   initialValues,
   initialStep,
@@ -141,6 +144,7 @@ function useE2eProfileFormController({
   | "profileId"
 > & {
   finalize: FinalizeE2eProfileForm;
+  fixtures: readonly E2eProfileFixture[];
   saveDraft: SaveE2eProfileDraft;
 }) {
   const [queryStep, setQueryStep] = useQueryState(
@@ -495,6 +499,32 @@ function useE2eProfileFormController({
     void setQueryStep(activeStepNumber - 1);
   }
 
+  function mockCurrentStep() {
+    if (pendingRef.current) return;
+
+    const generated = getE2eProfileStepMockValues(
+      getEnrollmateFlowDefinition(flowType),
+      activeStep.step,
+      form.state.values,
+      fixtures,
+    );
+
+    for (const [fieldName, value] of Object.entries(generated.core)) {
+      form.setFieldValue(
+        `core.${fieldName}` as DeepKeys<E2eProfileFormValues>,
+        value as never,
+      );
+    }
+    for (const [fieldName, value] of Object.entries(generated.enrollmate)) {
+      form.setFieldValue(
+        `enrollmate.${fieldName}` as DeepKeys<E2eProfileFormValues>,
+        value as never,
+      );
+    }
+
+    clearErrors();
+  }
+
   function blockPendingFieldChange(event: SyntheticEvent) {
     if (!pendingRef.current) return;
     event.preventDefault();
@@ -512,6 +542,7 @@ function useE2eProfileFormController({
     goToPreviousStep,
     isFlowLocked: Boolean(profileId),
     isPending,
+    mockCurrentStep,
     saveAndContinue,
     steps,
     validatedSteps,

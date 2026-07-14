@@ -3,18 +3,22 @@
 import { Button } from "@/components/ui/button";
 
 type E2eProfileFormActionsProps = {
+  canMockCurrentStep: boolean;
   currentStep: number;
   totalSteps: number;
   isPending: boolean;
+  onMockCurrentStep: () => void;
   onPrevious: () => void;
   onContinue: () => void;
   onFinalize: () => void;
 };
 
 export function E2eProfileFormActions({
+  canMockCurrentStep,
   currentStep,
   totalSteps,
   isPending,
+  onMockCurrentStep,
   onPrevious,
   onContinue,
   onFinalize,
@@ -48,6 +52,16 @@ export function E2eProfileFormActions({
         </Button>
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
+          {canMockCurrentStep && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isPending}
+              onClick={onMockCurrentStep}
+            >
+              Mock current step
+            </Button>
+          )}
           {isConfirmationStep ? (
             <Button type="button" disabled={isPending} onClick={onFinalize}>
               Validate and finish

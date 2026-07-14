@@ -272,11 +272,14 @@ describe("E2eProfileFormActions", () => {
   it("renders Previous and Continue without the old save actions", () => {
     const onPrevious = vi.fn();
     const onContinue = vi.fn();
+    const onMockCurrentStep = vi.fn();
     render(
       <E2eProfileFormActions
+        canMockCurrentStep
         currentStep={2}
         totalSteps={3}
         isPending={false}
+        onMockCurrentStep={onMockCurrentStep}
         onPrevious={onPrevious}
         onContinue={onContinue}
         onFinalize={vi.fn()}
@@ -285,6 +288,9 @@ describe("E2eProfileFormActions", () => {
 
     expect(screen.getByRole("button", { name: "Previous" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Continue" })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "Mock current step" }),
+    ).toBeEnabled();
     expect(
       screen.queryByRole("button", { name: "Save and continue" }),
     ).not.toBeInTheDocument();
@@ -297,16 +303,20 @@ describe("E2eProfileFormActions", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Previous" }));
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.click(screen.getByRole("button", { name: "Mock current step" }));
     expect(onPrevious).toHaveBeenCalledOnce();
     expect(onContinue).toHaveBeenCalledOnce();
+    expect(onMockCurrentStep).toHaveBeenCalledOnce();
   });
 
   it("shows the finish action on confirmation and disables every action while pending", () => {
     render(
       <E2eProfileFormActions
+        canMockCurrentStep
         currentStep={3}
         totalSteps={3}
         isPending
+        onMockCurrentStep={vi.fn()}
         onPrevious={vi.fn()}
         onContinue={vi.fn()}
         onFinalize={vi.fn()}
@@ -337,9 +347,11 @@ describe("E2eProfileFormActions", () => {
     const onFinalize = vi.fn();
     render(
       <E2eProfileFormActions
+        canMockCurrentStep={false}
         currentStep={3}
         totalSteps={3}
         isPending={false}
+        onMockCurrentStep={onFinalize}
         onPrevious={vi.fn()}
         onContinue={vi.fn()}
         onFinalize={onFinalize}
@@ -350,6 +362,9 @@ describe("E2eProfileFormActions", () => {
       screen.getByRole("button", { name: "Validate and finish" }),
     );
     expect(onFinalize).toHaveBeenCalledOnce();
+    expect(
+      screen.queryByRole("button", { name: "Mock current step" }),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -526,6 +541,22 @@ describe("E2eProfileFormPage", () => {
         })).getByText(bachelorSteps[1]!.title).closest("li"),
       ).toHaveAttribute("aria-current", "step"),
     );
+  });
+
+  it("mocks empty current-step fields without submitting", async () => {
+    const saveDraft = successfulDraft();
+    const finalize = successfulFinalize();
+    renderPage({ finalize, saveDraft });
+
+    fireEvent.click(screen.getByRole("button", { name: "Mock current step" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("textbox", { name: "Full name" })).toHaveValue(
+        "Mock Student",
+      ),
+    );
+    expect(saveDraft).not.toHaveBeenCalled();
+    expect(finalize).not.toHaveBeenCalled();
   });
 
   it("preserves values and exposes injected field errors", async () => {
