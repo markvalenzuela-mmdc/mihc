@@ -37,7 +37,7 @@ export default function E2eProfileWorkspaceSheet() {
       ...runLimitSearchParams,
     },
     {
-      shallow: false,
+      shallow: true,
       history: "push",
       startTransition,
     },

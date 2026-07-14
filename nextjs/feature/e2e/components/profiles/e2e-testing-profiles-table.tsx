@@ -124,7 +124,7 @@ export function E2eTestingProfilesTable({
       ...runPaginationSearchParams,
     },
     {
-      shallow: false,
+      shallow: true,
       history: "push",
       startTransition,
     },

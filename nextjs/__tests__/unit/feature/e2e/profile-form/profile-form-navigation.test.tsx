@@ -1,5 +1,5 @@
 import { getEnrollmateFlowDefinition } from "@mihc/enrollmate-contract";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -77,6 +77,54 @@ describe("E2E profile creation navigation", () => {
     expect(screen.getByRole("link", { name: "New profile" })).toHaveAttribute(
       "href",
       "/e2e-testing/profiles/new",
+    );
+  });
+
+  it("opens a profile with shallow URL state", async () => {
+    const onUrlUpdate = vi.fn();
+
+    render(
+      <NuqsTestingAdapter onUrlUpdate={onUrlUpdate}>
+        <E2eTestingProfilesTable
+          profiles={{
+            data: [
+              {
+                id: "profile-1",
+                name: "Ari Santos",
+                email: "ari.santos@example.edu",
+                flowType: "bachelors",
+                status: "new",
+                latestRun: null,
+              },
+            ],
+            meta: {
+              isFirstPage: true,
+              isLastPage: true,
+              currentPage: 1,
+              previousPage: null,
+              nextPage: null,
+              pageCount: 1,
+              totalCount: 1,
+            },
+          }}
+        />
+      </NuqsTestingAdapter>,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Open profile Ari Santos" }),
+    );
+
+    await waitFor(() =>
+      expect(onUrlUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          queryString: "?profile=profile-1",
+          options: expect.objectContaining({
+            history: "push",
+            shallow: true,
+          }),
+        }),
+      ),
     );
   });
 
