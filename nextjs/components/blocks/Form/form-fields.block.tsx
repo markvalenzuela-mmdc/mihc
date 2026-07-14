@@ -46,15 +46,18 @@ export function FormField({
   label,
   errorId,
   required = false,
+  orientation = "vertical",
   className,
   children,
   ...props
-}: ComponentPropsWithoutRef<typeof Field> & {
+}: Omit<ComponentPropsWithoutRef<typeof Field>, "orientation"> & {
   errorId?: string;
   label: string;
+  orientation?: "vertical" | "horizontal";
   required?: boolean;
 }) {
   const field = useFieldContext();
+  const isHorizontal = orientation === "horizontal";
 
   const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
   const errorMessages = [
@@ -64,7 +67,13 @@ export function FormField({
   return (
     <Field
       data-invalid={isInvalid}
-      className={cn("gap-0", className)}
+      orientation={orientation}
+      className={cn(
+        "gap-0",
+        isHorizontal &&
+          "flex-wrap gap-2 [&>div:first-child]:min-w-0 [&>div:first-child]:flex-1 [&>p]:basis-full [&>[role=alert]]:basis-full",
+        className,
+      )}
       {...props}
     >
       <div className="flex items-center gap-2">

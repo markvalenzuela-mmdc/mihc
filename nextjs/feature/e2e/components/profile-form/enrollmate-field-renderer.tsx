@@ -29,6 +29,7 @@ type RegisteredFormFieldProps = PropsWithChildren<
   ComponentPropsWithoutRef<"div"> & {
     errorId?: string;
     label: string;
+    orientation?: "vertical" | "horizontal";
     required?: boolean;
   }
 >;
@@ -235,6 +236,7 @@ export function EnrollmateFieldRenderer({
     <boundField.FormField
       errorId={errorId}
       label={definition.label}
+      orientation={definition.type === "checkbox" ? "horizontal" : "vertical"}
       required={isRequired}
       className={"gap-2"}
     >

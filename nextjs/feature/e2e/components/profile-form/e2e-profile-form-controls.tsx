@@ -114,7 +114,7 @@ export function E2eProfileCheckboxControl({
       id={field.name}
       name={field.name}
       disabled={disabled}
-      className="size-5 max-w-5 rounded-sm border-2"
+      className="order-first size-5 max-w-5 rounded-sm border-2"
       checked={field.state.value}
       onCheckedChange={(checked) => field.handleChange(checked)}
       onBlur={field.handleBlur}

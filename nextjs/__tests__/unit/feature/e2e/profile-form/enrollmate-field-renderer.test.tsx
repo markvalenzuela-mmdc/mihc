@@ -263,8 +263,12 @@ describe("EnrollmateFieldRenderer", () => {
     expect(
       screen.getByRole("checkbox", { name: definition.label }),
     ).toHaveAttribute("data-slot", "checkbox");
-    expect(screen.getByRole("group")).toHaveClass(
-      "[&>[data-slot=checkbox]]:w-fit",
+    expect(
+      screen.getByRole("checkbox", { name: definition.label }),
+    ).toHaveClass("order-first");
+    expect(screen.getByRole("group")).toHaveAttribute(
+      "data-orientation",
+      "horizontal",
     );
 
     await waitFor(() =>
