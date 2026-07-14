@@ -19,7 +19,7 @@ export default function SmokeRunDetailsSheet() {
         if (!open) setSelectedRunId(null);
       }}
     >
-      <SheetContent className="w-full overflow-y-auto sm:max-w-3xl">
+      <SheetContent className="w-full sm:max-w-3xl">
         <SmokeRunDetailsContent query={query} />
       </SheetContent>
     </Sheet>
