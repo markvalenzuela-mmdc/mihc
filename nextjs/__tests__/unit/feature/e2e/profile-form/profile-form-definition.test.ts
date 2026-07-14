@@ -11,6 +11,8 @@ import {
   extractE2eProfileStepValues,
   getDefaultE2eProfileFormValues,
   getEnrollmateFieldOptions,
+  isEnrollmateFieldRendered,
+  isEnrollmateParentFieldDisabled,
   isEnrollmateFieldVisible,
 } from "@/feature/e2e/utils/e2e-profile-form.util";
 
@@ -43,6 +45,36 @@ describe("E2E profile form definition adapters", () => {
         lastschOther: "Old school",
       }),
     ).not.toHaveProperty("lastschOther");
+  });
+
+  it("keeps parent fields rendered and clears non-living parent values", () => {
+    const fatherName = getBachelorsField("fthrGivenName");
+    const values = {
+      fthrDeceased: "Deceased",
+      fthrGivenName: "Existing Father",
+      fthrCurraddrCountry: "Philippines",
+      copyPermafatherAddressCheckbox: true,
+      mthrDeceased: "Living",
+      mthrGivenName: "Existing Mother",
+    };
+
+    expect(isEnrollmateFieldRendered(fatherName, values)).toBe(true);
+    expect(isEnrollmateParentFieldDisabled(fatherName, values)).toBe(true);
+    expect(
+      isEnrollmateParentFieldDisabled(fatherName, {
+        ...values,
+        fthrDeceased: "Living",
+      }),
+    ).toBe(false);
+
+    expect(clearUnavailableE2eProfileFormValues(bachelors, values)).toEqual(
+      expect.objectContaining({
+        fthrGivenName: "",
+        fthrCurraddrCountry: "",
+        copyPermafatherAddressCheckbox: false,
+        mthrGivenName: "Existing Mother",
+      }),
+    );
   });
 
   it("resolves dependent options from the current values", () => {

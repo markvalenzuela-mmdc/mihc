@@ -91,6 +91,7 @@ export function FormTextInput({
   inputMode,
   autoComplete,
   placeholder,
+  disabled,
   className,
   "aria-describedby": ariaDescribedBy,
   "aria-errormessage": ariaErrorMessage,
@@ -101,6 +102,7 @@ export function FormTextInput({
   | "inputMode"
   | "autoComplete"
   | "placeholder"
+  | "disabled"
   | "className"
 > &
   FormControlAccessibilityProps) {
@@ -116,6 +118,7 @@ export function FormTextInput({
       inputMode={inputMode}
       autoComplete={autoComplete}
       placeholder={placeholder}
+      disabled={disabled}
       className={cn("", className)}
       value={field.state.value}
       onChange={(e) => field.handleChange(e.target.value)}
@@ -133,13 +136,14 @@ export function FormTextInput({
  */
 export function FormTextarea({
   placeholder,
+  disabled,
   className,
   "aria-describedby": ariaDescribedBy,
   "aria-errormessage": ariaErrorMessage,
   "aria-required": ariaRequired,
 }: Pick<
   ComponentPropsWithoutRef<typeof Textarea>,
-  "placeholder" | "className"
+  "placeholder" | "disabled" | "className"
 > &
   FormControlAccessibilityProps) {
   const field = useFieldContext<string>();
@@ -151,6 +155,7 @@ export function FormTextarea({
       id={field.name}
       name={field.name}
       placeholder={placeholder}
+      disabled={disabled}
       className={cn("", className)}
       value={field.state.value}
       onChange={(e) => field.handleChange(e.target.value)}
@@ -169,6 +174,7 @@ export function FormTextarea({
 export function FormSelect({
   items,
   placeholder,
+  disabled,
   className,
   "aria-describedby": ariaDescribedBy,
   "aria-errormessage": ariaErrorMessage,
@@ -178,6 +184,7 @@ export function FormSelect({
   "placeholder" | "className"
 > & {
   items: readonly { label: string; value: string }[];
+  disabled?: boolean;
 } &
   FormControlAccessibilityProps) {
   const field = useFieldContext<string>();
@@ -191,10 +198,12 @@ export function FormSelect({
         name={field.name}
         items={items}
         value={field.state.value}
+        disabled={disabled}
         onValueChange={(val) => val && field.handleChange(val)}
       >
         <SelectTrigger
           className={cn("flex-1", className)}
+          disabled={disabled}
           aria-describedby={ariaDescribedBy}
           aria-errormessage={isInvalid ? ariaErrorMessage : undefined}
           aria-invalid={isInvalid}

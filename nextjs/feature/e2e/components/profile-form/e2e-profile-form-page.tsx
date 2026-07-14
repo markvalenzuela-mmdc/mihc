@@ -8,7 +8,13 @@ import {
 } from "@mihc/enrollmate-contract";
 import { type DeepKeys, useStore } from "@tanstack/react-form";
 import { parseAsInteger, useQueryState } from "nuqs";
-import { type SyntheticEvent, useEffect, useRef, useState } from "react";
+import {
+  Fragment,
+  type SyntheticEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { useAppForm } from "@/components/blocks/Form/use-form.hook";
 import {
@@ -35,6 +41,7 @@ import {
   extractE2eProfileStepValues,
   getDefaultE2eProfileFormValues,
 } from "@/feature/e2e/utils/e2e-profile-form.util";
+import { Separator } from "@/components/ui/separator";
 
 type E2eProfileFormPageBaseProps = {
   flows: Record<EnrollmateFlowType, E2eProfileFormEditorStep[]>;
@@ -72,10 +79,14 @@ const ACTION_ERROR_MESSAGES = {
   notFound: "This profile could not be found.",
   emailConflict: "A profile already uses this email address.",
   flowConflict: "The application flow no longer matches this draft.",
-  definitionConflict: "The form definition changed. Review the profile before continuing.",
+  definitionConflict:
+    "The form definition changed. Review the profile before continuing.",
   forbidden: "You do not have permission to save this profile.",
   unexpected: "The profile could not be saved. Try again.",
-} satisfies Record<Exclude<E2eProfileFormActionError, E2eProfileFormFieldErrors>, string>;
+} satisfies Record<
+  Exclude<E2eProfileFormActionError, E2eProfileFormFieldErrors>,
+  string
+>;
 
 function clampStep(step: number, totalSteps: number) {
   return Math.min(Math.max(step, 1), totalSteps);
@@ -114,10 +125,18 @@ function normalizeActionFieldErrors(
 ): E2eProfileFormFieldErrors {
   return Object.fromEntries(
     Object.entries(errors).map(([fieldName, messages]) => {
-      if (fieldName.startsWith("core.") || fieldName.startsWith("enrollmate.")) {
+      if (
+        fieldName.startsWith("core.") ||
+        fieldName.startsWith("enrollmate.")
+      ) {
         return [fieldName, messages];
       }
-      if (fieldName === "name" || fieldName === "middleName" || fieldName === "email" || fieldName === "flowType") {
+      if (
+        fieldName === "name" ||
+        fieldName === "middleName" ||
+        fieldName === "email" ||
+        fieldName === "flowType"
+      ) {
         return [`core.${fieldName}`, messages];
       }
       return [`enrollmate.${fieldName}`, messages];
@@ -138,8 +157,10 @@ function getOrderedErrorFields(
   return Object.keys(errors).sort((left, right) => {
     const leftIndex = order.indexOf(left);
     const rightIndex = order.indexOf(right);
-    return (leftIndex < 0 ? order.length : leftIndex) -
-      (rightIndex < 0 ? order.length : rightIndex);
+    return (
+      (leftIndex < 0 ? order.length : leftIndex) -
+      (rightIndex < 0 ? order.length : rightIndex)
+    );
   });
 }
 
@@ -151,7 +172,11 @@ function focusElement(id: string) {
   window.setTimeout(() => document.getElementById(id)?.focus(), 0);
 }
 
-function ProfileFormErrorSummary({ messages }: { messages: readonly string[] }) {
+function ProfileFormErrorSummary({
+  messages,
+}: {
+  messages: readonly string[];
+}) {
   if (messages.length === 0) return null;
 
   return (
@@ -194,10 +219,7 @@ function useE2eProfileFormController({
   onExit,
   onFinish,
   saveDraft,
-}: Pick<
-  E2eProfileFormPageBaseProps,
-  "flows" | "onExit" | "onFinish"
-> & {
+}: Pick<E2eProfileFormPageBaseProps, "flows" | "onExit" | "onFinish"> & {
   finalize: FinalizeE2eProfileForm;
   saveDraft: SaveE2eProfileDraft;
 }) {
@@ -218,13 +240,30 @@ function useE2eProfileFormController({
     ...e2eProfileFormOptions,
     listeners: {
       onChange: ({ fieldApi, formApi }) => {
+        if (
+          fieldApi.name === "enrollmate.fthrDeceased" ||
+          fieldApi.name === "enrollmate.mthrDeceased"
+        ) {
+          formApi.setFieldValue(
+            "enrollmate",
+            clearUnavailableE2eProfileFormValues(
+              getEnrollmateFlowDefinition(formApi.state.values.core.flowType),
+              formApi.state.values.enrollmate,
+            ),
+            {
+              dontRunListeners: true,
+              dontUpdateMeta: true,
+              dontValidate: true,
+            },
+          );
+          return;
+        }
+
         if (fieldApi.name !== "core.flowType" || profileIdRef.current) return;
         const nextFlow = formApi.state.values.core.flowType;
         formApi.setFieldValue(
           "enrollmate",
-          getDefaultE2eProfileFormValues(
-            getEnrollmateFlowDefinition(nextFlow),
-          ),
+          getDefaultE2eProfileFormValues(getEnrollmateFlowDefinition(nextFlow)),
         );
         setValidatedSteps(new Set());
         setErrorMessages([]);
@@ -233,10 +272,7 @@ function useE2eProfileFormController({
     },
   });
 
-  const flowType = useStore(
-    form.store,
-    (state) => state.values.core.flowType,
-  );
+  const flowType = useStore(form.store, (state) => state.values.core.flowType);
   const isDirty = useStore(form.store, (state) => state.isDirty);
   const steps = flows[flowType];
   const activeStepNumber = clampStep(queryStep, steps.length);
@@ -276,17 +312,14 @@ function useE2eProfileFormController({
       const field = fieldName as DeepKeys<E2eProfileFormValues>;
       const currentMeta = form.getFieldMeta(field);
       if (!currentMeta) continue;
-      form.setFieldMeta(
-        field,
-        (previous = currentMeta) => ({
-          ...previous,
-          isTouched: errors[fieldName] ? true : previous.isTouched,
-          errorMap: {
-            ...previous.errorMap,
-            onSubmit: errors[fieldName],
-          },
-        }),
-      );
+      form.setFieldMeta(field, (previous = currentMeta) => ({
+        ...previous,
+        isTouched: errors[fieldName] ? true : previous.isTouched,
+        errorMap: {
+          ...previous.errorMap,
+          onSubmit: errors[fieldName],
+        },
+      }));
     }
 
     const orderedFields = getOrderedErrorFields(errors, steps);
@@ -610,26 +643,28 @@ export function E2eProfileFormPage({
                 {(values) => (
                   <div className="space-y-8">
                     {controller.activeStep.sections.map((section) => (
-                      <EnrollmateSection
-                        key={section.id}
-                        section={section}
-                        fixtures={boundary.fixtures}
-                        values={values}
-                        renderField={({ definition, fixtures, values }) => (
-                          <controller.form.AppField
-                            name={`enrollmate.${definition.name}`}
-                          >
-                            {(field) => (
-                              <EnrollmateFieldRenderer
-                                boundField={field}
-                                definition={definition}
-                                fixtures={fixtures}
-                                values={values}
-                              />
-                            )}
-                          </controller.form.AppField>
-                        )}
-                      />
+                      <Fragment key={section.id}>
+                        <EnrollmateSection
+                          section={section}
+                          fixtures={boundary.fixtures}
+                          values={values}
+                          renderField={({ definition, fixtures, values }) => (
+                            <controller.form.AppField
+                              name={`enrollmate.${definition.name}`}
+                            >
+                              {(field) => (
+                                <EnrollmateFieldRenderer
+                                  boundField={field}
+                                  definition={definition}
+                                  fixtures={fixtures}
+                                  values={values}
+                                />
+                              )}
+                            </controller.form.AppField>
+                          )}
+                        />
+                        <Separator />
+                      </Fragment>
                     ))}
                   </div>
                 )}

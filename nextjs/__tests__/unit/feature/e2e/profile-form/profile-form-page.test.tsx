@@ -353,6 +353,30 @@ describe("E2eProfileFormPage", () => {
     });
   });
 
+  it("clears and disables a parent's fields when status changes", async () => {
+    renderPage({ searchParams: "step=2" });
+
+    const fatherName = screen.getByRole("textbox", {
+      name: "Father First name",
+    });
+    fireEvent.change(fatherName, { target: { value: "Existing Father" } });
+
+    const livingStatuses = screen.getAllByRole("combobox", {
+      name: "Living Status",
+    });
+    expect(livingStatuses).toHaveLength(2);
+    fireEvent.click(livingStatuses[0]!);
+    const deceasedOption = await screen.findByRole("option", {
+      name: "Deceased",
+    });
+    fireEvent.pointerDown(deceasedOption);
+    fireEvent.pointerUp(deceasedOption);
+    fireEvent.click(deceasedOption);
+
+    await waitFor(() => expect(fatherName).toHaveValue(""));
+    expect(fatherName).toBeDisabled();
+  });
+
   it("keeps an invalid active step in place and focuses its first error", async () => {
     contractValidation.stepSafeParse.mockReturnValue({
       success: false,

@@ -15,10 +15,12 @@ import { FieldDescription } from "@/components/ui/field";
 import type { E2eProfileFixture } from "@/feature/e2e/types/e2e-profile-form.types";
 import {
   getEnrollmateFieldOptions,
-  isEnrollmateFieldVisible,
+  isEnrollmateParentFieldDisabled,
+  isEnrollmateFieldRendered,
 } from "@/feature/e2e/utils/e2e-profile-form.util";
 import {
   E2eProfileCheckboxControl,
+  E2eProfileDatePicker,
   E2eProfileFixtureControl,
   E2eProfileFreeEntryCombobox,
 } from "./e2e-profile-form-controls";
@@ -35,26 +37,36 @@ type RegisteredControlAccessibilityProps = {
   "aria-describedby"?: string;
   "aria-errormessage"?: string;
   "aria-required"?: boolean;
+  disabled?: boolean;
 };
 
 export type EnrollmateBoundField = {
   FormField: ComponentType<RegisteredFormFieldProps>;
-  FormSelect: ComponentType<{
-    className?: string;
-    items: readonly { label: string; value: string }[];
-    placeholder?: string;
-  } & RegisteredControlAccessibilityProps>;
-  FormTextInput: ComponentType<{
-    autoComplete?: string;
-    className?: string;
-    inputMode?: ComponentPropsWithoutRef<"input">["inputMode"];
-    placeholder?: string;
-    type?: HTMLInputTypeAttribute;
-  } & RegisteredControlAccessibilityProps>;
-  FormTextarea: ComponentType<{
-    className?: string;
-    placeholder?: string;
-  } & RegisteredControlAccessibilityProps>;
+  FormSelect: ComponentType<
+    {
+      className?: string;
+      disabled?: boolean;
+      items: readonly { label: string; value: string }[];
+      placeholder?: string;
+    } & RegisteredControlAccessibilityProps
+  >;
+  FormTextInput: ComponentType<
+    {
+      autoComplete?: string;
+      className?: string;
+      disabled?: boolean;
+      inputMode?: ComponentPropsWithoutRef<"input">["inputMode"];
+      placeholder?: string;
+      type?: HTMLInputTypeAttribute;
+    } & RegisteredControlAccessibilityProps
+  >;
+  FormTextarea: ComponentType<
+    {
+      className?: string;
+      disabled?: boolean;
+      placeholder?: string;
+    } & RegisteredControlAccessibilityProps
+  >;
 };
 
 export type EnrollmateFieldRenderProps = {
@@ -112,12 +124,14 @@ function renderControl({
   errorId,
   fixtures,
   isRequired,
+  isDisabled,
   values,
   descriptionId,
 }: EnrollmateFieldRendererProps & {
   descriptionId?: string;
   errorId: string;
   isRequired: boolean;
+  isDisabled: boolean;
 }) {
   const options = getEnrollmateFieldOptions(definition, values);
   const accessibility = {
@@ -125,12 +139,14 @@ function renderControl({
     "aria-errormessage": errorId,
     "aria-label": definition.label,
     "aria-required": isRequired,
+    disabled: isDisabled,
   };
 
   if (acceptsFreeEntry(definition)) {
     return (
       <E2eProfileFreeEntryCombobox
         {...accessibility}
+        disabled={isDisabled}
         options={options}
         placeholder={definition.placeholder}
       />
@@ -141,12 +157,20 @@ function renderControl({
     case "text":
     case "email":
     case "tel":
-    case "date":
       return (
         <boundField.FormTextInput
           {...accessibility}
+          disabled={isDisabled}
           type={getInputType(definition)}
           inputMode={getInputMode(definition)}
+          placeholder={definition.placeholder}
+        />
+      );
+    case "date":
+      return (
+        <E2eProfileDatePicker
+          {...accessibility}
+          disabled={isDisabled}
           placeholder={definition.placeholder}
         />
       );
@@ -154,6 +178,7 @@ function renderControl({
       return (
         <boundField.FormTextarea
           {...accessibility}
+          disabled={isDisabled}
           placeholder={definition.placeholder}
         />
       );
@@ -162,16 +187,20 @@ function renderControl({
       return (
         <boundField.FormSelect
           {...accessibility}
+          disabled={isDisabled}
           items={options}
           placeholder={definition.placeholder ?? "Select an option"}
         />
       );
     case "checkbox":
-      return <E2eProfileCheckboxControl {...accessibility} />;
+      return (
+        <E2eProfileCheckboxControl {...accessibility} disabled={isDisabled} />
+      );
     case "file":
       return (
         <E2eProfileFixtureControl
           {...accessibility}
+          disabled={isDisabled}
           fixtures={fixtures}
           placeholder="Select a fixture"
         />
@@ -189,23 +218,25 @@ export function EnrollmateFieldRenderer({
   fixtures,
   values,
 }: EnrollmateFieldRendererProps) {
-  if (!isEnrollmateFieldVisible(definition, values)) return null;
+  if (!isEnrollmateFieldRendered(definition, values)) return null;
 
   const descriptionId = definition.description
     ? getDescriptionId(definition)
     : undefined;
   const errorId = getErrorId(definition);
+  const isDisabled = isEnrollmateParentFieldDisabled(definition, values);
   const isRequired =
-    definition.required ||
-    (definition.requiredWhenConditionMet &&
-      definition.conditionalOn !== null);
+    !isDisabled &&
+    (definition.required ||
+      (definition.requiredWhenConditionMet &&
+        definition.conditionalOn !== null));
 
   return (
     <boundField.FormField
       errorId={errorId}
       label={definition.label}
       required={isRequired}
-      className="gap-2"
+      className={"gap-2"}
     >
       {renderControl({
         boundField,
@@ -214,6 +245,7 @@ export function EnrollmateFieldRenderer({
         errorId,
         fixtures,
         isRequired,
+        isDisabled,
         values,
       })}
       {definition.description && (

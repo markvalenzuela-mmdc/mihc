@@ -119,7 +119,6 @@ describe("EnrollmateFieldRenderer", () => {
   it.each([
     ["email", "email"],
     ["mobile", "tel"],
-    ["birthdate", "date"],
   ])("uses a semantic input type for %s", (fieldName, inputType) => {
     const definition = getField(fieldName);
     render(<RendererHarness definition={definition} />);
@@ -127,6 +126,27 @@ describe("EnrollmateFieldRenderer", () => {
     expect(screen.getByLabelText(definition.label)).toHaveAttribute(
       "type",
       inputType,
+    );
+  });
+
+  it("renders date fields with the Shadcn date picker", async () => {
+    const definition = getField("birthdate");
+    render(
+      <RendererHarness
+        definition={definition}
+        initialValue="2000-01-02"
+      />,
+    );
+
+    const datePicker = screen.getByRole("button", {
+      name: definition.label,
+    });
+    expect(datePicker).toHaveTextContent("2000");
+    expect(screen.queryByDisplayValue("2000-01-02")).not.toBeInTheDocument();
+
+    fireEvent.click(datePicker);
+    await waitFor(() =>
+      expect(document.querySelector('[data-slot="calendar"]')).toBeInTheDocument(),
     );
   });
 
@@ -215,6 +235,13 @@ describe("EnrollmateFieldRenderer", () => {
 
     fireEvent.click(screen.getByRole("checkbox", { name: definition.label }));
 
+    expect(
+      screen.getByRole("checkbox", { name: definition.label }),
+    ).toHaveAttribute("data-slot", "checkbox");
+    expect(screen.getByRole("group")).toHaveClass(
+      "[&>[data-slot=checkbox]]:w-fit",
+    );
+
     await waitFor(() =>
       expect(screen.getByTestId("field-value")).toHaveTextContent("true"),
     );
@@ -258,6 +285,22 @@ describe("EnrollmateFieldRenderer", () => {
     );
 
     expect(screen.queryByLabelText(definition.label)).not.toBeInTheDocument();
+  });
+
+  it("keeps non-living parent fields visible and disables them", () => {
+    const definition = getField("fthrGivenName");
+    render(
+      <RendererHarness
+        definition={definition}
+        initialValue="Existing Father"
+        values={{ fthrDeceased: "Deceased" }}
+      />,
+    );
+
+    expect(screen.getByLabelText(definition.label)).toBeDisabled();
+    expect(screen.getByLabelText(definition.label)).toHaveValue(
+      "Existing Father",
+    );
   });
 
   it("associates labels and descriptions and announces field errors", async () => {
@@ -415,6 +458,40 @@ describe("EnrollmateSection", () => {
         section.fields.map((field) => field.name),
       ),
     );
+  });
+
+  it("does not leave a layout child for a hidden conditional field", () => {
+    const section = serializeE2eProfileFormEditorSteps(bachelors)
+      .flatMap((step) => step.sections)
+      .find((candidate) => candidate.fields.some((field) => field.conditionalOn));
+    if (!section) throw new Error("Expected a section with a conditional field");
+
+    const hiddenField = section.fields.find((field) => field.conditionalOn);
+    if (!hiddenField?.conditionalOn) {
+      throw new Error("Expected a conditional field");
+    }
+
+    const { container } = render(
+      <EnrollmateSection
+        section={section}
+        fixtures={fixtures}
+        values={{ [hiddenField.conditionalOn.field]: "unmatched" }}
+        renderField={({ definition }) =>
+          definition.id === hiddenField.id ? null : (
+            <span data-field-name={definition.name}>{definition.label}</span>
+          )
+        }
+      />,
+    );
+
+    expect(
+      container.querySelector(`[data-field-name="${hiddenField.name}"]`),
+    ).not.toBeInTheDocument();
+    expect(
+      [...container.querySelectorAll("[data-field-name]")].some(
+        (element) => element.parentElement?.childElementCount === 0,
+      ),
+    ).toBe(false);
   });
 
   it("renders a real required checkbox group as a labelled fieldset", () => {

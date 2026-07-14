@@ -9,6 +9,46 @@ function getEnrollmateFields(flow: EnrollmateFlowDefinition) {
   );
 }
 
+function getEmptyEnrollmateFieldValue(field: EnrollmateField) {
+  if (field.type === "checkbox") return false;
+  if (field.type === "file") return undefined;
+  return "";
+}
+
+function getParentStatusFieldName(fieldName: string) {
+  if (
+    fieldName.startsWith("fthr") ||
+    fieldName.startsWith("copyfather") ||
+    fieldName.startsWith("copyPermafather")
+  ) {
+    return "fthrDeceased";
+  }
+  if (
+    fieldName.startsWith("mthr") ||
+    fieldName.startsWith("copyMother") ||
+    fieldName.startsWith("copyPermaMother")
+  ) {
+    return "mthrDeceased";
+  }
+  return undefined;
+}
+
+export function isEnrollmateParentField(field: EnrollmateField) {
+  return getParentStatusFieldName(field.name) !== undefined;
+}
+
+export function isEnrollmateParentFieldDisabled(
+  field: EnrollmateField,
+  values: Record<string, unknown>,
+) {
+  const statusFieldName = getParentStatusFieldName(field.name);
+  return (
+    statusFieldName !== undefined &&
+    field.name !== statusFieldName &&
+    values[statusFieldName] !== "Living"
+  );
+}
+
 export function getDefaultE2eProfileFormValues(
   flow: EnrollmateFlowDefinition,
 ): Record<string, unknown> {
@@ -39,6 +79,13 @@ export function isEnrollmateFieldVisible(
   );
 }
 
+export function isEnrollmateFieldRendered(
+  field: EnrollmateField,
+  values: Record<string, unknown>,
+) {
+  return isEnrollmateParentField(field) || isEnrollmateFieldVisible(field, values);
+}
+
 export function getEnrollmateFieldOptions(
   field: EnrollmateField,
   values: Record<string, unknown>,
@@ -62,6 +109,14 @@ export function clearUnavailableE2eProfileFormValues(
 
     for (const field of fields) {
       if (!isEnrollmateFieldVisible(field, availableValues)) {
+        if (isEnrollmateParentField(field)) {
+          const emptyValue = getEmptyEnrollmateFieldValue(field);
+          if (availableValues[field.name] !== emptyValue) {
+            availableValues[field.name] = emptyValue;
+            changed = true;
+          }
+          continue;
+        }
         if (Object.hasOwn(availableValues, field.name)) {
           delete availableValues[field.name];
           changed = true;

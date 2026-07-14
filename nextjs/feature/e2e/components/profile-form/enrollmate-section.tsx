@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 
 import {
   FieldDescription,
@@ -36,9 +36,9 @@ function renderFields({
   values,
 }: EnrollmateSectionProps) {
   return section.fields.map((definition) => (
-    <div key={definition.id}>
+    <Fragment key={definition.id}>
       {renderField({ definition, fixtures, values })}
-    </div>
+    </Fragment>
   ));
 }
 

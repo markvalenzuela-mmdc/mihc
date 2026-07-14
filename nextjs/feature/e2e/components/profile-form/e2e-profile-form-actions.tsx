@@ -28,7 +28,7 @@ export function E2eProfileFormActions({
       role="group"
       aria-label="Profile form actions"
       aria-busy={isPending}
-      className="space-y-3 border-t pt-6"
+      className="space-y-3 pt-6"
     >
       {isPending && (
         <p
