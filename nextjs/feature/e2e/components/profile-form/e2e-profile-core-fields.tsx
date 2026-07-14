@@ -34,8 +34,7 @@ export const e2eProfileFormOptions = formOptions({ defaultValues });
 
 export const E2eProfileCoreFields = withForm({
   ...e2eProfileFormOptions,
-  props: { isFlowLocked: false },
-  render: function Render({ form, isFlowLocked }) {
+  render: function Render({ form }) {
     return (
       <div className="space-y-6">
         <div className="space-y-1">
@@ -81,7 +80,7 @@ export const E2eProfileCoreFields = withForm({
             )}
           </form.AppField>
 
-          <fieldset disabled={isFlowLocked} className="min-w-0">
+          <fieldset className="min-w-0">
             <form.AppField name="core.flowType">
               {(field) => (
                 <field.FormField label="Application flow" required>
@@ -91,13 +90,8 @@ export const E2eProfileCoreFields = withForm({
                     aria-required="true"
                   />
                 </field.FormField>
-              )}
+                )}
             </form.AppField>
-            {isFlowLocked && (
-              <p className="mt-2 text-sm text-muted-foreground">
-                The application flow is locked after the first draft is saved.
-              </p>
-            )}
           </fieldset>
         </div>
       </div>

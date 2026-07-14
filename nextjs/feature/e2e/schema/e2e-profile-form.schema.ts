@@ -11,24 +11,7 @@ export type E2eProfileCoreInput = z.infer<typeof e2eProfileCoreSchema>;
 
 const e2eProfileStepDataSchema = z.record(z.string(), z.unknown());
 
-export const saveE2eProfileDraftSchema = z.discriminatedUnion("mode", [
-  z.object({
-    mode: z.literal("create"),
-    core: e2eProfileCoreSchema,
-    stepNumber: z.number().int().positive(),
-    stepData: e2eProfileStepDataSchema,
-  }),
-  z.object({
-    mode: z.literal("edit"),
-    profileId: z.uuid(),
-    core: e2eProfileCoreSchema,
-    stepNumber: z.number().int().positive(),
-    stepData: e2eProfileStepDataSchema,
-  }),
-]);
-
 export const finalizeE2eProfileFormSchema = z.object({
-  profileId: z.uuid(),
   core: e2eProfileCoreSchema,
   enrollmateData: e2eProfileStepDataSchema,
 });

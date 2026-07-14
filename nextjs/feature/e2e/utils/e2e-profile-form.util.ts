@@ -9,7 +9,7 @@ function getEnrollmateFields(flow: EnrollmateFlowDefinition) {
   );
 }
 
-function getEmptyEnrollmateFieldValue(field: EnrollmateField) {
+export function getEmptyEnrollmateFieldValue(field: EnrollmateField) {
   if (field.type === "checkbox") return false;
   if (field.type === "file") return undefined;
   return "";
@@ -144,17 +144,3 @@ export function clearUnavailableE2eProfileFormValues(
   return availableValues;
 }
 
-export function extractE2eProfileStepValues(
-  step: EnrollmateFlowDefinition["steps"][number],
-  values: Record<string, unknown>,
-): Record<string, unknown> {
-  const stepValues: Record<string, unknown> = {};
-
-  for (const field of step.sections.flatMap((section) => section.fields)) {
-    if (Object.hasOwn(values, field.name)) {
-      stepValues[field.name] = values[field.name];
-    }
-  }
-
-  return stepValues;
-}

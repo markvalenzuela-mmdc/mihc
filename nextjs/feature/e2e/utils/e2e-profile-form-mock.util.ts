@@ -1,3 +1,4 @@
+import { faker as defaultFaker, type Faker } from "@faker-js/faker";
 import type {
   EnrollmateField,
   EnrollmateFlowDefinition,
@@ -7,8 +8,10 @@ import type { E2eProfileCoreInput } from "@/feature/e2e/schema/e2e-profile-form.
 import type {
   E2eProfileFixture,
   E2eProfileFormValues,
+  E2eProfileMockMode,
 } from "@/feature/e2e/types/e2e-profile-form.types";
 import {
+  getEmptyEnrollmateFieldValue,
   getEnrollmateFieldOptions,
   isEnrollmateFieldRendered,
   isEnrollmateParentFieldDisabled,
@@ -19,24 +22,105 @@ export type E2eProfileStepMockValues = {
   enrollmate: Record<string, unknown>;
 };
 
-function isEmptyMockValue(value: unknown) {
+export type E2eProfileStepMockOptions = {
+  fixtures: readonly E2eProfileFixture[];
+  faker?: Faker;
+};
+
+type MockFieldContext = {
+  field: EnrollmateField;
+  section: EnrollmateFlowDefinition["steps"][number]["sections"][number];
+};
+
+type MockIdentity = {
+  firstName: string;
+  lastName: string;
+  middleName: string;
+  email: string;
+  birthdate: string;
+  mobile: string;
+};
+
+function isEmptyMockValue(field: EnrollmateField, value: unknown) {
+  if (value === undefined || value === null) return true;
+  if (field.type === "checkbox") return value === false;
+  if (field.type === "file") return typeof value !== "object";
+  return typeof value !== "string" || value.trim() === "";
+}
+
+function isEmptyCoreValue(value: unknown) {
   return value === undefined || value === null || value === "";
 }
 
-function getMockTextValue(field: EnrollmateField) {
+function hasMeaningfulMockValue(field: EnrollmateField, value: unknown) {
+  return !isEmptyMockValue(field, value);
+}
+
+function formatMockDate(value: Date) {
+  return value.toISOString().slice(0, 10);
+}
+
+function getUniqueMockEmail(firstName: string, lastName: string, faker: Faker) {
+  const localPart = `${firstName}.${lastName}`
+    .toLowerCase()
+    .replace(/[^a-z0-9.]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return `${localPart}.${faker.string.uuid()}@example.com`;
+}
+
+function getMockIdentity(faker: Faker): MockIdentity {
+  const firstName = faker.person.firstName();
+  const lastName = faker.person.lastName();
+
+  return {
+    firstName,
+    lastName,
+    middleName: faker.person.firstName(),
+    email: getUniqueMockEmail(firstName, lastName, faker),
+    birthdate: formatMockDate(
+      faker.date.birthdate({ min: 18, max: 35, mode: "age" }),
+    ),
+    mobile: `09${faker.string.numeric(9)}`,
+  };
+}
+
+function getMockEmail(identity: MockIdentity, faker: Faker) {
+  return getUniqueMockEmail(identity.firstName, identity.lastName, faker);
+}
+
+function getMockTextValue(
+  field: EnrollmateField,
+  identity: MockIdentity,
+  faker: Faker,
+) {
   const name = field.name.toLowerCase();
 
-  if (field.type === "email") return "mock.student@example.com";
-  if (field.type === "date") return "2000-01-01";
-  if (field.type === "tel") return "09171234567";
-  if (name.includes("zipcode")) return "1000";
-  if (name.includes("addrline")) return "123 Mock Street";
-  if (name.includes("givenname")) return "Alex";
-  if (name.includes("familyname")) return "Tester";
-  if (name.includes("birthplace")) return "Manila";
-  if (name.includes("occupation")) return "Student";
+  if (field.type === "email") {
+    return field.name === "email" ? identity.email : getMockEmail(identity, faker);
+  }
+  if (field.type === "date") return identity.birthdate;
+  if (field.type === "tel") return identity.mobile;
+  if (name.includes("givenname")) {
+    return field.name === "givenName"
+      ? identity.firstName
+      : faker.person.firstName();
+  }
+  if (name.includes("familyname")) {
+    return field.name === "familyName"
+      ? identity.lastName
+      : faker.person.lastName();
+  }
+  if (name === "middlename") return identity.middleName;
+  if (name.includes("zipcode")) return faker.location.zipCode();
+  if (name.includes("addrline")) return faker.location.streetAddress();
+  if (name.includes("birthplace")) return faker.location.city();
+  if (name.includes("occupation")) return faker.person.jobTitle();
+  if (name.includes("description") || field.type === "textarea") {
+    return faker.lorem.sentence({ min: 4, max: 9 });
+  }
 
-  return `Mock ${field.label}`;
+  return faker.lorem.words({ min: 2, max: 5 });
 }
 
 function getCompatibleFixture(
@@ -45,10 +129,12 @@ function getCompatibleFixture(
 ) {
   return fixtures.find((fixture) => {
     const filename = fixture.filename.toLowerCase();
-    const acceptsFilename = field.acceptedFormats.some((format) => {
-      const normalizedFormat = format.startsWith(".") ? format : `.${format}`;
-      return filename.endsWith(normalizedFormat.toLowerCase());
-    });
+    const acceptsFilename =
+      field.acceptedFormats.length === 0 ||
+      field.acceptedFormats.some((format) => {
+        const normalizedFormat = format.startsWith(".") ? format : `.${format}`;
+        return filename.endsWith(normalizedFormat.toLowerCase());
+      });
     const isWithinSizeLimit =
       field.maxSizeBytes === null || fixture.sizeBytes <= field.maxSizeBytes;
 
@@ -56,108 +142,317 @@ function getCompatibleFixture(
   });
 }
 
-function getMockFieldValue(
-  field: EnrollmateField,
-  values: Record<string, unknown>,
-  fields: readonly EnrollmateField[],
-  fixtures: readonly E2eProfileFixture[],
-) {
-  if (field.type === "checkbox") return false;
+function isCompatibleFileValue(field: EnrollmateField, value: unknown) {
+  if (typeof value !== "object" || value === null) return false;
+  const file = value as Partial<E2eProfileFixture>;
+  const filename = file.filename?.toLowerCase();
+  if (!filename) return false;
 
-  if (field.type === "file") {
-    return getCompatibleFixture(field, fixtures);
+  return (
+    (field.acceptedFormats.length === 0 ||
+      field.acceptedFormats.some((format) => {
+        const normalizedFormat = format.startsWith(".") ? format : `.${format}`;
+        return filename.endsWith(normalizedFormat.toLowerCase());
+      })) &&
+    typeof file.sizeBytes === "number" &&
+    (field.maxSizeBytes === null || file.sizeBytes <= field.maxSizeBytes)
+  );
+}
+
+function isMockFieldValueValid(
+  field: EnrollmateField,
+  value: unknown,
+  values: Record<string, unknown>,
+) {
+  if (isEmptyMockValue(field, value)) {
+    return !field.required && !field.requiredWhenConditionMet;
   }
+
+  if (field.type === "checkbox") return typeof value === "boolean";
+  if (field.type === "file") return isCompatibleFileValue(field, value);
+  if (typeof value !== "string" || value.trim() === "") return false;
+  if (field.type === "email") return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  if (field.type === "date") return /^\d{4}-\d{2}-\d{2}$/.test(value);
 
   if (field.type === "select" || field.type === "combobox") {
     if (
       field.optionSource?.kind === "cascade" ||
       field.optionSource?.kind === "external"
     ) {
-      return getMockTextValue(field);
+      return true;
     }
 
-    const options = getEnrollmateFieldOptions(field, values);
-    for (const option of options) {
-      const candidateValues = { ...values, [field.name]: option.value };
-      const revealsUnfillableRequiredField = fields.some((candidate) => {
-        if (candidate.conditionalOn?.field !== field.name) return false;
-        if (!candidate.required && !candidate.requiredWhenConditionMet) {
-          return false;
-        }
-        if (!isEnrollmateFieldRendered(candidate, candidateValues)) {
-          return false;
-        }
-        if (!isEmptyMockValue(candidateValues[candidate.name])) return false;
-        if (candidate.type !== "file") return false;
+    return getEnrollmateFieldOptions(field, values).some(
+      (option) => option.value === value,
+    );
+  }
 
-        return (
-          getMockFieldValue(
-            candidate,
-            candidateValues,
-            fields,
-            fixtures,
-          ) === undefined
-        );
-      });
+  return true;
+}
 
-      if (!revealsUnfillableRequiredField) return option.value;
+function canResolveRequiredFiles(
+  fields: readonly EnrollmateField[],
+  values: Record<string, unknown>,
+  fixtures: readonly E2eProfileFixture[],
+) {
+  return fields.every((field) => {
+    if (
+      field.type !== "file" ||
+      (!field.required && !field.requiredWhenConditionMet) ||
+      !isEnrollmateFieldRendered(field, values) ||
+      isEnrollmateParentFieldDisabled(field, values)
+    ) {
+      return true;
     }
 
+    return (
+      isCompatibleFileValue(field, values[field.name]) ||
+      getCompatibleFixture(field, fixtures) !== undefined
+    );
+  });
+}
+
+function getMockOption(
+  field: EnrollmateField,
+  values: Record<string, unknown>,
+  fields: readonly EnrollmateField[],
+  fixtures: readonly E2eProfileFixture[],
+  identity: MockIdentity,
+  faker: Faker,
+) {
+  const options = getEnrollmateFieldOptions(field, values);
+  if (options.length === 0) {
+    return field.optionSource?.kind === "dependent"
+      ? undefined
+      : getMockTextValue(field, identity, faker);
+  }
+
+  const startIndex = faker.number.int({ min: 0, max: options.length - 1 });
+  for (let offset = 0; offset < options.length; offset += 1) {
+    const option = options[(startIndex + offset) % options.length]!;
+    const candidateValues = { ...values, [field.name]: option.value };
+    if (canResolveRequiredFiles(fields, candidateValues, fixtures)) {
+      return option.value;
+    }
+  }
+
+  return undefined;
+}
+
+function getMockFieldValue(
+  field: EnrollmateField,
+  values: Record<string, unknown>,
+  fields: readonly EnrollmateField[],
+  fixtures: readonly E2eProfileFixture[],
+  identity: MockIdentity,
+  faker: Faker,
+) {
+  if (field.type === "checkbox") {
+    const preferredValue = faker.datatype.boolean();
+    for (const value of [preferredValue, !preferredValue]) {
+      if (
+        canResolveRequiredFiles(
+          fields,
+          { ...values, [field.name]: value },
+          fixtures,
+        )
+      ) {
+        return value;
+      }
+    }
     return undefined;
   }
 
-  return getMockTextValue(field);
+  if (field.type === "file") {
+    return getCompatibleFixture(field, fixtures);
+  }
+
+  if (field.type === "select" || field.type === "combobox") {
+    return getMockOption(field, values, fields, fixtures, identity, faker);
+  }
+
+  return getMockTextValue(field, identity, faker);
+}
+
+function setGeneratedValue(
+  field: EnrollmateField,
+  value: unknown,
+  workingValues: Record<string, unknown>,
+  result: E2eProfileStepMockValues,
+) {
+  if (Object.is(workingValues[field.name], value)) return false;
+
+  workingValues[field.name] = value;
+  result.enrollmate[field.name] = value;
+  return true;
+}
+
+function getShouldGenerateField(
+  context: MockFieldContext,
+  mode: E2eProfileMockMode,
+  isStepOne: boolean,
+  workingValues: Record<string, unknown>,
+  initiallyVisible: boolean,
+  faker: Faker,
+) {
+  const { field } = context;
+  const isVisible = isEnrollmateFieldRendered(field, workingValues);
+  const isDisabled = isEnrollmateParentFieldDisabled(field, workingValues);
+
+  if (!isVisible || isDisabled) {
+    return hasMeaningfulMockValue(field, workingValues[field.name]);
+  }
+
+  if (mode === "full") return true;
+  if (field.type === "checkbox") return true;
+  if (isStepOne && field.name === "email") return true;
+  if (!initiallyVisible) return true;
+  if (!isMockFieldValueValid(field, workingValues[field.name], workingValues)) {
+    return true;
+  }
+
+  return isEmptyMockValue(field, workingValues[field.name])
+    ? faker.datatype.boolean()
+    : false;
+}
+
+function enforceRequiredCheckboxGroups(
+  contexts: readonly MockFieldContext[],
+  workingValues: Record<string, unknown>,
+  result: E2eProfileStepMockValues,
+  fields: readonly EnrollmateField[],
+  fixtures: readonly E2eProfileFixture[],
+  faker: Faker,
+) {
+  let changed = false;
+  const sections = new Set(
+    contexts
+      .filter(({ section }) => section.required && section.type === "checkboxGroup")
+      .map(({ section }) => section),
+  );
+
+  for (const section of sections) {
+    const checkboxFields = section.fields.filter(
+      (field) => field.type === "checkbox",
+    );
+    if (
+      checkboxFields.some((field) => workingValues[field.name] === true)
+    ) {
+      continue;
+    }
+
+    const candidates = checkboxFields.filter(
+      (field) =>
+        isEnrollmateFieldRendered(field, workingValues) &&
+        !isEnrollmateParentFieldDisabled(field, workingValues) &&
+        canResolveRequiredFiles(
+          fields,
+          { ...workingValues, [field.name]: true },
+          fixtures,
+        ),
+    );
+    const field = candidates[faker.number.int({ min: 0, max: candidates.length - 1 })];
+    if (!field) continue;
+
+    changed =
+      setGeneratedValue(field, true, workingValues, result) || changed;
+  }
+
+  return changed;
 }
 
 export function getE2eProfileStepMockValues(
   flow: EnrollmateFlowDefinition,
   stepNumber: number,
   currentValues: E2eProfileFormValues,
-  fixtures: readonly E2eProfileFixture[],
+  mode: E2eProfileMockMode,
+  { fixtures, faker = defaultFaker }: E2eProfileStepMockOptions,
 ): E2eProfileStepMockValues {
   const result: E2eProfileStepMockValues = {
     core: {},
     enrollmate: {},
   };
+  const identity = getMockIdentity(faker);
 
   if (stepNumber === 1) {
-    if (isEmptyMockValue(currentValues.core.name)) {
-      result.core.name = "Mock Student";
+    if (mode === "full" || isEmptyCoreValue(currentValues.core.name)) {
+      result.core.name = `${identity.firstName} ${identity.lastName}`;
     }
-    if (isEmptyMockValue(currentValues.core.middleName)) {
-      result.core.middleName = "M.";
+    if (
+      mode === "full" ||
+      isEmptyCoreValue(currentValues.core.middleName)
+    ) {
+      result.core.middleName = identity.middleName;
     }
-    if (isEmptyMockValue(currentValues.core.email)) {
-      result.core.email = "mock.student@example.com";
-    }
+    result.core.email = identity.email;
   }
 
   const step = flow.steps.find((candidate) => candidate.step === stepNumber);
   if (!step) return result;
 
-  const fields = step.sections.flatMap((section) => section.fields);
+  const contexts = step.sections.flatMap((section) =>
+    section.fields.map((field) => ({ field, section })),
+  );
+  const fields = contexts.map(({ field }) => field);
   const workingValues = { ...currentValues.enrollmate };
+  const initiallyVisible = new Map(
+    fields.map((field) => [
+      field.name,
+      isEnrollmateFieldRendered(field, currentValues.enrollmate),
+    ]),
+  );
 
-  for (let pass = 0; pass < fields.length; pass += 1) {
+  for (let pass = 0; pass < Math.max(fields.length * 3, 1); pass += 1) {
     let changed = false;
 
-    for (const field of fields) {
-      if (!isEmptyMockValue(workingValues[field.name])) continue;
-      if (!isEnrollmateFieldRendered(field, workingValues)) continue;
-      if (isEnrollmateParentFieldDisabled(field, workingValues)) continue;
+    for (const context of contexts) {
+      const { field } = context;
+      const shouldGenerate = getShouldGenerateField(
+        context,
+        mode,
+        stepNumber === 1,
+        workingValues,
+        initiallyVisible.get(field.name) ?? false,
+        faker,
+      );
+
+      if (!shouldGenerate) continue;
+
+      const isVisible = isEnrollmateFieldRendered(field, workingValues);
+      const isDisabled = isEnrollmateParentFieldDisabled(field, workingValues);
+      if (!isVisible || isDisabled) {
+        changed =
+          setGeneratedValue(
+            field,
+            getEmptyEnrollmateFieldValue(field),
+            workingValues,
+            result,
+          ) || changed;
+        continue;
+      }
 
       const value = getMockFieldValue(
         field,
         workingValues,
         fields,
         fixtures,
+        identity,
+        faker,
       );
       if (value === undefined) continue;
 
-      workingValues[field.name] = value;
-      result.enrollmate[field.name] = value;
-      changed = true;
+      changed = setGeneratedValue(field, value, workingValues, result) || changed;
     }
+
+    changed =
+      enforceRequiredCheckboxGroups(
+        contexts,
+        workingValues,
+        result,
+        fields,
+        fixtures,
+        faker,
+      ) || changed;
 
     if (!changed) break;
   }

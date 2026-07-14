@@ -21,9 +21,7 @@ import { serializeE2eProfileFormEditorSteps } from "@/feature/e2e/serializers/e2
 import type {
   E2eProfileFixture,
   E2eProfileFormEditorStep,
-  E2eProfileFormValues,
   FinalizeE2eProfileForm,
-  SaveE2eProfileDraft,
 } from "@/feature/e2e/types/e2e-profile-form.types";
 
 const contractValidation = vi.hoisted(() => ({
@@ -75,31 +73,10 @@ const fixtures: E2eProfileFixture[] = [
     sizeBytes: 1024,
   },
 ];
-const validInitialValues: E2eProfileFormValues = {
-  ...e2eProfileFormOptions.defaultValues,
-  core: {
-    ...e2eProfileFormOptions.defaultValues.core,
-    name: "Example Student",
-    email: "student@example.com",
-  },
-  enrollmate: {
-    ...e2eProfileFormOptions.defaultValues.enrollmate,
-    fthrDeceased: "Living",
-    mthrDeceased: "Living",
-  },
-};
-
-function successfulDraft(profileId = "profile-1"): SaveE2eProfileDraft {
-  return vi.fn(async (input) => ({
+function successfulFinalize(profileId = "profile-1"): FinalizeE2eProfileForm {
+  return vi.fn(async () => ({
     ok: true as const,
-    data: { profileId, nextStep: input.stepNumber + 1 },
-  }));
-}
-
-function successfulFinalize(): FinalizeE2eProfileForm {
-  return vi.fn(async (input) => ({
-    ok: true as const,
-    data: { profileId: input.profileId },
+    data: { profileId },
   }));
 }
 
@@ -107,17 +84,13 @@ function renderPage({
   finalize = successfulFinalize(),
   onFinish,
   onUrlUpdate,
-  initialValues,
-  profileId,
-  saveDraft = successfulDraft(),
+  isNavigating,
   searchParams,
 }: {
   finalize?: FinalizeE2eProfileForm;
   onFinish?: (profileId: string) => void;
   onUrlUpdate?: (event: UrlUpdateEvent) => void;
-  initialValues?: E2eProfileFormValues;
-  profileId?: string;
-  saveDraft?: SaveE2eProfileDraft;
+  isNavigating?: boolean;
   searchParams?: string;
 } = {}) {
   return render(
@@ -128,15 +101,29 @@ function renderPage({
     >
       <E2eProfileFormPage
         flows={flows}
-        initialValues={initialValues}
+        isNavigating={isNavigating}
         fixtures={fixtures}
-        saveDraft={saveDraft}
         finalize={finalize}
-        profileId={profileId}
         onFinish={onFinish}
       />
     </NuqsTestingAdapter>,
   );
+}
+
+function getProfileFormActionGroup(position: "top" | "bottom" = "bottom") {
+  return screen.getByRole("group", {
+    name:
+      position === "top" ? "Top profile form actions" : "Profile form actions",
+  });
+}
+
+function getProfileFormActionButton(
+  name: string,
+  position: "top" | "bottom" = "bottom",
+) {
+  return within(getProfileFormActionGroup(position)).getByRole("button", {
+    name,
+  });
 }
 
 function fillValidCore() {
@@ -160,6 +147,25 @@ async function chooseOption(controlName: string, optionName: string) {
   fireEvent.click(option);
 }
 
+async function advanceToStep(
+  targetStep: number,
+  stepDefinitions: readonly E2eProfileFormEditorStep[] = bachelorSteps,
+) {
+  for (let currentStep = 1; currentStep < targetStep; currentStep += 1) {
+    fireEvent.click(getProfileFormActionButton("Continue"));
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", {
+          name: stepDefinitions[currentStep]!.title,
+        }),
+      ).toBeVisible(),
+    );
+    await waitFor(() =>
+      expect(getProfileFormActionButton("Continue")).toBeEnabled(),
+    );
+  }
+}
+
 async function chooseFixtureOption(controlName: string, optionName: string) {
   const input = screen.getByRole("combobox", { name: controlName });
   const inputGroup = input.closest('[data-slot="input-group"]');
@@ -170,12 +176,12 @@ async function chooseFixtureOption(controlName: string, optionName: string) {
   fireEvent.click(await screen.findByRole("option", { name: optionName }));
 }
 
-function CoreFieldsHarness({ isFlowLocked = false }) {
+function CoreFieldsHarness() {
   const form = useAppForm({ ...e2eProfileFormOptions });
 
   return (
     <form.AppForm>
-      <E2eProfileCoreFields form={form} isFlowLocked={isFlowLocked} />
+      <E2eProfileCoreFields form={form} />
       <form.Subscribe selector={(state) => state.values.core.flowType}>
         {(flowType) => <output data-testid="flow-value">{flowType}</output>}
       </form.Subscribe>
@@ -215,13 +221,6 @@ describe("E2eProfileCoreFields", () => {
     );
   });
 
-  it("locks the flow choice after the first successful draft", () => {
-    render(<CoreFieldsHarness isFlowLocked />);
-
-    expect(
-      screen.getByRole("combobox", { name: "Application flow" }),
-    ).toBeDisabled();
-  });
 });
 
 describe("E2eProfileFormProgress", () => {
@@ -269,7 +268,7 @@ describe("E2eProfileFormProgress", () => {
 });
 
 describe("E2eProfileFormActions", () => {
-  it("renders Previous and Continue without the old save actions", () => {
+  it("confirms the mock mode before invoking the action", () => {
     const onPrevious = vi.fn();
     const onContinue = vi.fn();
     const onMockCurrentStep = vi.fn();
@@ -278,7 +277,7 @@ describe("E2eProfileFormActions", () => {
         canMockCurrentStep
         currentStep={2}
         totalSteps={3}
-        isPending={false}
+        pendingAction={undefined}
         onMockCurrentStep={onMockCurrentStep}
         onPrevious={onPrevious}
         onContinue={onContinue}
@@ -304,9 +303,22 @@ describe("E2eProfileFormActions", () => {
     fireEvent.click(screen.getByRole("button", { name: "Previous" }));
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     fireEvent.click(screen.getByRole("button", { name: "Mock current step" }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(onMockCurrentStep).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Mock current step" }));
+    fireEvent.click(screen.getByRole("button", { name: "Fill all fields" }));
     expect(onPrevious).toHaveBeenCalledOnce();
     expect(onContinue).toHaveBeenCalledOnce();
-    expect(onMockCurrentStep).toHaveBeenCalledOnce();
+    expect(onMockCurrentStep).toHaveBeenCalledWith("full");
+
+    fireEvent.click(screen.getByRole("button", { name: "Mock current step" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Random partial fill" }),
+    );
+    expect(onMockCurrentStep).toHaveBeenCalledWith("partial");
   });
 
   it("shows the finish action on confirmation and disables every action while pending", () => {
@@ -315,7 +327,7 @@ describe("E2eProfileFormActions", () => {
         canMockCurrentStep
         currentStep={3}
         totalSteps={3}
-        isPending
+        pendingAction="finalize"
         onMockCurrentStep={vi.fn()}
         onPrevious={vi.fn()}
         onContinue={vi.fn()}
@@ -336,11 +348,46 @@ describe("E2eProfileFormActions", () => {
       "aria-busy",
       "true",
     );
-    expect(screen.getByRole("status")).toHaveTextContent("Saving profile…");
-    expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
+    expect(screen.queryByText("Saving profile…")).not.toBeInTheDocument();
+    const finalizeButton = screen.getByRole("button", {
+      name: "Validate and finish",
+    });
+    expect(finalizeButton).toHaveAttribute("aria-busy", "true");
+    expect(
+      finalizeButton.querySelector('[data-slot="spinner"]'),
+    ).not.toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Previous" }),
+    ).not.toHaveAttribute("aria-busy", "true");
     for (const button of screen.getAllByRole("button")) {
       expect(button).toBeDisabled();
     }
+  });
+
+  it("shows the previous action spinner while navigating backward", () => {
+    render(
+      <E2eProfileFormActions
+        canMockCurrentStep={false}
+        currentStep={2}
+        totalSteps={3}
+        pendingAction="previous"
+        onMockCurrentStep={vi.fn()}
+        onPrevious={vi.fn()}
+        onContinue={vi.fn()}
+        onFinalize={vi.fn()}
+      />,
+    );
+
+    const previousButton = screen.getByRole("button", { name: "Previous" });
+    const continueButton = screen.getByRole("button", { name: "Continue" });
+    expect(previousButton).toHaveAttribute("aria-busy", "true");
+    expect(
+      previousButton.querySelector('[data-slot="spinner"]'),
+    ).not.toBeNull();
+    expect(continueButton).not.toHaveAttribute("aria-busy", "true");
+    expect(
+      continueButton.querySelector('[data-slot="spinner"]'),
+    ).toBeNull();
   });
 
   it("invokes finalize from the confirmation action", () => {
@@ -350,7 +397,7 @@ describe("E2eProfileFormActions", () => {
         canMockCurrentStep={false}
         currentStep={3}
         totalSteps={3}
-        isPending={false}
+        pendingAction={undefined}
         onMockCurrentStep={onFinalize}
         onPrevious={vi.fn()}
         onContinue={vi.fn()}
@@ -383,16 +430,30 @@ describe("E2eProfileFormPage", () => {
     });
   });
 
+  it("renders action groups above and below the form fields", () => {
+    renderPage();
+
+    const topActions = getProfileFormActionGroup("top");
+    const bottomActions = getProfileFormActionGroup("bottom");
+    const fieldset = document.querySelector("fieldset");
+    expect(topActions).toBeInTheDocument();
+    expect(bottomActions).toBeInTheDocument();
+    expect(fieldset).not.toBeNull();
+    expect(
+      topActions.compareDocumentPosition(fieldset!) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      fieldset!.compareDocumentPosition(bottomActions) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(getProfileFormActionButton("Continue", "top")).toBeEnabled();
+    expect(getProfileFormActionButton("Continue", "bottom")).toBeEnabled();
+  });
+
   it("updates municipality options after selecting a province", async () => {
-    renderPage({
-      initialValues: {
-        ...validInitialValues,
-        enrollmate: {
-          ...validInitialValues.enrollmate,
-          curraddrCountry: "Philippines",
-        },
-      },
-    });
+    renderPage();
+    await chooseOption("Current Country", "Philippines");
 
     await chooseOption("Current Province", "Rizal");
     fireEvent.click(
@@ -415,6 +476,14 @@ describe("E2eProfileFormPage", () => {
     expect(
       screen.queryByRole("heading", { name: "Profile details" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("renders separators only between active-step sections", () => {
+    renderPage({ searchParams: "?step=2" });
+
+    expect(document.querySelectorAll('[data-slot="separator"]')).toHaveLength(
+      Math.max(bachelorSteps[1]!.sections.length - 1, 0),
+    );
   });
 
   it("clears and disables a parent's fields when status changes", async () => {
@@ -441,24 +510,35 @@ describe("E2eProfileFormPage", () => {
     expect(fatherName).toBeDisabled();
   });
 
-  it("keeps an invalid active step in place and focuses its first error", async () => {
+  it("keeps an invalid active step in place without moving focus", async () => {
     contractValidation.stepSafeParse.mockReturnValue({
       success: false,
       error: {
         issues: [{ path: ["email"], message: "Email is required." }],
       },
     });
-    const saveDraft = successfulDraft();
-    renderPage({ saveDraft });
+    renderPage();
     fillValidCore();
 
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    const continueButton = getProfileFormActionButton("Continue");
+    continueButton.focus();
+    fireEvent.click(continueButton);
 
     expect(await screen.findAllByText("Email is required.")).not.toHaveLength(0);
-    await waitFor(() =>
-      expect(document.activeElement).toHaveAttribute("name", "enrollmate.email"),
-    );
-    expect(saveDraft).not.toHaveBeenCalled();
+    const errorSummary = document.getElementById("e2e-profile-form-errors");
+    const fieldset = document.querySelector("fieldset");
+    const actionGroup = getProfileFormActionGroup();
+    expect(errorSummary).not.toBeNull();
+    expect(fieldset).not.toBeNull();
+    expect(
+      fieldset!.compareDocumentPosition(errorSummary!) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      errorSummary!.compareDocumentPosition(actionGroup) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(document.activeElement).toBe(continueButton);
     expect(
       within(screen.getByRole("navigation", {
         name: "Profile creation progress",
@@ -466,38 +546,15 @@ describe("E2eProfileFormPage", () => {
     ).toHaveAttribute("aria-current", "step");
   });
 
-  it("saves only active-step keys, advances, stores the profile, and locks flow", async () => {
+  it("advances without persisting the profile", async () => {
     const onUrlUpdate = vi.fn<(event: UrlUpdateEvent) => void>();
-    const saveDraft = successfulDraft("saved-profile");
-    renderPage({ onUrlUpdate, saveDraft });
+    const finalize = successfulFinalize();
+    renderPage({ onUrlUpdate, finalize });
     fillValidCore();
 
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.click(getProfileFormActionButton("Continue"));
 
-    await waitFor(() => expect(saveDraft).toHaveBeenCalledOnce());
-    const firstInput = vi.mocked(saveDraft).mock.calls[0]![0];
-    const expectedKeys = bachelorSteps[0]!.sections.flatMap((section) =>
-      section.fields.map((field) => field.name),
-    );
-    expect(firstInput).toMatchObject({
-      mode: "create",
-      stepNumber: 1,
-      core: {
-        name: "Example Student",
-        email: "student@example.com",
-        flowType: "bachelors",
-      },
-    });
-    const validatedValues = contractValidation.stepSafeParse.mock.calls[0]![0];
-    const expectedAvailableKeys = expectedKeys.filter((fieldName) =>
-      Object.hasOwn(validatedValues, fieldName),
-    );
-    expect(Object.keys(firstInput.stepData).sort()).toEqual(
-      expectedAvailableKeys.sort(),
-    );
-    expect(Object.keys(firstInput.stepData).every((fieldName) =>
-      expectedKeys.includes(fieldName),
-    )).toBe(true);
+    expect(finalize).not.toHaveBeenCalled();
     await waitFor(() =>
       expect(
         screen.queryByRole("heading", { name: "Profile details" }),
@@ -514,15 +571,12 @@ describe("E2eProfileFormPage", () => {
     ).toHaveAttribute("aria-current", "step");
   });
 
-  it("moves backward without submitting and Continue saves the current step", async () => {
-    const saveDraft = successfulDraft();
-    renderPage({
-      initialValues: validInitialValues,
-      saveDraft,
-      searchParams: "?step=2",
-    });
+  it("moves backward without persisting and can continue locally", async () => {
+    renderPage();
+    fillValidCore();
+    await advanceToStep(2);
 
-    fireEvent.click(screen.getByRole("button", { name: "Previous" }));
+    fireEvent.click(getProfileFormActionButton("Previous"));
     await waitFor(() =>
       expect(
         within(screen.getByRole("navigation", {
@@ -530,10 +584,15 @@ describe("E2eProfileFormPage", () => {
         })).getByText(bachelorSteps[0]!.title).closest("li"),
       ).toHaveAttribute("aria-current", "step"),
     );
-    expect(saveDraft).not.toHaveBeenCalled();
-
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-    expect(saveDraft).toHaveBeenCalledOnce();
+    await waitFor(() =>
+      expect(getProfileFormActionButton("Continue")).toBeEnabled(),
+    );
+    fireEvent.click(getProfileFormActionButton("Continue"));
+    expect(
+      within(getProfileFormActionGroup()).queryByRole("button", {
+        name: "Validate and finish",
+      }),
+    ).not.toBeInTheDocument();
     await waitFor(() =>
       expect(
         within(screen.getByRole("navigation", {
@@ -543,89 +602,38 @@ describe("E2eProfileFormPage", () => {
     );
   });
 
-  it("mocks empty current-step fields without submitting", async () => {
-    const saveDraft = successfulDraft();
+  it("mocks the current step without submitting", async () => {
     const finalize = successfulFinalize();
-    renderPage({ finalize, saveDraft });
+    renderPage({ finalize });
 
-    fireEvent.click(screen.getByRole("button", { name: "Mock current step" }));
+    fireEvent.click(getProfileFormActionButton("Mock current step"));
+    fireEvent.click(screen.getByRole("button", { name: "Fill all fields" }));
 
     await waitFor(() =>
-      expect(screen.getByRole("textbox", { name: "Full name" })).toHaveValue(
-        "Mock Student",
-      ),
+      expect(
+        (screen.getByRole("textbox", { name: "Full name" }) as HTMLInputElement)
+          .value,
+      ).toMatch(/\S+\s+\S+/),
     );
-    expect(saveDraft).not.toHaveBeenCalled();
     expect(finalize).not.toHaveBeenCalled();
   });
 
-  it("preserves values and exposes injected field errors", async () => {
-    const saveDraft: SaveE2eProfileDraft = vi.fn(async () => ({
-      ok: false as const,
-      error: { "core.email": ["A profile already uses this email."] },
-    }));
-    renderPage({ saveDraft });
-    fillValidCore();
-
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-
-    expect(
-      await screen.findAllByText("A profile already uses this email."),
-    ).not.toHaveLength(0);
-    expect(screen.getByRole("textbox", { name: "Full name" })).toHaveValue(
-      "Example Student",
-    );
-    expect(screen.getAllByRole("textbox", { name: "Email" })[0]).toHaveValue(
-      "student@example.com",
-    );
-  });
-
-  it("prevents duplicate submissions while a draft is pending", async () => {
-    let resolveDraft: ((result: Awaited<ReturnType<SaveE2eProfileDraft>>) => void) | undefined;
-    const saveDraft: SaveE2eProfileDraft = vi.fn(
-      () =>
-        new Promise<Awaited<ReturnType<SaveE2eProfileDraft>>>((resolve) => {
-          resolveDraft = resolve;
-        }),
-    );
+  it("keeps the finish action busy while final navigation is pending", () => {
     renderPage({
-      initialValues: validInitialValues,
-      saveDraft,
-      searchParams: "?step=2",
-    });
-    const fatherName = screen.getByRole("textbox", {
-      name: "Father First name",
-    });
-    fireEvent.change(fatherName, { target: { value: "Existing Father" } });
-    const continueButton = screen.getByRole("button", {
-      name: "Continue",
+      isNavigating: true,
+      searchParams: "?step=4",
     });
 
-    fireEvent.click(continueButton);
-    fireEvent.click(continueButton);
-    fireEvent.change(fatherName, { target: { value: "Changed while pending" } });
-    fireEvent.click(screen.getByRole("button", { name: "Previous" }));
-
-    await waitFor(() => expect(saveDraft).toHaveBeenCalledOnce());
-    expect(continueButton).toBeDisabled();
-    expect(fatherName).toBeDisabled();
-    expect(fatherName).toHaveValue("Existing Father");
-    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
+    const finishButton = getProfileFormActionButton("Validate and finish");
+    expect(finishButton).toBeDisabled();
+    expect(finishButton).toHaveAttribute("aria-busy", "true");
     expect(
-      within(screen.getByRole("navigation", {
-        name: "Profile creation progress",
-      })).getByText(bachelorSteps[1]!.title).closest("li"),
-    ).toHaveAttribute("aria-current", "step");
-    resolveDraft?.({
-      ok: true,
-      data: { profileId: "profile-1", nextStep: 2 },
-    });
-    await waitFor(() => expect(continueButton).toBeEnabled());
-    expect(
-      within(screen.getByRole("navigation", {
-        name: "Profile creation progress",
-      })).getByText(bachelorSteps[1]!.title).closest("li"),
-    ).toHaveAttribute("aria-current", "step");
+      finishButton.querySelector('[data-slot="spinner"]'),
+    ).not.toBeNull();
+    expect(getProfileFormActionGroup()).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
   });
 
   it("removes stale hidden values before validation, extraction, or focus", async () => {
@@ -641,8 +649,7 @@ describe("E2eProfileFormPage", () => {
           }
         : { success: true, data: values },
     );
-    const saveDraft = successfulDraft();
-    renderPage({ saveDraft });
+    renderPage();
     fillValidCore();
 
     await chooseOption(medicalQuestion, "Yes");
@@ -654,14 +661,10 @@ describe("E2eProfileFormPage", () => {
       ).not.toBeInTheDocument(),
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.click(getProfileFormActionButton("Continue"));
 
-    await waitFor(() => expect(saveDraft).toHaveBeenCalledOnce());
     expect(contractValidation.stepSafeParse).toHaveBeenCalledWith(
       expect.not.objectContaining({ DR: expect.anything() }),
-    );
-    expect(vi.mocked(saveDraft).mock.calls[0]![0].stepData).not.toHaveProperty(
-      "DR",
     );
     expect(screen.queryByText("Hidden report is stale.")).not.toBeInTheDocument();
     expect(document.activeElement).not.toHaveAttribute("name", "enrollmate.DR");
@@ -688,18 +691,14 @@ describe("E2eProfileFormPage", () => {
           typeof getEnrollmateStepValidator
         >,
     );
-    renderPage({ initialValues: validInitialValues, searchParams: "?step=4" });
+    renderPage();
+    fillValidCore();
+    await advanceToStep(4);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Validate and finish" }),
-    );
+    fireEvent.click(getProfileFormActionButton("Validate and finish"));
 
     expect(getEnrollmateStepValidator).toHaveBeenCalledWith("bachelors", 4);
-    expect(
-      await screen.findByText(
-        "Save at least one profile step before validating the complete draft.",
-      ),
-    ).toBeVisible();
+    await waitFor(() => expect(getProfileFormActionButton("Validate and finish")).toBeEnabled());
   });
 
   it("changes flow on the first step and returns to its first step", async () => {
@@ -719,25 +718,20 @@ describe("E2eProfileFormPage", () => {
   });
 
   it("validates the complete microcredential form before finalizing", async () => {
-    const saveDraft = successfulDraft("micro-profile");
-    const finalize = successfulFinalize();
+    const finalize = successfulFinalize("micro-profile");
     const onFinish = vi.fn();
-    renderPage({ finalize, onFinish, saveDraft });
+    renderPage({ finalize, onFinish });
     fillValidCore();
     await chooseFlow("Microcredential");
 
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.click(getProfileFormActionButton("Continue"));
     await screen.findByRole("heading", {
       name: microcredentialSteps[1]!.title,
     });
-    const continueButton = screen.getByRole("button", {
-      name: "Continue",
-    });
+    const continueButton = getProfileFormActionButton("Continue");
     await waitFor(() => expect(continueButton).toBeEnabled());
     fireEvent.click(continueButton);
-    const validateButton = await screen.findByRole("button", {
-      name: "Validate and finish",
-    });
+    const validateButton = getProfileFormActionButton("Validate and finish");
     await waitFor(() => expect(validateButton).toBeEnabled());
 
     contractValidation.fullSafeParse.mockReturnValueOnce({
@@ -756,11 +750,9 @@ describe("E2eProfileFormPage", () => {
         }),
       ).toBeVisible(),
     );
-    await waitFor(() =>
-      expect(document.activeElement).toHaveAttribute(
-        "name",
-        "enrollmate.givenName",
-      ),
+    expect(document.activeElement).not.toHaveAttribute(
+      "name",
+      "enrollmate.givenName",
     );
 
     contractValidation.fullSafeParse.mockReturnValue({
@@ -769,29 +761,27 @@ describe("E2eProfileFormPage", () => {
     });
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: "Continue" }),
+        getProfileFormActionButton("Continue"),
       ).toBeEnabled(),
     );
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.click(getProfileFormActionButton("Continue"));
     await screen.findByRole("heading", {
       name: microcredentialSteps[1]!.title,
     });
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: "Continue" }),
+        getProfileFormActionButton("Continue"),
       ).toBeEnabled(),
     );
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-    const finalValidateButton = await screen.findByRole("button", {
-      name: "Validate and finish",
-    });
+    fireEvent.click(getProfileFormActionButton("Continue"));
+    const finalValidateButton = getProfileFormActionButton("Validate and finish");
     await waitFor(() => expect(finalValidateButton).toBeEnabled());
     fireEvent.click(finalValidateButton);
     await waitFor(() => expect(finalize).toHaveBeenCalledOnce());
     expect(finalize).toHaveBeenCalledWith(
       expect.objectContaining({
-        profileId: "micro-profile",
         core: expect.objectContaining({ flowType: "microcredentials" }),
+        enrollmateData: {},
       }),
     );
     expect(onFinish).toHaveBeenCalledWith("micro-profile");
@@ -823,7 +813,7 @@ describe("E2eProfileFormPage", () => {
     );
   });
 
-  it("marks persisted core and active-step fields pristine after a draft save", async () => {
+  it("keeps the local draft dirty after Continue", async () => {
     const addEventListener = vi.spyOn(window, "addEventListener");
     const removeEventListener = vi.spyOn(window, "removeEventListener");
     renderPage();
@@ -835,20 +825,23 @@ describe("E2eProfileFormPage", () => {
       ),
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.click(getProfileFormActionButton("Continue"));
 
     await waitFor(() =>
-      expect(removeEventListener).toHaveBeenCalledWith(
-        "beforeunload",
-        expect.any(Function),
-      ),
+      expect(screen.getByRole("heading", { name: bachelorSteps[1]!.title })).toBeVisible(),
+    );
+    expect(removeEventListener).not.toHaveBeenCalledWith(
+      "beforeunload",
+      expect.any(Function),
     );
   });
 
   it("preserves dirty state for an unsaved field owned by another step", async () => {
     const addEventListener = vi.spyOn(window, "addEventListener");
     const removeEventListener = vi.spyOn(window, "removeEventListener");
-    renderPage({ initialValues: validInitialValues, searchParams: "?step=3" });
+    renderPage();
+    fillValidCore();
+    await advanceToStep(3);
     fireEvent.click(screen.getByRole("checkbox", { name: "Facebook" }));
     await waitFor(() =>
       expect(addEventListener).toHaveBeenCalledWith(
@@ -858,12 +851,16 @@ describe("E2eProfileFormPage", () => {
     );
     removeEventListener.mockClear();
 
-    fireEvent.click(screen.getByRole("button", { name: "Previous" }));
+    fireEvent.click(getProfileFormActionButton("Previous"));
     await screen.findByRole("heading", { name: bachelorSteps[1]!.title });
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-    await waitFor(() => expect(screen.getByRole("status")).toBeVisible());
     await waitFor(() =>
-      expect(screen.queryByRole("status")).not.toBeInTheDocument(),
+      expect(getProfileFormActionButton("Continue")).toBeEnabled(),
+    );
+    fireEvent.click(getProfileFormActionButton("Continue"));
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { name: bachelorSteps[2]!.title }),
+      ).toBeVisible(),
     );
 
     expect(removeEventListener).not.toHaveBeenCalledWith(
@@ -873,34 +870,21 @@ describe("E2eProfileFormPage", () => {
   });
 
   it("finalizes a confirmation step without rendering profile details", async () => {
-    const saveDraft = successfulDraft("existing-profile");
-    const finalize = successfulFinalize();
-    renderPage({
-      finalize,
-      initialValues: validInitialValues,
-      profileId: "existing-profile",
-      saveDraft,
-      searchParams: "?step=4",
-    });
+    const finalize = successfulFinalize("created-profile");
+    renderPage({ finalize });
+    fillValidCore();
+    await advanceToStep(4);
 
     expect(
       screen.queryByRole("heading", { name: "Profile details" }),
     ).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Validate and finish" }));
-    await waitFor(() => expect(saveDraft).toHaveBeenCalledOnce());
+    fireEvent.click(getProfileFormActionButton("Validate and finish"));
     await waitFor(() => expect(finalize).toHaveBeenCalledOnce());
-    expect(saveDraft).toHaveBeenCalledWith(
-      expect.objectContaining({
-        mode: "edit",
-        profileId: "existing-profile",
-        stepNumber: 4,
-      }),
-    );
     expect(finalize).toHaveBeenCalledWith(
-      expect.objectContaining({ profileId: "existing-profile" }),
-    );
-    expect(vi.mocked(saveDraft).mock.invocationCallOrder[0]).toBeLessThan(
-      vi.mocked(finalize).mock.invocationCallOrder[0]!,
+      expect.objectContaining({
+        core: expect.objectContaining({ email: "student@example.com" }),
+        enrollmateData: {},
+      }),
     );
   });
 });

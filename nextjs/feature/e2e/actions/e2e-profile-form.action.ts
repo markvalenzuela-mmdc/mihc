@@ -9,17 +9,13 @@ import {
 } from "../errors/e2e-profile-form.error";
 import {
   finalizeE2eProfileFormSchema,
-  saveE2eProfileDraftSchema,
 } from "../schema/e2e-profile-form.schema";
 import { finalizeE2eProfileForm } from "../services/e2e-profile-form-finalization.service";
-import { saveE2eProfileDraft } from "../services/e2e-profile-draft.service";
 import type {
   E2eProfileFormActionError,
   E2eProfileFormFieldErrors,
   FinalizeE2eProfileFormInput,
   FinalizeE2eProfileFormResult,
-  SaveE2eProfileDraftInput,
-  SaveE2eProfileDraftResult,
 } from "../types/e2e-profile-form.types";
 import { getCurrentUser } from "@/feature/auth/actions/auth.action";
 
@@ -46,29 +42,6 @@ function getActionError(
   return E2eProfileFormErrorCode.UNEXPECTED;
 }
 
-export async function saveE2eProfileDraftAction(
-  input: SaveE2eProfileDraftInput,
-): Promise<SaveE2eProfileDraftResult> {
-  try {
-    const user = await getCurrentUser();
-    if (!user) return err("forbidden");
-
-    const parsed = saveE2eProfileDraftSchema.safeParse(input);
-    if (!parsed.success) return err(getFieldErrors(parsed.error.issues));
-
-    const result = await saveE2eProfileDraft({
-      ...parsed.data,
-      userId: user.id,
-    });
-    revalidatePath("/e2e-testing");
-    revalidatePath(`/e2e-testing/profiles/${result.profileId}/edit`);
-    return ok(result);
-  } catch (error) {
-    console.error("Failed to save E2E profile draft", error);
-    return err(getActionError(error));
-  }
-}
-
 export async function finalizeE2eProfileFormAction(
   input: FinalizeE2eProfileFormInput,
 ): Promise<FinalizeE2eProfileFormResult> {
@@ -84,7 +57,6 @@ export async function finalizeE2eProfileFormAction(
       userId: user.id,
     });
     revalidatePath("/e2e-testing");
-    revalidatePath(`/e2e-testing/profiles/${result.profileId}/edit`);
     return ok(result);
   } catch (error) {
     console.error("Failed to finalize E2E profile form", error);

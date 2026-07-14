@@ -2,6 +2,7 @@ import {
   getEnrollmateFlowDefinition,
   getEnrollmateStepValidator,
 } from "@mihc/enrollmate-contract";
+import { faker } from "@faker-js/faker";
 import type {
   EnrollmateField,
   EnrollmateFlowDefinition,
@@ -12,7 +13,6 @@ import { serializeE2eProfileFormEditorSteps } from "@/feature/e2e/serializers/e2
 import type { E2eProfileFormValues } from "@/feature/e2e/types/e2e-profile-form.types";
 import {
   clearUnavailableE2eProfileFormValues,
-  extractE2eProfileStepValues,
   getDefaultE2eProfileFormValues,
   getEnrollmateFieldOptions,
   isEnrollmateFieldRendered,
@@ -72,7 +72,7 @@ describe("E2E profile form definition adapters", () => {
     ).toBe(true);
     expect(
       isEnrollmateFieldVisible(lastSchoolAttended, { schoolNotFound: true }),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       isEnrollmateFieldVisible(lastschOther, { schoolNotFound: true }),
     ).toBe(true);
@@ -87,7 +87,7 @@ describe("E2E profile form definition adapters", () => {
         schoolNotFound: true,
         lastSchoolAttended: "Mapua University-Makati",
       }),
-    ).not.toHaveProperty("lastSchoolAttended");
+    ).toHaveProperty("lastSchoolAttended", "Mapua University-Makati");
   });
 
   it("keeps parent fields rendered and clears non-living parent values", () => {
@@ -207,20 +207,6 @@ describe("E2E profile form definition adapters", () => {
     });
   });
 
-  it("extracts only values owned by the active step", () => {
-    const values = {
-      email: "student@example.com",
-      fthrGivenName: "Parent",
-    };
-
-    expect(extractE2eProfileStepValues(bachelors.steps[0]!, values)).toEqual({
-      email: "student@example.com",
-    });
-    expect(
-      extractE2eProfileStepValues(bachelors.steps[0]!, values),
-    ).not.toHaveProperty("fthrGivenName");
-  });
-
   it("serializes ordered steps without copying contract field definitions", () => {
     const steps = serializeE2eProfileFormEditorSteps(bachelors);
     const sourceFirstSection = bachelors.steps[0]!.sections[0]!;
@@ -246,31 +232,153 @@ describe("E2E profile form definition adapters", () => {
     );
   });
 
-  it.each(["bachelors", "microcredentials"] as const)(
-    "generates valid empty-step values for %s",
-    (flowType) => {
-      const flow = getEnrollmateFlowDefinition(flowType);
-      const current = getEmptyFormValues(flowType);
+  it.each(["full", "partial"] as const)(
+    "generates valid %s values for every step",
+    (mode) => {
+      for (const flowType of ["bachelors", "microcredentials"] as const) {
+        faker.seed(42);
+        const flow = getEnrollmateFlowDefinition(flowType);
+        const current = getEmptyFormValues(flowType);
 
-      for (const step of flow.steps) {
-        const generated = getE2eProfileStepMockValues(
-          flow,
-          step.step,
-          current,
-          [],
-        );
-        const result = getEnrollmateStepValidator(
-          flowType,
-          step.step,
-        ).safeParse({
-          ...current.enrollmate,
-          ...generated.enrollmate,
-        });
+        for (const step of flow.steps) {
+          const generated = getE2eProfileStepMockValues(
+            flow,
+            step.step,
+            current,
+            mode,
+            { fixtures: [], faker },
+          );
+          const result = getEnrollmateStepValidator(
+            flowType,
+            step.step,
+          ).safeParse(
+            clearUnavailableE2eProfileFormValues(flow, {
+              ...current.enrollmate,
+              ...generated.enrollmate,
+            }),
+          );
 
-        expect(result.success, `${flowType} step ${step.step}`).toBe(true);
+          expect(result.success, `${flowType} ${mode} step ${step.step}`).toBe(
+            true,
+          );
+        }
       }
     },
   );
+
+  it("uses a fresh coherent email for each mock invocation", () => {
+    const flow = getEnrollmateFlowDefinition("bachelors");
+    const current = getEmptyFormValues("bachelors");
+
+    faker.seed(42);
+    const first = getE2eProfileStepMockValues(
+      flow,
+      1,
+      current,
+      "full",
+      { fixtures: [], faker },
+    );
+    const second = getE2eProfileStepMockValues(
+      flow,
+      1,
+      current,
+      "partial",
+      { fixtures: [], faker },
+    );
+
+    expect(first.core.email).toMatch(/@example\.com$/);
+    expect(second.core.email).toMatch(/@example\.com$/);
+    expect(first.core.email).not.toBe(second.core.email);
+    expect(first.core.email).toBe(first.enrollmate.email);
+    expect(second.core.email).toBe(second.enrollmate.email);
+  });
+
+  it("fills a newly visible conditional field after a random checkbox", () => {
+    const flow = getEnrollmateFlowDefinition("bachelors");
+    const current = getEmptyFormValues("bachelors");
+    let sawCheckedBranch = false;
+    let sawUncheckedBranch = false;
+
+    for (let seed = 0; seed < 20; seed += 1) {
+      faker.seed(seed);
+      const generated = getE2eProfileStepMockValues(
+        flow,
+        1,
+        current,
+        "partial",
+        { fixtures: [], faker },
+      );
+      const values = clearUnavailableE2eProfileFormValues(flow, {
+        ...current.enrollmate,
+        ...generated.enrollmate,
+      });
+
+      if (values.schoolNotFound === true) {
+        sawCheckedBranch = true;
+        expect(values.lastschOther).toEqual(expect.any(String));
+        expect(values.lastschOther).not.toBe("");
+      } else {
+        sawUncheckedBranch = true;
+      }
+    }
+
+    expect(sawCheckedBranch).toBe(true);
+    expect(sawUncheckedBranch).toBe(true);
+  });
+
+  it("preserves valid non-checkbox values in partial mode", () => {
+    const flow = getEnrollmateFlowDefinition("bachelors");
+    const current = getEmptyFormValues("bachelors");
+    current.core.name = "Existing Student";
+    current.core.email = "existing.student@example.com";
+    current.enrollmate.programFocus = "BS Information Technology";
+
+    faker.seed(42);
+    const generated = getE2eProfileStepMockValues(
+      flow,
+      1,
+      current,
+      "partial",
+      { fixtures: [], faker },
+    );
+
+    expect(generated.core).not.toHaveProperty("name");
+    expect(generated.core.email).toMatch(/@example\.com$/);
+    expect(generated.enrollmate).not.toHaveProperty("programFocus");
+    expect(generated.enrollmate.programApplied).toBeTruthy();
+    expect(
+      getEnrollmateFieldOptions(
+        getBachelorsField("programApplied"),
+        {
+          ...current.enrollmate,
+          ...generated.enrollmate,
+        },
+      ),
+    ).toContainEqual(
+      expect.objectContaining({ value: generated.enrollmate.programApplied }),
+    );
+  });
+
+  it("overwrites existing values in full mode", () => {
+    const flow = getEnrollmateFlowDefinition("bachelors");
+    const current = getEmptyFormValues("bachelors");
+    current.core.name = "Existing Student";
+    current.core.email = "existing.student@example.com";
+    current.enrollmate.programFocus = "BS Information Technology";
+
+    faker.seed(42);
+    const generated = getE2eProfileStepMockValues(
+      flow,
+      1,
+      current,
+      "full",
+      { fixtures: [], faker },
+    );
+
+    expect(generated.core.name).not.toBe("Existing Student");
+    expect(generated.core.email).not.toBe("existing.student@example.com");
+    expect(generated.enrollmate.programFocus).toBeTruthy();
+  });
 
   it("uses only contract-resolved options for generated choices", () => {
     const flow = getEnrollmateFlowDefinition("bachelors");
@@ -281,7 +389,8 @@ describe("E2E profile form definition adapters", () => {
         flow,
         step.step,
         current,
-        [],
+        "partial",
+        { fixtures: [], faker },
       );
       const values = { ...current.enrollmate, ...generated.enrollmate };
 
@@ -306,29 +415,4 @@ describe("E2E profile form definition adapters", () => {
     }
   });
 
-  it("fills empty values without overwriting existing values", () => {
-    const flow = getEnrollmateFlowDefinition("bachelors");
-    const current = getEmptyFormValues("bachelors");
-    current.core.name = "Existing Student";
-    current.core.email = "existing.student@example.com";
-    current.enrollmate.programFocus = "BS Information Technology";
-
-    const generated = getE2eProfileStepMockValues(flow, 1, current, []);
-
-    expect(generated.core).not.toHaveProperty("name");
-    expect(generated.core).not.toHaveProperty("email");
-    expect(generated.enrollmate).not.toHaveProperty("programFocus");
-    expect(generated.enrollmate.programApplied).toBeTruthy();
-    expect(
-      getEnrollmateFieldOptions(
-        getBachelorsField("programApplied"),
-        {
-          ...current.enrollmate,
-          ...generated.enrollmate,
-        },
-      ),
-    ).toContainEqual(
-      expect.objectContaining({ value: generated.enrollmate.programApplied }),
-    );
-  });
 });

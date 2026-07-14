@@ -3,11 +3,14 @@ import {
   type EnrollmateFlowType,
 } from "@mihc/enrollmate-contract";
 import { getEnrollmateDefinitionHash } from "@mihc/enrollmate-contract/server";
-import { and, eq, ne } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import { getDb, profileForms, profiles } from "@/lib/drizzle/db";
 import type { DbExecutor } from "@/types/db-transaction";
-import { E2eProfileFormError, E2eProfileFormErrorCode } from "../errors/e2e-profile-form.error";
+import {
+  E2eProfileFormError,
+  E2eProfileFormErrorCode,
+} from "../errors/e2e-profile-form.error";
 import { e2eProfileCoreSchema } from "../schema/e2e-profile-form.schema";
 import type {
   E2eProfileFormFieldErrors,
@@ -34,7 +37,9 @@ function getIssueErrors(
   return errors;
 }
 
-function throwValidationError(errors: E2eProfileFormFieldErrors): never {
+function throwValidationError(
+  errors: E2eProfileFormFieldErrors,
+): never {
   throw new E2eProfileFormError(
     E2eProfileFormErrorCode.UNEXPECTED,
     "The complete profile contains invalid values.",
@@ -62,84 +67,77 @@ async function withTransaction<T>(
   return callback(db);
 }
 
+async function assertEmailAvailable(db: DbExecutor, email: string) {
+  const [existingProfile] = await db
+    .select({ id: profiles.id })
+    .from(profiles)
+    .where(eq(profiles.email, email))
+    .limit(1);
+
+  if (existingProfile) {
+    throw new E2eProfileFormError(E2eProfileFormErrorCode.EMAIL_CONFLICT);
+  }
+}
+
+function validateCore(coreInput: FinalizeE2eProfileFormInput["core"]) {
+  const result = e2eProfileCoreSchema.safeParse(coreInput);
+  if (!result.success) {
+    throwValidationError(getIssueErrors(result.error.issues, "core"));
+  }
+
+  return result.data;
+}
+
+function validateEnrollmate(
+  flowType: EnrollmateFlowType,
+  enrollmateData: Record<string, unknown>,
+) {
+  const result = getEnrollmateValidator(flowType).safeParse(enrollmateData);
+  if (!result.success) {
+    throwValidationError(getIssueErrors(result.error.issues, "enrollmate"));
+  }
+
+  return result.data;
+}
+
 export async function finalizeE2eProfileForm(
   input: FinalizeE2eProfileFormServiceInput,
   db: DbExecutor = getDb(),
 ): Promise<{ profileId: string }> {
-  const coreResult = e2eProfileCoreSchema.safeParse(input.core);
-  if (!coreResult.success) {
-    throwValidationError(getIssueErrors(coreResult.error.issues, "core"));
-  }
+  const core = validateCore(input.core);
+  const normalizedEnrollmateData = validateEnrollmate(
+    core.flowType,
+    input.enrollmateData,
+  );
 
   return withTransaction(db, async (tx) => {
-    const [profile] = await tx
-      .select()
-      .from(profiles)
-      .where(eq(profiles.id, input.profileId))
-      .for("update");
-    const [profileForm] = await tx
-      .select()
-      .from(profileForms)
-      .where(eq(profileForms.profileId, input.profileId))
-      .for("update");
+    await assertEmailAvailable(tx, core.email);
 
-    if (!profile || !profileForm) {
-      throw new E2eProfileFormError(E2eProfileFormErrorCode.NOT_FOUND);
-    }
-    if (profile.status !== "new") {
-      throw new E2eProfileFormError(E2eProfileFormErrorCode.LOCKED);
-    }
-    if (profile.flowType !== coreResult.data.flowType) {
-      throw new E2eProfileFormError(E2eProfileFormErrorCode.FLOW_CONFLICT);
-    }
-    if (profileForm.definitionHash !== getEnrollmateDefinitionHash()) {
-      throw new E2eProfileFormError(
-        E2eProfileFormErrorCode.DEFINITION_CONFLICT,
-      );
-    }
-
-    const [emailConflict] = await tx
-      .select({ id: profiles.id })
-      .from(profiles)
-      .where(
-        and(
-          eq(profiles.email, coreResult.data.email),
-          ne(profiles.id, profile.id),
-        ),
-      )
-      .limit(1);
-    if (emailConflict) {
-      throw new E2eProfileFormError(E2eProfileFormErrorCode.EMAIL_CONFLICT);
-    }
-
-    const normalizedResult = getEnrollmateValidator(
-      profile.flowType as EnrollmateFlowType,
-    ).safeParse(profileForm.data);
-    if (!normalizedResult.success) {
-      throwValidationError(
-        getIssueErrors(normalizedResult.error.issues, "enrollmate"),
-      );
-    }
-
-    await tx
-      .update(profiles)
-      .set({
-        name: coreResult.data.name,
-        middleName: coreResult.data.middleName ?? null,
-        email: coreResult.data.email,
+    const profileRows = await tx
+      .insert(profiles)
+      .values({
+        name: core.name,
+        middleName: core.middleName ?? null,
+        email: core.email,
+        flowType: core.flowType,
         status: "validated",
+        createdBy: input.userId,
         updatedBy: input.userId,
       })
-      .where(eq(profiles.id, profile.id));
-    await tx
-      .update(profileForms)
-      .set({
-        data: normalizedResult.data,
-        definitionHash: getEnrollmateDefinitionHash(),
-      })
-      .where(eq(profileForms.id, profileForm.id));
+      .returning({ id: profiles.id });
+    const profileId = profileRows[0]?.id;
 
-    return { profileId: profile.id };
+    if (!profileId) {
+      throw new Error("Profile creation did not return an ID");
+    }
+
+    await tx.insert(profileForms).values({
+      profileId,
+      definitionHash: getEnrollmateDefinitionHash(),
+      data: normalizedEnrollmateData,
+    });
+
+    return { profileId };
   }).catch((error: unknown) => {
     if (error instanceof E2eProfileFormError) throw error;
     if (isUniqueViolation(error)) {

@@ -11,25 +11,19 @@ import { EnrollmateSection } from "@/feature/e2e/components/profile-form/enrollm
 import type {
   E2eProfileFixture,
   E2eProfileFormEditorStep,
-  E2eProfileFormValues,
   FinalizeE2eProfileForm,
-  SaveE2eProfileDraft,
 } from "@/feature/e2e/types/e2e-profile-form.types";
 import { Separator } from "@/components/ui/separator";
 import useE2eProfileFormController from "./use-e2e-profile-form-controller";
 
 export type E2eProfileFormPageBaseProps = {
   flows: Record<EnrollmateFlowType, E2eProfileFormEditorStep[]>;
-  profileId?: string;
-  initialValues?: E2eProfileFormValues;
-  initialStep?: number;
-  initialValidatedSteps?: readonly number[];
+  isNavigating?: boolean;
   onFinish?: (profileId: string) => void;
 };
 
 export type E2eProfileFormPageProps = E2eProfileFormPageBaseProps & {
   fixtures: E2eProfileFixture[];
-  saveDraft: SaveE2eProfileDraft;
   finalize: FinalizeE2eProfileForm;
 };
 
@@ -78,24 +72,17 @@ export function E2eProfileFormPage({
   finalize,
   fixtures,
   flows,
-  initialValues,
-  initialStep,
-  initialValidatedSteps,
+  isNavigating = false,
   onFinish,
-  profileId,
-  saveDraft,
 }: E2eProfileFormPageProps) {
   const controller = useE2eProfileFormController({
     finalize,
     fixtures,
     flows,
-    initialValues,
-    initialStep,
-    initialValidatedSteps,
     onFinish,
-    profileId,
-    saveDraft,
   });
+  const isPending = controller.isPending || isNavigating;
+  const pendingAction = isNavigating ? "finalize" : controller.pendingAction;
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-8 py-6">
@@ -115,18 +102,25 @@ export function E2eProfileFormPage({
         onSubmit={(event) => event.preventDefault()}
       >
         <controller.form.AppForm>
-          <ProfileFormErrorSummary messages={controller.errorMessages} />
+          <E2eProfileFormActions
+            canMockCurrentStep={controller.activeStep.sections.length > 0}
+            currentStep={controller.activeStepNumber}
+            totalSteps={controller.steps.length}
+            placement="top"
+            pendingAction={pendingAction}
+            onMockCurrentStep={controller.mockCurrentStep}
+            onPrevious={controller.goToPreviousStep}
+            onContinue={() => void controller.continueToNextStep()}
+            onFinalize={() => void controller.finalizeProfile()}
+          />
 
           <fieldset
-            disabled={controller.isPending}
+            disabled={isPending}
             className="space-y-8"
             onChangeCapture={controller.blockPendingFieldChange}
           >
             {controller.activeStepNumber === 1 && (
-              <E2eProfileCoreFields
-                form={controller.form}
-                isFlowLocked={controller.isFlowLocked}
-              />
+              <E2eProfileCoreFields form={controller.form} />
             )}
 
             <div className="space-y-6 border-t pt-7">
@@ -137,8 +131,9 @@ export function E2eProfileFormPage({
               >
                 {(values) => (
                   <div className="space-y-8">
-                    {controller.activeStep.sections.map((section) => (
+                    {controller.activeStep.sections.map((section, index) => (
                       <Fragment key={section.id}>
+                        {index > 0 && <Separator />}
                         <EnrollmateSection
                           section={section}
                           fixtures={fixtures}
@@ -158,7 +153,6 @@ export function E2eProfileFormPage({
                             </controller.form.AppField>
                           )}
                         />
-                        <Separator />
                       </Fragment>
                     ))}
                   </div>
@@ -167,14 +161,17 @@ export function E2eProfileFormPage({
             </div>
           </fieldset>
 
+          <ProfileFormErrorSummary messages={controller.errorMessages} />
+
           <E2eProfileFormActions
             canMockCurrentStep={controller.activeStep.sections.length > 0}
             currentStep={controller.activeStepNumber}
             totalSteps={controller.steps.length}
-            isPending={controller.isPending}
+            placement="bottom"
+            pendingAction={pendingAction}
             onMockCurrentStep={controller.mockCurrentStep}
             onPrevious={controller.goToPreviousStep}
-            onContinue={() => void controller.saveAndContinue()}
+            onContinue={() => void controller.continueToNextStep()}
             onFinalize={() => void controller.finalizeProfile()}
           />
         </controller.form.AppForm>

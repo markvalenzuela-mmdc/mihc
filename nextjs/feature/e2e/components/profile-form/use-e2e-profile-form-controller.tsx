@@ -12,17 +12,18 @@ import { E2eProfileFormErrorCodeToMessage } from "../../errors/e2e-profile-form.
 import { e2eProfileCoreSchema } from "../../schema/e2e-profile-form.schema";
 import {
   FinalizeE2eProfileForm,
-  SaveE2eProfileDraft,
   E2eProfileFormFieldErrors,
   E2eProfileFixture,
   E2eProfileFormValues,
   E2eProfileFormActionError,
   E2eProfileFormEditorStep,
+  E2eProfileFormPendingAction,
+  E2eProfileMockMode,
 } from "../../types/e2e-profile-form.types";
 import {
   clearUnavailableE2eProfileFormValues,
   getDefaultE2eProfileFormValues,
-  extractE2eProfileStepValues,
+  getEmptyEnrollmateFieldValue,
 } from "../../utils/e2e-profile-form.util";
 import { getE2eProfileStepMockValues } from "../../utils/e2e-profile-form-mock.util";
 import { e2eProfileFormOptions } from "./e2e-profile-core-fields";
@@ -120,53 +121,36 @@ function getErrorMessages(errors: E2eProfileFormFieldErrors) {
   return [...new Set(Object.values(errors).flat())];
 }
 
-function focusElement(id: string) {
-  window.setTimeout(() => document.getElementById(id)?.focus(), 0);
-}
-
 function useE2eProfileFormController({
   finalize,
   fixtures,
   flows,
-  initialValues,
-  initialStep,
-  initialValidatedSteps,
   onFinish,
-  profileId: initialProfileId,
-  saveDraft,
 }: Pick<
   E2eProfileFormPageBaseProps,
-  | "flows"
-  | "initialValues"
-  | "initialStep"
-  | "initialValidatedSteps"
-  | "onFinish"
-  | "profileId"
+  "flows" | "onFinish"
 > & {
   finalize: FinalizeE2eProfileForm;
   fixtures: readonly E2eProfileFixture[];
-  saveDraft: SaveE2eProfileDraft;
 }) {
   const [queryStep, setQueryStep] = useQueryState(
     "step",
     parseAsInteger
-      .withDefault(initialStep ?? 1)
+      .withDefault(1)
       .withOptions({ clearOnDefault: false }),
   );
-  const [profileId, setProfileId] = useState<string | undefined>(
-    initialProfileId,
-  );
-  const [isPending, setIsPending] = useState(false);
+  const [pendingAction, setPendingAction] = useState<
+    E2eProfileFormPendingAction | undefined
+  >();
+  const isPending = pendingAction !== undefined;
   const [validatedSteps, setValidatedSteps] = useState<ReadonlySet<number>>(
-    () => new Set(initialValidatedSteps),
+    () => new Set(),
   );
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
-  const profileIdRef = useRef<string | undefined>(initialProfileId);
   const pendingRef = useRef(false);
 
   const form = useAppForm({
     ...e2eProfileFormOptions,
-    ...(initialValues ? { defaultValues: initialValues } : {}),
     listeners: {
       onChange: ({ fieldApi, formApi }) => {
         if (
@@ -188,7 +172,7 @@ function useE2eProfileFormController({
           return;
         }
 
-        if (fieldApi.name !== "core.flowType" || profileIdRef.current) return;
+        if (fieldApi.name !== "core.flowType") return;
         const nextFlow = formApi.state.values.core.flowType;
         formApi.setFieldValue(
           "enrollmate",
@@ -254,9 +238,7 @@ function useE2eProfileFormController({
       }));
     }
 
-    const orderedFields = getOrderedErrorFields(errors, steps);
     setErrorMessages(getErrorMessages(errors));
-    if (orderedFields[0]) focusElement(orderedFields[0]);
   }
 
   function setFieldErrors(errors: E2eProfileFormFieldErrors) {
@@ -360,54 +342,21 @@ function useE2eProfileFormController({
     }
 
     setErrorMessages([E2eProfileFormErrorCodeToMessage[error]]);
-    focusElement("e2e-profile-form-errors");
   }
 
-  async function saveAndContinue() {
+  async function continueToNextStep() {
     if (pendingRef.current) return;
-    const validation = validateActiveStep();
-    if (!validation) return;
+    if (!validateActiveStep()) return;
 
     pendingRef.current = true;
-    setIsPending(true);
+    setPendingAction("continue");
     try {
-      const currentProfileId = profileIdRef.current;
-      const result = await saveDraft({
-        ...(currentProfileId
-          ? { mode: "edit" as const, profileId: currentProfileId }
-          : { mode: "create" as const }),
-        core: validation.core,
-        stepNumber: activeStep.step,
-        stepData: extractE2eProfileStepValues(
-          activeStep,
-          validation.enrollmate,
-        ),
-      });
-
-      if (!result.ok) {
-        applyActionError(result.error);
-        return;
-      }
-
-      profileIdRef.current = result.data.profileId;
-      setProfileId(result.data.profileId);
       setValidatedSteps((current) => new Set(current).add(activeStep.step));
       clearErrors();
-      markFieldsPristine([
-        ...CORE_FIELD_ORDER,
-        "enrollmate",
-        ...activeStep.sections.flatMap((section) =>
-          section.fields.map((field) => `enrollmate.${field.name}`),
-        ),
-      ]);
-
-      const nextStep = result.data.nextStep ?? activeStepNumber + 1;
-      await setQueryStep(clampStep(nextStep, steps.length));
-    } catch {
-      applyActionError("unexpected");
+      await setQueryStep(clampStep(activeStepNumber + 1, steps.length));
     } finally {
       pendingRef.current = false;
-      setIsPending(false);
+      setPendingAction(undefined);
     }
   }
 
@@ -426,47 +375,10 @@ function useE2eProfileFormController({
       return;
     }
 
-    const currentProfileId = profileIdRef.current;
-    if (!currentProfileId) {
-      setErrorMessages([
-        "Save at least one profile step before validating the complete draft.",
-      ]);
-      focusElement("e2e-profile-form-errors");
-      return;
-    }
-
     pendingRef.current = true;
-    setIsPending(true);
+    setPendingAction("finalize");
     try {
-      const draftResult = await saveDraft({
-        mode: "edit",
-        profileId: currentProfileId,
-        core: validation.core,
-        stepNumber: activeStep.step,
-        stepData: extractE2eProfileStepValues(
-          activeStep,
-          validation.enrollmate,
-        ),
-      });
-
-      if (!draftResult.ok) {
-        applyActionError(draftResult.error);
-        return;
-      }
-
-      profileIdRef.current = draftResult.data.profileId;
-      setProfileId(draftResult.data.profileId);
-      setValidatedSteps((current) => new Set(current).add(activeStep.step));
-      markFieldsPristine([
-        ...CORE_FIELD_ORDER,
-        "enrollmate",
-        ...activeStep.sections.flatMap((section) =>
-          section.fields.map((field) => `enrollmate.${field.name}`),
-        ),
-      ]);
-
       const result = await finalize({
-        profileId: draftResult.data.profileId,
         core: validation.core,
         enrollmateData: completeValidation.data,
       });
@@ -475,38 +387,64 @@ function useE2eProfileFormController({
         return;
       }
       clearErrors();
-      markFieldsPristine([
-        ...CORE_FIELD_ORDER,
-        "enrollmate",
-        ...steps.flatMap((step) =>
-          step.sections.flatMap((section) =>
-            section.fields.map((field) => `enrollmate.${field.name}`),
-          ),
-        ),
-      ]);
       onFinish?.(result.data.profileId);
     } catch {
       applyActionError("unexpected");
     } finally {
       pendingRef.current = false;
-      setIsPending(false);
+      setPendingAction(undefined);
     }
   }
 
-  function goToPreviousStep() {
+  async function goToPreviousStep() {
     if (pendingRef.current || activeStepNumber <= 1) return;
-    clearErrors();
-    void setQueryStep(activeStepNumber - 1);
+
+    pendingRef.current = true;
+    setPendingAction("previous");
+    try {
+      clearErrors();
+      await setQueryStep(activeStepNumber - 1);
+    } finally {
+      pendingRef.current = false;
+      setPendingAction(undefined);
+    }
   }
 
-  function mockCurrentStep() {
+  function clearMockUnavailableValues() {
+    const flow = getEnrollmateFlowDefinition(flowType);
+    const currentValues = form.state.values.enrollmate;
+    const cleanedValues = clearUnavailableE2eProfileFormValues(
+      flow,
+      currentValues,
+    );
+    const fields = flow.steps.flatMap((step) =>
+      step.sections.flatMap((section) => section.fields),
+    );
+
+    for (const fieldDefinition of fields) {
+      if (!Object.hasOwn(currentValues, fieldDefinition.name)) continue;
+
+      const nextValue = Object.hasOwn(cleanedValues, fieldDefinition.name)
+        ? cleanedValues[fieldDefinition.name]
+        : getEmptyEnrollmateFieldValue(fieldDefinition);
+      if (Object.is(currentValues[fieldDefinition.name], nextValue)) continue;
+
+      form.setFieldValue(
+        `enrollmate.${fieldDefinition.name}` as DeepKeys<E2eProfileFormValues>,
+        nextValue as never,
+      );
+    }
+  }
+
+  function mockCurrentStep(mode: E2eProfileMockMode) {
     if (pendingRef.current) return;
 
     const generated = getE2eProfileStepMockValues(
       getEnrollmateFlowDefinition(flowType),
       activeStep.step,
       form.state.values,
-      fixtures,
+      mode,
+      { fixtures },
     );
 
     for (const [fieldName, value] of Object.entries(generated.core)) {
@@ -522,6 +460,7 @@ function useE2eProfileFormController({
       );
     }
 
+    clearMockUnavailableValues();
     clearErrors();
   }
 
@@ -540,10 +479,10 @@ function useE2eProfileFormController({
     flowType,
     form,
     goToPreviousStep,
-    isFlowLocked: Boolean(profileId),
     isPending,
     mockCurrentStep,
-    saveAndContinue,
+    pendingAction,
+    continueToNextStep,
     steps,
     validatedSteps,
   };

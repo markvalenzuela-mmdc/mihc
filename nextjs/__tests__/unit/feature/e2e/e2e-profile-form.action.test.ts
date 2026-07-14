@@ -4,7 +4,6 @@ const mocks = vi.hoisted(() => ({
   finalizeE2eProfileForm: vi.fn(),
   getCurrentUser: vi.fn(),
   revalidatePath: vi.fn(),
-  saveE2eProfileDraft: vi.fn(),
 }));
 
 vi.mock("next/cache", () => ({
@@ -13,9 +12,6 @@ vi.mock("next/cache", () => ({
 vi.mock("@/feature/auth/actions/auth.action", () => ({
   getCurrentUser: mocks.getCurrentUser,
 }));
-vi.mock("@/feature/e2e/services/e2e-profile-draft.service", () => ({
-  saveE2eProfileDraft: mocks.saveE2eProfileDraft,
-}));
 vi.mock(
   "@/feature/e2e/services/e2e-profile-form-finalization.service",
   () => ({
@@ -23,10 +19,7 @@ vi.mock(
   }),
 );
 
-import {
-  finalizeE2eProfileFormAction,
-  saveE2eProfileDraftAction,
-} from "@/feature/e2e/actions/e2e-profile-form.action";
+import { finalizeE2eProfileFormAction } from "@/feature/e2e/actions/e2e-profile-form.action";
 
 const validCore = {
   name: "Example Student",
@@ -40,49 +33,42 @@ describe("E2E profile form actions", () => {
     mocks.finalizeE2eProfileForm.mockReset();
     mocks.getCurrentUser.mockReset();
     mocks.revalidatePath.mockReset();
-    mocks.saveE2eProfileDraft.mockReset();
   });
 
-  it("rejects unauthenticated draft saves before calling the service", async () => {
+  it("rejects unauthenticated finalization before calling the service", async () => {
     mocks.getCurrentUser.mockResolvedValue(null);
 
     await expect(
-      saveE2eProfileDraftAction({
-        mode: "create",
+      finalizeE2eProfileFormAction({
         core: validCore,
-        stepNumber: 1,
-        stepData: {},
+        enrollmateData: {},
       }),
     ).resolves.toEqual({ ok: false, error: "forbidden" });
-    expect(mocks.saveE2eProfileDraft).not.toHaveBeenCalled();
+    expect(mocks.finalizeE2eProfileForm).not.toHaveBeenCalled();
   });
 
-  it("passes the authenticated Better Auth user to the draft service", async () => {
+  it("passes the authenticated Better Auth user to the finalization service", async () => {
     mocks.getCurrentUser.mockResolvedValue({ id: "user-1" });
-    mocks.saveE2eProfileDraft.mockResolvedValue({
+    mocks.finalizeE2eProfileForm.mockResolvedValue({
       profileId: "profile-1",
-      nextStep: 2,
     });
 
     await expect(
-      saveE2eProfileDraftAction({
-        mode: "create",
+      finalizeE2eProfileFormAction({
         core: validCore,
-        stepNumber: 1,
-        stepData: { givenName: "Example" },
+        enrollmateData: { givenName: "Example" },
       }),
     ).resolves.toEqual({
       ok: true,
-      data: { profileId: "profile-1", nextStep: 2 },
+      data: { profileId: "profile-1" },
     });
-    expect(mocks.saveE2eProfileDraft).toHaveBeenCalledWith({
-      mode: "create",
+    expect(mocks.finalizeE2eProfileForm).toHaveBeenCalledWith({
       core: validCore,
-      stepNumber: 1,
-      stepData: { givenName: "Example" },
+      enrollmateData: { givenName: "Example" },
       userId: "user-1",
     });
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/e2e-testing");
+    expect(mocks.revalidatePath).toHaveBeenCalledOnce();
   });
 
   it("returns field errors for malformed finalization input", async () => {
@@ -90,14 +76,13 @@ describe("E2E profile form actions", () => {
 
     await expect(
       finalizeE2eProfileFormAction({
-        profileId: "not-a-uuid",
-        core: validCore,
+        core: { ...validCore, email: "not-an-email" },
         enrollmateData: {},
       }),
     ).resolves.toMatchObject({
       ok: false,
       error: {
-        profileId: expect.any(Array),
+        "core.email": expect.any(Array),
       },
     });
     expect(mocks.finalizeE2eProfileForm).not.toHaveBeenCalled();

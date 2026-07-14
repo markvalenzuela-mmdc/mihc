@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add a fill-only `Mock current step` action that generates valid current-step E2E profile values from the shared EnrollMate contract without saving or finalizing.
+**Goal:** Add a confirmed two-mode `Mock current step` action that generates unique, variable, coherent values from the shared EnrollMate contract without saving or finalizing.
 
-**Architecture:** A pure utility under the E2E feature will generate only empty visible values using contract-resolved options, conditional visibility, dependent options, and approved file fixtures. The form controller will apply those values individually with normal TanStack Form updates, while the existing action component exposes the UI button and keeps persistence actions separate.
+**Architecture:** A pure utility under the E2E feature will generate either a complete overwrite or a random partial mutation using Faker-backed identity/scalar values and contract-resolved choices. It will walk conditional/dependent fields until the selected step validates, while the action bar confirms the mode and the controller applies values individually with normal TanStack Form updates.
 
-**Tech Stack:** Next.js 16, React 19, TanStack Form, Zod, Vitest, Testing Library, `@mihc/enrollmate-contract`.
+**Tech Stack:** Next.js 16, React 19, TanStack Form, Zod, Vitest, Testing Library, `@mihc/enrollmate-contract`, `@faker-js/faker`.
 
 ---
 
@@ -18,8 +18,9 @@
 - Modify: `$HOME/Documents/Programming/mihc/nextjs/feature/e2e/components/profile-form/e2e-profile-form-actions.tsx` — render the `Mock current step` button separately from continue/finalize.
 - Modify: `$HOME/Documents/Programming/mihc/nextjs/__tests__/unit/feature/e2e/profile-form/profile-form-definition.test.ts` — test valid generated values, option compliance, and fill-only behavior.
 - Modify: `$HOME/Documents/Programming/mihc/nextjs/__tests__/unit/feature/e2e/profile-form/profile-form-page.test.tsx` — test the visible action and prove it does not submit.
+- Modify: `$HOME/Documents/Programming/mihc/nextjs/package.json` and `$HOME/Documents/Programming/mihc/nextjs/pnpm-lock.yaml` — add the approved Faker dependency.
 
-No dependency, shared-contract, backend, Playwright, or checkbox-layout changes are planned.
+No shared-contract, backend, Playwright, or checkbox-layout changes are planned.
 
 ## Task 1: Add failing generator tests
 
@@ -313,3 +314,228 @@ git diff --stat
 Confirm only the generator, form integration, focused tests, and the required
 plan document changed. Confirm no checkbox layout, shared contract, backend,
 or Playwright browser files were modified.
+
+## Amendment: confirmed random mock modes
+
+The original plan’s fill-empty-only behavior is superseded by these execution
+tasks. The existing implementation remains the base and must be extended, not
+removed.
+
+### Task 6: Add Faker and define explicit mock modes
+
+**Files:**
+
+- Modify: `$HOME/Documents/Programming/mihc/nextjs/package.json`
+- Modify: `$HOME/Documents/Programming/mihc/nextjs/pnpm-lock.yaml`
+- Modify: `$HOME/Documents/Programming/mihc/nextjs/feature/e2e/types/e2e-profile-form.types.ts`
+- Modify: `$HOME/Documents/Programming/mihc/nextjs/feature/e2e/utils/e2e-profile-form-mock.util.ts`
+
+- [ ] **Step 1: Add the dependency.**
+
+Run from `$HOME/Documents/Programming/mihc/nextjs/`:
+
+```sh
+pnpm add @faker-js/faker
+```
+
+Expected: `package.json` and `pnpm-lock.yaml` gain the runtime dependency.
+
+- [ ] **Step 2: Add the mode type.**
+
+Define the public mode beside the existing form types:
+
+```ts
+export type E2eProfileMockMode = "full" | "partial";
+```
+
+- [ ] **Step 3: Make the generator options injectable.**
+
+Keep the default browser behavior backed by Faker but allow deterministic tests
+to pass a Faker instance and fixture list:
+
+```ts
+export type E2eProfileStepMockOptions = {
+  fixtures: readonly E2eProfileFixture[];
+  faker?: Faker;
+};
+
+export function getE2eProfileStepMockValues(
+  flow: EnrollmateFlowDefinition,
+  stepNumber: number,
+  currentValues: E2eProfileFormValues,
+  mode: E2eProfileMockMode,
+  options: E2eProfileStepMockOptions,
+): E2eProfileStepMockValues;
+```
+
+Use the imported default Faker instance when `options.faker` is omitted. Do not
+seed the production instance globally.
+
+### Task 7: Implement coherent full and partial generation
+
+**Files:**
+
+- Modify: `$HOME/Documents/Programming/mihc/nextjs/feature/e2e/utils/e2e-profile-form-mock.util.ts`
+- Modify: `$HOME/Documents/Programming/mihc/nextjs/__tests__/unit/feature/e2e/profile-form/profile-form-definition.test.ts`
+
+- [ ] **Step 1: Add a shared identity context.**
+
+Generate one first name, last name, birthdate, phone number, and UUID-suffixed
+`example.com` email per mock invocation. Reuse those values for core identity,
+EnrollMate identity, and related parent/guardian fields so the result is
+coherent. The email local part must include `faker.string.uuid()` and must be
+used for both core and EnrollMate email fields.
+
+- [ ] **Step 2: Implement full-mode selection.**
+
+In `full` mode, every field in the active step is eligible for replacement,
+including non-empty values, optional values, and checkboxes. Select options via
+`getEnrollmateFieldOptions`; choose a parent before its dependent child. For a
+required checkbox group, randomize each checkbox and force one checkbox true if
+the random result would leave the required group empty.
+
+- [ ] **Step 3: Implement partial-mode selection.**
+
+In `partial` mode, preserve non-empty values by default. Always select empty or
+invalid required fields. On step 1, always regenerate the core and EnrollMate
+email with the invocation identity so every mock run represents a fresh user.
+For optional fields, use a Faker boolean decision. A checkbox is eligible for a
+random boolean decision even when its current value is `false`, so partial mode
+can exercise checkbox branches. Do not change an existing non-checkbox value
+unless it is required to make the selected branch valid.
+
+- [ ] **Step 4: Resolve conditional closure.**
+
+After each generated parent, continue scanning the active step. Any newly
+visible field is eligible for generation, even if optional, so a randomly
+checked condition never leaves a visible blank. If a selected branch reveals a
+required file, choose a compatible approved fixture or choose another parent
+option when no fixture exists. Clear values made unavailable by a randomized
+false condition through the existing normal cleanup path.
+
+- [ ] **Step 5: Verify generated results with real validators.**
+
+Add seeded tests that assert:
+
+```ts
+faker.seed(42);
+const full = getE2eProfileStepMockValues(flow, 1, current, "full", {
+  fixtures,
+  faker,
+});
+const partial = getE2eProfileStepMockValues(flow, 1, current, "partial", {
+  fixtures,
+  faker,
+});
+
+expect(full.core.email).not.toBe(partial.core.email);
+expect(full.core.email).toMatch(/@example\.com$/);
+expect(getEnrollmateValidator("bachelors").safeParse(fullData).success).toBe(true);
+expect(getEnrollmateStepValidator("bachelors", 1).safeParse(partialData).success).toBe(true);
+```
+
+Also assert every generated choice belongs to its actual resolved options and
+that every visible conditional field has a non-empty value after a selected
+checkbox branch.
+
+### Task 8: Add the confirmation dialog and mode plumbing
+
+**Files:**
+
+- Modify: `$HOME/Documents/Programming/mihc/nextjs/feature/e2e/components/profile-form/e2e-profile-form-actions.tsx`
+- Modify: `$HOME/Documents/Programming/mihc/nextjs/feature/e2e/components/profile-form/use-e2e-profile-form-controller.tsx`
+- Modify: `$HOME/Documents/Programming/mihc/nextjs/feature/e2e/components/profile-form/e2e-profile-form-page.tsx`
+
+- [ ] **Step 1: Convert the immediate action into a dialog trigger.**
+
+Use the existing dialog primitives and local open state. The trigger remains
+`Mock current step`; the dialog must expose:
+
+```text
+Mock current step
+Choose how to populate this step.
+Cancel
+Fill all fields
+Random partial fill
+```
+
+Close the dialog on Cancel or after selecting a mode. Do not run the generator
+when the dialog is dismissed.
+
+- [ ] **Step 2: Pass the selected mode to the controller.**
+
+Change the handler type to:
+
+```ts
+onMockCurrentStep: (mode: E2eProfileMockMode) => void;
+```
+
+The controller calls the generator with the selected mode and existing approved
+fixtures, then applies values one at a time through `form.setFieldValue`.
+Neither mode may call `saveDraft` or `finalize`.
+
+- [ ] **Step 3: Preserve normal cleanup and dirty state.**
+
+Do not use `dontRunListeners` or mark fields pristine. When a selected false
+branch hides existing values, clear those fields through the existing form
+cleanup behavior so the next validation sees only available values.
+
+### Task 9: Add dialog and mode behavior tests
+
+**Files:**
+
+- Modify: `$HOME/Documents/Programming/mihc/nextjs/__tests__/unit/feature/e2e/profile-form/profile-form-page.test.tsx`
+
+- [ ] **Step 1: Test cancellation and mode selection.**
+
+Assert clicking `Mock current step` opens the dialog, Cancel leaves values and
+submission spies unchanged, `Fill all fields` invokes the controller with
+`"full"`, and `Random partial fill` invokes it with `"partial"`.
+
+- [ ] **Step 2: Test no persistence side effects.**
+
+For both choices, assert `saveDraft` and `finalize` are not called. Assert the
+dialog closes after a mode is selected and remains unavailable on confirmation.
+
+- [ ] **Step 3: Run focused tests.**
+
+```sh
+pnpm exec vitest run \
+  __tests__/unit/feature/e2e/profile-form/profile-form-definition.test.ts \
+  __tests__/unit/feature/e2e/profile-form/profile-form-page.test.tsx
+```
+
+Expected: PASS with the original and amended behavior covered.
+
+### Task 10: Verify the amended feature
+
+**Files:**
+
+- No additional files.
+
+- [ ] **Step 1: Run lint and focused/full tests.**
+
+```sh
+pnpm lint
+pnpm test
+```
+
+- [ ] **Step 2: Run TypeScript and build.**
+
+```sh
+pnpm exec tsc --noEmit
+pnpm build
+```
+
+- [ ] **Step 3: Check the final boundary.**
+
+```sh
+git diff --check
+git status --short
+git diff --stat
+```
+
+Confirm the only changes are the Faker dependency, mock generator, dialog,
+controller plumbing, focused tests, and plan/design documentation. Confirm no
+checkbox layout, contract definition, backend persistence, or Playwright files
+changed.
