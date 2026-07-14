@@ -1,5 +1,6 @@
 import type {
   EnrollmateField,
+  EnrollmateFlowType,
   EnrollmateFlowDefinition,
 } from "@mihc/enrollmate-contract";
 
@@ -7,11 +8,6 @@ import type { E2eProfileCoreInput } from "@/feature/e2e/schema/e2e-profile-form.
 
 type EnrollmateStep = EnrollmateFlowDefinition["steps"][number];
 type EnrollmateSection = EnrollmateStep["sections"][number];
-
-export type E2eProfileFormIntent =
-  | "save-and-continue"
-  | "save-and-exit"
-  | "finalize";
 
 export type E2eProfileFormValues = {
   core: E2eProfileCoreInput;
@@ -35,6 +31,7 @@ export type E2eProfileFormActionError =
   | "emailConflict"
   | "flowConflict"
   | "definitionConflict"
+  | "locked"
   | "forbidden"
   | "unexpected";
 
@@ -77,4 +74,14 @@ export type E2eProfileFormEditorSection = Omit<
 
 export type E2eProfileFormEditorStep = Omit<EnrollmateStep, "sections"> & {
   sections: E2eProfileFormEditorSection[];
+};
+
+export type E2eProfileFormEditorData = {
+  profileId: string;
+  core: E2eProfileCoreInput;
+  enrollmateData: Record<string, unknown>;
+  flows: Record<EnrollmateFlowType, E2eProfileFormEditorStep[]>;
+  fixtures: E2eProfileFixture[];
+  validatedSteps: number[];
+  initialStep: number;
 };

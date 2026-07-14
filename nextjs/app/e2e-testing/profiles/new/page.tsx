@@ -5,11 +5,19 @@ import {
 
 import { AppShell } from "@/components/app-shell";
 import { MainShell } from "@/components/main-shell";
-import { E2eProfileFormPage } from "@/feature/e2e/components/profile-form/e2e-profile-form-page";
+import {
+  finalizeE2eProfileFormAction,
+  saveE2eProfileDraftAction,
+} from "@/feature/e2e/actions/e2e-profile-form.action";
+import { E2eProfileFormRoute } from "@/feature/e2e/components/profile-form/e2e-profile-form-route";
 import { serializeE2eProfileFormEditorSteps } from "@/feature/e2e/serializers/e2e-profile-form-editor.serializer";
+import { getApprovedE2eProfileFixtures } from "@/feature/e2e/services/e2e-profile-fixtures.service";
 import type { E2eProfileFormEditorStep } from "@/feature/e2e/types/e2e-profile-form.types";
+import { Suspense } from "react";
+import { requireAuthenticated } from "@/feature/auth/auth-guards";
 
-export default function NewE2eProfilePage() {
+export default async function NewE2eProfilePage() {
+  const user = await requireAuthenticated();
   const flows = {
     bachelors: serializeE2eProfileFormEditorSteps(
       getEnrollmateFlowDefinition("bachelors"),
@@ -20,12 +28,19 @@ export default function NewE2eProfilePage() {
   } satisfies Record<EnrollmateFlowType, E2eProfileFormEditorStep[]>;
 
   return (
-    <AppShell>
+    <AppShell user={user}>
       <MainShell
         title="Create E2E profile"
-        subtitle="Build a reusable student profile one validated application step at a time. Phase 1 drafts remain in this page only."
+        subtitle="Build a reusable student profile one validated application step at a time."
       >
-        <E2eProfileFormPage flows={flows} />
+        <Suspense fallback={<p>Loading profile form...</p>}>
+          <E2eProfileFormRoute
+            flows={flows}
+            fixtures={getApprovedE2eProfileFixtures()}
+            saveDraft={saveE2eProfileDraftAction}
+            finalize={finalizeE2eProfileFormAction}
+          />
+        </Suspense>
       </MainShell>
     </AppShell>
   );

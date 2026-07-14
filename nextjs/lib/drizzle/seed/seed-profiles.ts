@@ -10,6 +10,7 @@ import { profileForms, profiles } from "../schema";
 import type * as schema from "../schema";
 import { profileFixtures } from "./profile/profile-fixtures";
 import { createProfileFormValueResolver } from "./profile/profile-form-value-policy";
+import { currentOperator } from "./seed-operator";
 
 export function createProfileFormData(flowType: EnrollmateFlowType, email: string, overrides?: Record<string, unknown>) {
   return createEnrollmateFixture(flowType, {
@@ -35,8 +36,8 @@ export async function seedProfiles(tx: NodePgDatabase<typeof schema>) {
         flowType,
         status,
         operationalData,
-        createdBy: "8f0c506c-b865-42fc-992d-6eaeea7bf4c3",
-        updatedBy: "8f0c506c-b865-42fc-992d-6eaeea7bf4c3",
+        createdBy: currentOperator.id,
+        updatedBy: currentOperator.id,
       })
       .onConflictDoUpdate({
         target: profiles.id,

@@ -4,9 +4,6 @@ import { apps, smokeRuns, smokeRunsTestResults } from "./apps";
 import { authAccount, authSession, authUser, authVerification } from "./auth";
 import { profileE2eSnapshots, profileForms } from "./profile-forms";
 import { e2eRuns, e2eRunSteps, e2eRunTests, e2eSteps, profiles } from "./profiles";
-import { users } from "./users";
-
-export const usersRelations = relations(users, () => ({}));
 
 export const authUserRelations = relations(authUser, ({ many }) => ({
   sessions: many(authSession),
@@ -29,7 +26,7 @@ export const appsRelations = relations(apps, ({ many }) => ({
 
 export const smokeRunsRelations = relations(smokeRuns, ({ one, many }) => ({
   app: one(apps, { fields: [smokeRuns.appId], references: [apps.id] }),
-  startedByUser: one(users, { fields: [smokeRuns.startedBy], references: [users.id] }),
+  startedByUser: one(authUser, { fields: [smokeRuns.startedBy], references: [authUser.id] }),
   testResults: many(smokeRunsTestResults),
 }));
 
@@ -58,7 +55,7 @@ export const e2eStepsRelations = relations(e2eSteps, ({ many }) => ({
 
 export const e2eRunsRelations = relations(e2eRuns, ({ one, many }) => ({
   profile: one(profiles, { fields: [e2eRuns.profileId], references: [profiles.id] }),
-  startedByUser: one(users, { fields: [e2eRuns.startedBy], references: [users.id] }),
+  startedByUser: one(authUser, { fields: [e2eRuns.startedBy], references: [authUser.id] }),
   runSteps: many(e2eRunSteps),
   e2eSnapshots: many(profileE2eSnapshots),
 }));

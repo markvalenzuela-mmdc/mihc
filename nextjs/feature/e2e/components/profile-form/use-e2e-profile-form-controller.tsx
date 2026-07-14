@@ -126,27 +126,38 @@ function useE2eProfileFormController({
   finalize,
   flows,
   initialValues,
-  onExit,
+  initialStep,
+  initialValidatedSteps,
   onFinish,
+  profileId: initialProfileId,
   saveDraft,
 }: Pick<
   E2eProfileFormPageBaseProps,
-  "flows" | "initialValues" | "onExit" | "onFinish"
+  | "flows"
+  | "initialValues"
+  | "initialStep"
+  | "initialValidatedSteps"
+  | "onFinish"
+  | "profileId"
 > & {
   finalize: FinalizeE2eProfileForm;
   saveDraft: SaveE2eProfileDraft;
 }) {
   const [queryStep, setQueryStep] = useQueryState(
     "step",
-    parseAsInteger.withDefault(1).withOptions({ clearOnDefault: false }),
+    parseAsInteger
+      .withDefault(initialStep ?? 1)
+      .withOptions({ clearOnDefault: false }),
   );
-  const [profileId, setProfileId] = useState<string>();
+  const [profileId, setProfileId] = useState<string | undefined>(
+    initialProfileId,
+  );
   const [isPending, setIsPending] = useState(false);
   const [validatedSteps, setValidatedSteps] = useState<ReadonlySet<number>>(
-    () => new Set(),
+    () => new Set(initialValidatedSteps),
   );
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
-  const profileIdRef = useRef<string | undefined>(undefined);
+  const profileIdRef = useRef<string | undefined>(initialProfileId);
   const pendingRef = useRef(false);
 
   const form = useAppForm({
@@ -348,7 +359,7 @@ function useE2eProfileFormController({
     focusElement("e2e-profile-form-errors");
   }
 
-  async function runDraft(intent: "continue" | "exit") {
+  async function saveAndContinue() {
     if (pendingRef.current) return;
     const validation = validateActiveStep();
     if (!validation) return;
@@ -385,11 +396,6 @@ function useE2eProfileFormController({
           section.fields.map((field) => `enrollmate.${field.name}`),
         ),
       ]);
-
-      if (intent === "exit") {
-        onExit?.(result.data.profileId);
-        return;
-      }
 
       const nextStep = result.data.nextStep ?? activeStepNumber + 1;
       await setQueryStep(clampStep(nextStep, steps.length));
@@ -428,8 +434,35 @@ function useE2eProfileFormController({
     pendingRef.current = true;
     setIsPending(true);
     try {
-      const result = await finalize({
+      const draftResult = await saveDraft({
+        mode: "edit",
         profileId: currentProfileId,
+        core: validation.core,
+        stepNumber: activeStep.step,
+        stepData: extractE2eProfileStepValues(
+          activeStep,
+          validation.enrollmate,
+        ),
+      });
+
+      if (!draftResult.ok) {
+        applyActionError(draftResult.error);
+        return;
+      }
+
+      profileIdRef.current = draftResult.data.profileId;
+      setProfileId(draftResult.data.profileId);
+      setValidatedSteps((current) => new Set(current).add(activeStep.step));
+      markFieldsPristine([
+        ...CORE_FIELD_ORDER,
+        "enrollmate",
+        ...activeStep.sections.flatMap((section) =>
+          section.fields.map((field) => `enrollmate.${field.name}`),
+        ),
+      ]);
+
+      const result = await finalize({
+        profileId: draftResult.data.profileId,
         core: validation.core,
         enrollmateData: completeValidation.data,
       });
@@ -479,7 +512,7 @@ function useE2eProfileFormController({
     goToPreviousStep,
     isFlowLocked: Boolean(profileId),
     isPending,
-    runDraft,
+    saveAndContinue,
     steps,
     validatedSteps,
   };

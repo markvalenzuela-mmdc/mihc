@@ -49054,7 +49054,6 @@
                   "label": "Work Type",
                   "type": "select",
                   "required": false,
-                  "description": "CONDITIONAL: Only visible when 'Student Status' is set to 'Working Student'.",
                   "placeholderValue": "",
                   "visibleWhen": {
                     "field": "studentStatus",
@@ -49083,7 +49082,6 @@
                   "label": "Company/Organization Name",
                   "type": "text",
                   "required": false,
-                  "description": "CONDITIONAL: Only visible when 'Student Status' is set to 'Working Student'.",
                   "visibleWhen": {
                     "field": "studentStatus",
                     "equalsAny": [
@@ -49143,7 +49141,6 @@
                   "label": "Specify Your Current/Completed Strand/Program",
                   "type": "text",
                   "required": false,
-                  "description": "CONDITIONAL: Only visible when 'Current/Completed Strand/Program' is set to 'Others'.",
                   "visibleWhen": {
                     "field": "strand",
                     "equalsAny": [
@@ -49537,7 +49534,6 @@
                   "label": "Scholarship",
                   "type": "select",
                   "required": false,
-                  "description": "CONDITIONAL: Only visible when 'Interested to apply for a Scholarship?' is set to Yes.",
                   "placeholderValue": "",
                   "visibleWhen": {
                     "field": "interestedForAScholarship",
@@ -49616,7 +49612,6 @@
                   "label": "Brief description if diagnosed with any medical, psychological, or learning difficulty.",
                   "type": "textarea",
                   "required": false,
-                  "description": "CONDITIONAL: Only visible when 'Have you ever been diagnosed with any medical, psychological, or learning difficulty?' is set to 'Yes'.",
                   "visibleWhen": {
                     "field": "withMedicalCondition",
                     "equalsAny": [
@@ -49631,7 +49626,6 @@
                   "label": "Doctor's Report",
                   "type": "file",
                   "required": false,
-                  "description": "CONDITIONAL: Only visible when 'Have you ever been diagnosed with any medical, psychological, or learning difficulty?' is set to 'Yes'.",
                   "visibleWhen": {
                     "field": "withMedicalCondition",
                     "equalsAny": [
@@ -50711,7 +50705,6 @@
                   "label": "Specify Guardian Relationship",
                   "type": "text",
                   "required": false,
-                  "description": "CONDITIONAL: Only visible when 'Relationship to Applicant' is set to 'Others'.",
                   "visibleWhen": {
                     "field": "grdnApplRelationship",
                     "equalsAny": [
@@ -51323,7 +51316,6 @@
                   "label": "Work Type",
                   "type": "select",
                   "required": false,
-                  "description": "CONDITIONAL: Only visible when 'Student Status' is set to 'Working Student'.",
                   "placeholderValue": "",
                   "visibleWhen": {
                     "field": "studentStatus",
@@ -51352,7 +51344,6 @@
                   "label": "Company/Organization Name",
                   "type": "text",
                   "required": false,
-                  "description": "CONDITIONAL: Only visible when 'Student Status' is set to 'Working Student'.",
                   "visibleWhen": {
                     "field": "studentStatus",
                     "equalsAny": [

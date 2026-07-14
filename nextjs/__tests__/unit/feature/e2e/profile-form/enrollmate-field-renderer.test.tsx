@@ -204,28 +204,53 @@ describe("EnrollmateFieldRenderer", () => {
     ).toBeInTheDocument();
   });
 
-  it.each(["cascade", "external"] as const)(
-    "accepts free-entry strings for %s option sources",
-    async (sourceKind) => {
-      const definition = getFieldByOptionSource(sourceKind);
-      render(
-        <RendererHarness
-          definition={definition}
-          values={getVisibilityValues(definition)}
-        />,
-      );
+  it("renders municipality and barangay options from their selected parents", async () => {
+    const municipality = getField("curraddrCitymun");
+    const barangay = getField("curraddrBarangay");
 
-      fireEvent.change(screen.getByRole("combobox", { name: definition.label }), {
-        target: { value: "Operator supplied value" },
-      });
+    render(
+      <RendererHarness
+        definition={municipality}
+        values={{ curraddrCountry: "Philippines", curraddrProvince: "Rizal" }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("combobox", { name: municipality.label }));
+    expect(
+      await screen.findByRole("option", { name: "Antipolo City" }),
+    ).toBeInTheDocument();
 
-      await waitFor(() =>
-        expect(screen.getByTestId("field-value")).toHaveTextContent(
-          '"Operator supplied value"',
-        ),
-      );
-    },
-  );
+    cleanup();
+    render(
+      <RendererHarness
+        definition={barangay}
+        values={{ curraddrCountry: "Philippines", curraddrCitymun: "Tanay" }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("combobox", { name: barangay.label }));
+    expect(
+      await screen.findByRole("option", { name: "Sampaloc" }),
+    ).toBeInTheDocument();
+  });
+
+  it("accepts free-entry strings for external option sources", async () => {
+    const definition = getFieldByOptionSource("external");
+    render(
+      <RendererHarness
+        definition={definition}
+        values={getVisibilityValues(definition)}
+      />,
+    );
+
+    fireEvent.change(screen.getByRole("combobox", { name: definition.label }), {
+      target: { value: "Operator supplied value" },
+    });
+
+    await waitFor(() =>
+      expect(screen.getByTestId("field-value")).toHaveTextContent(
+        '"Operator supplied value"',
+      ),
+    );
+  });
 
   it("stores checkbox state as a boolean", async () => {
     const definition = getFieldByType("checkbox");

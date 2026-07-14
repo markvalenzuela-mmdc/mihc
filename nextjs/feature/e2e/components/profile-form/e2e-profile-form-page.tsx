@@ -1,14 +1,13 @@
 "use client";
 
 import { type EnrollmateFlowType } from "@mihc/enrollmate-contract";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment } from "react";
 
 import { E2eProfileCoreFields } from "@/feature/e2e/components/profile-form/e2e-profile-core-fields";
 import { E2eProfileFormActions } from "@/feature/e2e/components/profile-form/e2e-profile-form-actions";
 import { E2eProfileFormProgress } from "@/feature/e2e/components/profile-form/e2e-profile-form-progress";
 import { EnrollmateFieldRenderer } from "@/feature/e2e/components/profile-form/enrollmate-field-renderer";
 import { EnrollmateSection } from "@/feature/e2e/components/profile-form/enrollmate-section";
-import { createInMemoryE2eProfileFormMock } from "@/feature/e2e/mocks/e2e-profile-form.mock";
 import type {
   E2eProfileFixture,
   E2eProfileFormEditorStep,
@@ -21,24 +20,18 @@ import useE2eProfileFormController from "./use-e2e-profile-form-controller";
 
 export type E2eProfileFormPageBaseProps = {
   flows: Record<EnrollmateFlowType, E2eProfileFormEditorStep[]>;
+  profileId?: string;
   initialValues?: E2eProfileFormValues;
-  onExit?: (profileId: string) => void;
+  initialStep?: number;
+  initialValidatedSteps?: readonly number[];
   onFinish?: (profileId: string) => void;
 };
 
-export type E2eProfileFormPageProps = E2eProfileFormPageBaseProps &
-  (
-    | {
-        fixtures: E2eProfileFixture[];
-        saveDraft: SaveE2eProfileDraft;
-        finalize: FinalizeE2eProfileForm;
-      }
-    | {
-        fixtures?: never;
-        saveDraft?: never;
-        finalize?: never;
-      }
-  );
+export type E2eProfileFormPageProps = E2eProfileFormPageBaseProps & {
+  fixtures: E2eProfileFixture[];
+  saveDraft: SaveE2eProfileDraft;
+  finalize: FinalizeE2eProfileForm;
+};
 
 function ProfileFormErrorSummary({
   messages,
@@ -82,41 +75,25 @@ function ProfileFormStepIntroduction({
 }
 
 export function E2eProfileFormPage({
-  finalize: injectedFinalize,
-  fixtures: injectedFixtures,
+  finalize,
+  fixtures,
   flows,
   initialValues,
-  onExit,
+  initialStep,
+  initialValidatedSteps,
   onFinish,
-  saveDraft: injectedSaveDraft,
+  profileId,
+  saveDraft,
 }: E2eProfileFormPageProps) {
-  const hasInjectedBoundary =
-    injectedFixtures !== undefined &&
-    injectedSaveDraft !== undefined &&
-    injectedFinalize !== undefined;
-  const [mock] = useState(() =>
-    hasInjectedBoundary ? null : createInMemoryE2eProfileFormMock(),
-  );
-
-  const boundary = hasInjectedBoundary
-    ? {
-        fixtures: injectedFixtures,
-        saveDraft: injectedSaveDraft,
-        finalize: injectedFinalize,
-      }
-    : mock!;
-
-  useEffect(() => {
-    return () => mock?.dispose();
-  }, [mock]);
-
   const controller = useE2eProfileFormController({
-    finalize: boundary.finalize,
+    finalize,
     flows,
     initialValues,
-    onExit,
+    initialStep,
+    initialValidatedSteps,
     onFinish,
-    saveDraft: boundary.saveDraft,
+    profileId,
+    saveDraft,
   });
 
   return (
@@ -163,7 +140,7 @@ export function E2eProfileFormPage({
                       <Fragment key={section.id}>
                         <EnrollmateSection
                           section={section}
-                          fixtures={boundary.fixtures}
+                          fixtures={fixtures}
                           values={values}
                           renderField={({ definition, fixtures, values }) => (
                             <controller.form.AppField
@@ -194,8 +171,7 @@ export function E2eProfileFormPage({
             totalSteps={controller.steps.length}
             isPending={controller.isPending}
             onPrevious={controller.goToPreviousStep}
-            onSaveAndContinue={() => void controller.runDraft("continue")}
-            onSaveAndExit={() => void controller.runDraft("exit")}
+            onContinue={() => void controller.saveAndContinue()}
             onFinalize={() => void controller.finalizeProfile()}
           />
         </controller.form.AppForm>

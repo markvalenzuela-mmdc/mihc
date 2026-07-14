@@ -3,10 +3,13 @@ import { DatabaseZapIcon, ShieldCheckIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { requireAuthenticated } from "@/feature/auth/auth-guards";
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const user = await requireAuthenticated();
+
   return (
-    <AppShell>
+    <AppShell user={user}>
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>

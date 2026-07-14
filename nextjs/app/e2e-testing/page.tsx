@@ -11,6 +11,7 @@ import { E2eTestingProfilesTable } from "@/feature/e2e/components/profiles/e2e-t
 import { getPaginatedE2eProfiles } from "@/feature/e2e/services/e2e-profile.service";
 import { SearchParams } from "nuqs";
 import { cache } from "react";
+import { requireAuthenticated } from "@/feature/auth/auth-guards";
 
 interface PageProps {
   searchParams: Promise<SearchParams>;
@@ -33,10 +34,11 @@ const getData = cache(async (searchParams: Promise<SearchParams>) => {
 });
 
 export default async function E2eTestingPage({ searchParams }: PageProps) {
+  const user = await requireAuthenticated();
   const dataPromise = getData(searchParams);
 
   return (
-    <AppShell>
+    <AppShell user={user}>
       <MainShell
         title="End-to-End Testing"
         subtitle="Review enrollment-ready profiles, start complete test sessions, and trace results from run to assertion."

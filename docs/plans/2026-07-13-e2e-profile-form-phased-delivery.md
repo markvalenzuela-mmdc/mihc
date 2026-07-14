@@ -930,6 +930,11 @@ git commit -m "docs(e2e): record profile form phase one verification"
 
 ## Phase 2 pairing gate — backend services and action wiring
 
+> **Implementation update (2026-07-14):** Phase 2 backend wiring is implemented
+> on top of the current branch. The existing extracted form controller is
+> preserved, the mock boundary is removed, and manual browser QA remains the
+> final handoff step.
+
 Do not start Task 9 automatically. The user will implement or pair on the
 backend. At the start of the pairing session, inspect actual code and compare it
 to the contracts below. Report mismatches before editing the backend.
@@ -983,6 +988,10 @@ at the action boundary and map to `forbidden`.
 
 ### Task 9: Review the paired backend before wiring
 
+**Status:** Implemented. The reviewed boundary uses focused services, one
+typed domain error, authenticated actions, and direct Better Auth session user
+IDs for audit writes.
+
 **Files to inspect:**
 
 - `nextjs/feature/e2e/actions/e2e-profile-form.action.ts`
@@ -992,21 +1001,21 @@ at the action boundary and map to `forbidden`.
 - `nextjs/feature/e2e/services/e2e-profile-form-editor.service.ts`
 - `nextjs/feature/e2e/services/e2e-profile-fixtures.service.ts`
 
-- [ ] **Step 1: Review service ownership**
+- [x] **Step 1: Review service ownership**
 
 Confirm draft service owns step validation and create/edit transactions;
 finalization owns complete validation; editor service owns the read model;
 fixture service owns approved metadata only. Reject a broad service containing
 all four responsibilities.
 
-- [ ] **Step 2: Review persistence invariants**
+- [x] **Step 2: Review persistence invariants**
 
 Confirm atomic profile/form creation, row locking for edit/finalize, locked flow,
 definition hash checks, replacement of active-step-owned keys, preservation of
 other steps, unique-email translation, normalized final data, and audit user
 updates. Confirm no client-supplied operator ID is trusted.
 
-- [ ] **Step 3: Review action orchestration**
+- [x] **Step 3: Review action orchestration**
 
 Each action must authenticate, parse one typed input, call one public service,
 revalidate affected paths, return `ok(data)`/`err(error)`, and map unexpected
@@ -1014,6 +1023,9 @@ errors once. If any contract differs, document the mismatch and agree on the
 change with the user before wiring.
 
 ### Task 10: Replace mocks and add edit/resume
+
+**Status:** Implemented. The route boundary now supplies live actions and
+fixture metadata, and the edit route loads persisted drafts.
 
 **Files:**
 
@@ -1025,7 +1037,7 @@ change with the user before wiring.
 - Modify: Phase 1 page/navigation tests
 - Add: focused action/service tests supplied by the paired backend work
 
-- [ ] **Step 1: Inject real actions at the route boundary**
+- [x] **Step 1: Inject real actions at the route boundary**
 
 Pass `saveE2eProfileDraftAction` and `finalizeE2eProfileFormAction` through the
 existing typed props together with real fixtures. Make `fixtures`, `saveDraft`,
@@ -1033,7 +1045,7 @@ and `finalize` required page props, remove mock-factory initialization and its
 cleanup effect, and preserve the controller, validation, result handling, and
 presentation.
 
-- [ ] **Step 2: Delete and verify the temporary boundary**
+- [x] **Step 2: Delete and verify the temporary boundary**
 
 Delete the complete `nextjs/feature/e2e/mocks/` directory after both creation
 and edit composition provide the required live props. Then run:
@@ -1047,33 +1059,35 @@ pnpm --dir nextjs exec tsc --noEmit
 Expected: `rg` returns no matches, the unchanged Phase 1 behavior suite passes,
 and TypeScript reports no missing boundary props.
 
-- [ ] **Step 3: Use real fixtures and initial data**
+- [x] **Step 3: Use real fixtures and initial data**
 
 New route loads approved fixtures. Edit route awaits `params`, calls
 `getE2eProfileFormEditorData`, uses `notFound()` for missing profiles, and shows
 a blocked state for deprecated/hash-conflicted data.
 
-- [ ] **Step 4: Complete navigation**
+- [x] **Step 4: Complete navigation**
 
 Save and continue advances only after persisted success. Save draft and exit
 redirects to `/e2e-testing`. Final submit saves the active step, then finalizes,
 then redirects to the profile workspace. Add the workspace **Edit profile**
 entry point and lock flow in edit mode.
 
-- [ ] **Step 5: Run frontend and paired backend tests**
+- [x] **Step 5: Run frontend and paired backend tests**
 
 Run Phase 1 tests unchanged against real actions plus the focused action,
 fixture, persistence, and editor tests created during pairing.
 
 ### Task 11: Verify persistence and finish Phase 2
 
-- [ ] **Step 1: Run database integration coverage**
+**Status:** Automated verification implemented; manual browser QA remains.
+
+- [x] **Step 1: Run database integration coverage**
 
 Verify atomic creation/rollback, draft merge/replacement, cross-step
 preservation, email conflict, flow/hash conflict, final validation, deprecated
 edit rejection, and derived active/invalid run gating.
 
-- [ ] **Step 2: Run all project checks with pnpm**
+- [x] **Step 2: Run all project checks with pnpm**
 
 Run Next.js unit/integration tests, TypeScript, and lint; run Playwright server
 unit tests/typecheck without launching browser tests.
@@ -1088,3 +1102,86 @@ start runs.
 
 Mark Phase 2 implemented only after automated checks, database tests, and user
 pairing review pass. Preserve the historical plans as superseded records.
+
+---
+
+## Phase 2 amendment — Better Auth canonical operators and location cascades
+
+> **Decision (2026-07-14):** Better Auth's existing `user` table is the sole
+> operator identity source. The legacy `users` table and email-based adapter
+> are removed. The database is intentionally reset and reseeded, so audit
+> foreign keys use native UUID columns referencing `user.id`. Better Auth is
+> configured to generate UUID IDs for its auth tables.
+
+### Task 12: Make Better Auth users the audit identity
+
+**Files:**
+
+- Modify: `nextjs/lib/drizzle/schema/apps.ts`
+- Modify: `nextjs/lib/drizzle/schema/profiles.ts`
+- Modify: `nextjs/lib/drizzle/schema/auth.ts`
+- Modify: `nextjs/lib/drizzle/schema/relations.ts`
+- Modify: `nextjs/lib/drizzle/schema/index.ts`
+- Delete: `nextjs/lib/drizzle/schema/users.ts`
+- Delete: `nextjs/lib/better-auth/current-operator.ts`
+- Modify: `nextjs/feature/e2e/actions/e2e-profile-form.action.ts`
+- Modify: `nextjs/feature/e2e/services/e2e-profile-draft.service.ts`
+- Modify: `nextjs/feature/e2e/services/e2e-profile-form-finalization.service.ts`
+- Modify: `nextjs/lib/drizzle/seed/seed-operator.ts`
+- Modify: `nextjs/lib/drizzle/seed/seed-smoke-runs.ts`
+- Modify: `nextjs/lib/drizzle/seed/seed-e2e-runs.ts`
+- Modify: `nextjs/lib/drizzle/seed/seed-profiles.ts`
+- Modify: `nextjs/lib/drizzle/seed.ts`
+- Create: `nextjs/drizzle/0001_glorious_frank_castle.sql`
+
+- [x] Configure Better Auth to generate UUID IDs, use native PostgreSQL UUID
+  columns for its auth tables, and keep every audit ID as a UUID reference to
+  `authUser.id`; remove the `users` schema export and relations.
+- [ ] Pass the authenticated Better Auth `session.user.id` directly from the
+  server actions into the services; do not accept an operator ID from client
+  input and do not perform email lookup.
+- [ ] Seed one Better Auth `user` row as the deterministic operator and use its
+  ID for apps, profiles, smoke runs, and E2E runs. Preserve Better Auth's
+  existing table and credential semantics.
+- [ ] Reset/reseed the test database through the new migration and verify all
+  foreign keys resolve to `user.id`.
+
+### Task 13: Add real dependent location options to the shared contract
+
+**Files:**
+
+- Modify: `packages/enrollmate-contract/src/definitions/enrollmate-form-fields.json`
+- Modify: `packages/enrollmate-contract/src/definitions/enrollmate-form-definition.schema.json`
+- Modify: `packages/enrollmate-contract/src/form-definition.schema.ts`
+- Modify: `packages/enrollmate-contract/README.md`
+- Delete: `nextjs/lib/drizzle/seed/data/locations.ts`
+- Add/update: `nextjs/__tests__/unit/lib/enrollmate-contract.test.ts`
+
+- [x] Move the complete UAT Province → Municipality and Municipality →
+  Barangay catalogs into reusable dependent option sets in the shared contract
+  source.
+- [x] Mark every location child field as a dependent option source backed by
+  the reusable catalogs.
+- [x] Ensure the renderer receives options from the selected parent and clears
+  stale child values when the parent changes.
+- [x] Assert contract parsing, full-catalog option resolution, and invalid
+  dependency rejection in unit tests.
+
+### Task 14: Verify the reset-and-reseed boundary
+
+- [ ] Run migrations against a clean test database and seed it.
+- [ ] Verify Better Auth sign-in/session lookup returns a user ID accepted by
+  profile/app/run audit foreign keys.
+- [x] Verify Municipality and Barangay options change with their parents.
+- [x] Run focused tests, TypeScript, lint, build, and `git diff --check`.
+
+---
+
+## Current behavior amendment — save on step completion (2026-07-14)
+
+The current profile form has one forward action, **Continue**. It validates and
+saves the active step before advancing. **Previous** is navigation-only and
+does not save. On the confirmation step, **Validate and finish** still saves the
+active step before finalization. The server draft action and its persistence
+contract are unchanged: it validates and persists one active step and returns
+the profile and next-step result.

@@ -34,8 +34,15 @@ describe("E2E profile form definition adapters", () => {
   });
 
   it("evaluates visibility and removes values that are no longer available", () => {
+    const lastSchoolAttended = getBachelorsField("lastSchoolAttended");
     const lastschOther = getBachelorsField("lastschOther");
 
+    expect(
+      isEnrollmateFieldVisible(lastSchoolAttended, { schoolNotFound: false }),
+    ).toBe(true);
+    expect(
+      isEnrollmateFieldVisible(lastSchoolAttended, { schoolNotFound: true }),
+    ).toBe(false);
     expect(
       isEnrollmateFieldVisible(lastschOther, { schoolNotFound: true }),
     ).toBe(true);
@@ -45,6 +52,12 @@ describe("E2E profile form definition adapters", () => {
         lastschOther: "Old school",
       }),
     ).not.toHaveProperty("lastschOther");
+    expect(
+      clearUnavailableE2eProfileFormValues(bachelors, {
+        schoolNotFound: true,
+        lastSchoolAttended: "Mapua University-Makati",
+      }),
+    ).not.toHaveProperty("lastSchoolAttended");
   });
 
   it("keeps parent fields rendered and clears non-living parent values", () => {

@@ -8,6 +8,10 @@ import NewE2eProfilePage from "@/app/e2e-testing/profiles/new/page";
 import { E2eTestingProfilesTable } from "@/feature/e2e/components/profiles/e2e-testing-profiles-table";
 import type { E2eProfileFormEditorStep } from "@/feature/e2e/types/e2e-profile-form.types";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
 const capturedFormProps = vi.hoisted(() => ({
   flows: undefined as
     | Record<"bachelors" | "microcredentials", E2eProfileFormEditorStep[]>

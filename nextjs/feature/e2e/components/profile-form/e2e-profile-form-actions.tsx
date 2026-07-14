@@ -7,8 +7,7 @@ type E2eProfileFormActionsProps = {
   totalSteps: number;
   isPending: boolean;
   onPrevious: () => void;
-  onSaveAndContinue: () => void;
-  onSaveAndExit: () => void;
+  onContinue: () => void;
   onFinalize: () => void;
 };
 
@@ -17,8 +16,7 @@ export function E2eProfileFormActions({
   totalSteps,
   isPending,
   onPrevious,
-  onSaveAndContinue,
-  onSaveAndExit,
+  onContinue,
   onFinalize,
 }: E2eProfileFormActionsProps) {
   const isConfirmationStep = currentStep === totalSteps;
@@ -50,14 +48,6 @@ export function E2eProfileFormActions({
         </Button>
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={isPending}
-            onClick={onSaveAndExit}
-          >
-            Save draft and exit
-          </Button>
           {isConfirmationStep ? (
             <Button type="button" disabled={isPending} onClick={onFinalize}>
               Validate and finish
@@ -66,9 +56,9 @@ export function E2eProfileFormActions({
             <Button
               type="button"
               disabled={isPending}
-              onClick={onSaveAndContinue}
+              onClick={onContinue}
             >
-              Save and continue
+              Continue
             </Button>
           )}
         </div>

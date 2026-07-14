@@ -406,3 +406,14 @@ made executable only after the user supplies or co-authors the backend code.
   frontend wiring reviews its contracts rather than silently fixing them.
 - Final folders follow the structure and page rewrite conventions from the
   beginning.
+
+---
+
+## Current behavior amendment — save on step completion (2026-07-14)
+
+The current profile form has one forward action, **Continue**. It validates and
+saves the active step before advancing. **Previous** is navigation-only and
+does not save. On the confirmation step, **Validate and finish** still saves the
+active step before finalization. The server draft action and its persistence
+contract are unchanged: it validates and persists one active step and returns
+the profile and next-step result.

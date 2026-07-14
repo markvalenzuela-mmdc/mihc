@@ -1,12 +1,13 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
-import { apps, users } from "../schema";
+import { apps, authUser } from "../schema";
 import type * as schema from "../schema";
 
 export const currentOperator = {
   id: "8f0c506c-b865-42fc-992d-6eaeea7bf4c3",
   name: "Jamie Villanueva",
   email: "jamie.villanueva@mmdc.mcl.edu.ph",
+  emailVerified: true,
 };
 
 const smokeApps = [
@@ -20,11 +21,15 @@ export async function seedOperatorAndApps(tx: NodePgDatabase<typeof schema>) {
   const messages: string[] = [];
 
   await tx
-    .insert(users)
+    .insert(authUser)
     .values(currentOperator)
     .onConflictDoUpdate({
-      target: users.id,
-      set: { name: currentOperator.name, email: currentOperator.email },
+      target: authUser.id,
+      set: {
+        name: currentOperator.name,
+        email: currentOperator.email,
+        emailVerified: currentOperator.emailVerified,
+      },
     });
   messages.push(`Seeded operator: ${currentOperator.email}`);
 

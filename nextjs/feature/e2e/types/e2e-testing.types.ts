@@ -1,5 +1,5 @@
 import type { ProfileOperationalData } from "@mihc/enrollmate-contract";
-import type { e2eRuns, e2eRunSteps, e2eRunTests, e2eSteps, profileForms, profiles, users } from "@/lib/drizzle/db";
+import type { authUser, e2eRuns, e2eRunSteps, e2eRunTests, e2eSteps, profileForms, profiles } from "@/lib/drizzle/db";
 
 type ProfileSelect = typeof profiles.$inferSelect;
 type E2eRunSelect = typeof e2eRuns.$inferSelect;
@@ -11,7 +11,7 @@ type E2eProfileFormBase = Omit<ProfileFormSelect, "data"> & {
 };
 
 export type ProfileStatus = ProfileSelect["status"];
-export type OperatorSummary = Pick<typeof users.$inferSelect, "id" | "name" | "email">;
+export type OperatorSummary = Pick<typeof authUser.$inferSelect, "id" | "name" | "email">;
 export type E2eProfileLatestRun = Pick<E2eRunSelect, "id" | "runNumber" | "status">;
 export interface E2eProfileSummary extends Pick<ProfileSelect, "id" | "name" | "email" | "flowType" | "status"> { latestRun: E2eProfileLatestRun | null; }
 export type ProfileFormValidationIssue = {

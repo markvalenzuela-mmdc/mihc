@@ -20,7 +20,7 @@ export function E2eProfileFormProgress({
 }: E2eProfileFormProgressProps) {
   return (
     <nav aria-label="Profile creation progress">
-      <ol className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] sm:overflow-visible sm:pb-0">
+      <ol className="grid gap-2 sm:grid-cols-4 sm:gap-0 sm:divide-x sm:overflow-hidden sm:rounded-lg sm:border sm:bg-card">
         {steps.map((step) => {
           const isActive = step.step === activeStep;
           const isValidated = validatedSteps.has(step.step);
@@ -37,9 +37,9 @@ export function E2eProfileFormProgress({
               data-state={state}
               data-validated={isValidated || undefined}
               className={cn(
-                "flex min-w-40 items-start gap-3 rounded-md border px-3 py-3 text-sm",
-                isActive && "border-foreground bg-muted",
-                isValidated && !isActive && "bg-muted/60",
+                "flex min-w-0 items-start gap-3 rounded-md border px-3 py-3 text-sm sm:rounded-none sm:border-0 sm:px-4 sm:py-4",
+                isActive && "border-foreground bg-muted sm:bg-muted/80",
+                isValidated && !isActive && "bg-muted/50",
                 !isActive && !isValidated && "text-muted-foreground",
               )}
             >
@@ -59,11 +59,17 @@ export function E2eProfileFormProgress({
                   step.step
                 )}
               </span>
-              <span className="min-w-0 leading-6 font-medium text-foreground">
-                {step.title}
+              <span className="min-w-0">
+                <span className="block leading-5 font-medium text-foreground">
+                  {step.title}
+                </span>
+                {isActive && (
+                  <span className="mt-1 block text-xs font-normal text-muted-foreground">
+                    Current step
+                  </span>
+                )}
               </span>
               {isValidated && <span className="sr-only">Validated</span>}
-              {isActive && <span className="sr-only">Current step</span>}
             </li>
           );
         })}
