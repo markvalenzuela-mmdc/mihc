@@ -117,3 +117,46 @@ changes are required.
 ## Open questions
 
 None. The design is approved for implementation.
+
+## Amendment: random mock modes and explicit confirmation
+
+Date: 2026-07-14
+
+The first implementation added one immediate fill-empty action. The follow-up
+requirement adds variability, unique generated identity data, and two explicit
+mock strategies. Clicking `Mock current step` will now open a confirmation
+dialog with `Cancel`, `Fill all fields`, and `Random partial fill` actions.
+
+### Fill all fields
+
+This mode overwrites every current-step field with a newly generated coherent
+value. It also includes step-one core fields. Checkbox values are randomized,
+with required checkbox groups guaranteed to have at least one selected value.
+
+### Random partial fill
+
+This mode selects a random subset of fields while preserving the rest. Required
+fields are always included, and checkbox values may be randomly selected. If a
+selected value makes a conditional field visible, the generator fills the
+newly visible field and continues through its dependency chain until the active
+step validates.
+
+### Unique identity and variability
+
+Use `@faker-js/faker` for coherent names, dates, phone numbers, text, and
+random decisions. Generated core and EnrollMate email values share the same
+identity and include a UUID-like random suffix under `example.com`, avoiding
+the fixed-email conflict without coupling the mock action to persistence or
+final submission.
+
+All select and combobox values continue to come from the shared contract’s
+resolved options. Parent values are selected before dependent values, including
+province → municipality → barangay and major → specialization chains.
+
+### UI and tests
+
+The action bar owns the confirmation dialog and passes the selected mode to the
+controller. The controller applies generated fields individually through normal
+form updates. Focused tests will cover dialog cancellation/mode selection,
+unique email variability, full-mode coverage, partial-mode validity, random
+checkbox conditional expansion, and dependent option compliance.
