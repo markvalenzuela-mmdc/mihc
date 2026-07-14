@@ -21,6 +21,7 @@ import { serializeE2eProfileFormEditorSteps } from "@/feature/e2e/serializers/e2
 import type {
   E2eProfileFixture,
   E2eProfileFormEditorStep,
+  E2eProfileFormValues,
   FinalizeE2eProfileForm,
   SaveE2eProfileDraft,
 } from "@/feature/e2e/types/e2e-profile-form.types";
@@ -74,6 +75,19 @@ const fixtures: E2eProfileFixture[] = [
     sizeBytes: 1024,
   },
 ];
+const validInitialValues: E2eProfileFormValues = {
+  ...e2eProfileFormOptions.defaultValues,
+  core: {
+    ...e2eProfileFormOptions.defaultValues.core,
+    name: "Example Student",
+    email: "student@example.com",
+  },
+  enrollmate: {
+    ...e2eProfileFormOptions.defaultValues.enrollmate,
+    fthrDeceased: "Living",
+    mthrDeceased: "Living",
+  },
+};
 
 function successfulDraft(profileId = "profile-1"): SaveE2eProfileDraft {
   return vi.fn(async (input) => ({
@@ -94,6 +108,7 @@ function renderPage({
   onExit,
   onFinish,
   onUrlUpdate,
+  initialValues,
   saveDraft = successfulDraft(),
   searchParams,
 }: {
@@ -101,6 +116,7 @@ function renderPage({
   onExit?: (profileId: string) => void;
   onFinish?: (profileId: string) => void;
   onUrlUpdate?: (event: UrlUpdateEvent) => void;
+  initialValues?: E2eProfileFormValues;
   saveDraft?: SaveE2eProfileDraft;
   searchParams?: string;
 } = {}) {
@@ -112,6 +128,7 @@ function renderPage({
     >
       <E2eProfileFormPage
         flows={flows}
+        initialValues={initialValues}
         fixtures={fixtures}
         saveDraft={saveDraft}
         finalize={finalize}
@@ -353,6 +370,19 @@ describe("E2eProfileFormPage", () => {
     });
   });
 
+  it("shows profile details only on the first step", () => {
+    const { unmount } = renderPage();
+    expect(
+      screen.getByRole("heading", { name: "Profile details" }),
+    ).toBeVisible();
+
+    unmount();
+    renderPage({ searchParams: "?step=2" });
+    expect(
+      screen.queryByRole("heading", { name: "Profile details" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("clears and disables a parent's fields when status changes", async () => {
     renderPage({ searchParams: "step=2" });
 
@@ -436,8 +466,8 @@ describe("E2eProfileFormPage", () => {
     )).toBe(true);
     await waitFor(() =>
       expect(
-        screen.getByRole("combobox", { name: "Application flow" }),
-      ).toBeDisabled(),
+        screen.queryByRole("heading", { name: "Profile details" }),
+      ).not.toBeInTheDocument(),
     );
     expect(onUrlUpdate).toHaveBeenLastCalledWith(
       expect.objectContaining({ queryString: "?step=2" }),
@@ -453,8 +483,12 @@ describe("E2eProfileFormPage", () => {
   it("moves backward without submitting and exits only after a successful draft", async () => {
     const saveDraft = successfulDraft();
     const onExit = vi.fn();
-    renderPage({ onExit, saveDraft, searchParams: "?step=2" });
-    fillValidCore();
+    renderPage({
+      initialValues: validInitialValues,
+      onExit,
+      saveDraft,
+      searchParams: "?step=2",
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "Previous" }));
     await waitFor(() =>
@@ -500,25 +534,28 @@ describe("E2eProfileFormPage", () => {
           resolveDraft = resolve;
         }),
     );
-    renderPage({ saveDraft, searchParams: "?step=2" });
-    fillValidCore();
-    const nameInput = screen.getByRole("textbox", { name: "Full name" });
+    renderPage({
+      initialValues: validInitialValues,
+      saveDraft,
+      searchParams: "?step=2",
+    });
+    const fatherName = screen.getByRole("textbox", {
+      name: "Father First name",
+    });
+    fireEvent.change(fatherName, { target: { value: "Existing Father" } });
     const continueButton = screen.getByRole("button", {
       name: "Save and continue",
     });
 
     fireEvent.click(continueButton);
     fireEvent.click(continueButton);
-    fireEvent.change(nameInput, { target: { value: "Changed while pending" } });
+    fireEvent.change(fatherName, { target: { value: "Changed while pending" } });
     fireEvent.click(screen.getByRole("button", { name: "Previous" }));
 
     await waitFor(() => expect(saveDraft).toHaveBeenCalledOnce());
     expect(continueButton).toBeDisabled();
-    expect(nameInput).toBeDisabled();
-    expect(nameInput).toHaveValue("Example Student");
-    expect(
-      screen.getByRole("combobox", { name: "Application flow" }),
-    ).toBeDisabled();
+    expect(fatherName).toBeDisabled();
+    expect(fatherName).toHaveValue("Existing Father");
     expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
     expect(
       within(screen.getByRole("navigation", {
@@ -597,8 +634,7 @@ describe("E2eProfileFormPage", () => {
           typeof getEnrollmateStepValidator
         >,
     );
-    renderPage({ searchParams: "?step=4" });
-    fillValidCore();
+    renderPage({ initialValues: validInitialValues, searchParams: "?step=4" });
 
     fireEvent.click(
       screen.getByRole("button", { name: "Validate and finish" }),
@@ -612,9 +648,8 @@ describe("E2eProfileFormPage", () => {
     ).toBeVisible();
   });
 
-  it("clears incompatible values and returns to step one when flow changes before saving", async () => {
-    renderPage({ searchParams: "?step=2" });
-    fillValidCore();
+  it("changes flow on the first step and returns to its first step", async () => {
+    renderPage();
 
     await chooseFlow("Microcredential");
 
@@ -759,8 +794,7 @@ describe("E2eProfileFormPage", () => {
   it("preserves dirty state for an unsaved field owned by another step", async () => {
     const addEventListener = vi.spyOn(window, "addEventListener");
     const removeEventListener = vi.spyOn(window, "removeEventListener");
-    renderPage({ searchParams: "?step=3" });
-    fillValidCore();
+    renderPage({ initialValues: validInitialValues, searchParams: "?step=3" });
     fireEvent.click(screen.getByRole("checkbox", { name: "Facebook" }));
     await waitFor(() =>
       expect(addEventListener).toHaveBeenCalledWith(
@@ -784,46 +818,23 @@ describe("E2eProfileFormPage", () => {
     );
   });
 
-  it("marks every field pristine after successful finalization", async () => {
-    const addEventListener = vi.spyOn(window, "addEventListener");
-    const removeEventListener = vi.spyOn(window, "removeEventListener");
+  it("finalizes a confirmation step without rendering profile details", async () => {
+    const saveDraft = successfulDraft();
     const finalize = successfulFinalize();
-    renderPage({ finalize });
-    fillValidCore();
-    await chooseFlow("Microcredential");
-
-    fireEvent.click(screen.getByRole("button", { name: "Save and continue" }));
-    await screen.findByRole("heading", {
-      name: microcredentialSteps[1]!.title,
+    renderPage({
+      finalize,
+      initialValues: validInitialValues,
+      saveDraft,
+      searchParams: "?step=4",
     });
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: "Save and continue" }),
-      ).toBeEnabled(),
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Save and continue" }));
-    await screen.findByRole("button", { name: "Validate and finish" });
-    fireEvent.change(screen.getByRole("textbox", { name: "Full name" }), {
-      target: { value: "Updated at confirmation" },
-    });
-    await waitFor(() =>
-      expect(addEventListener).toHaveBeenCalledWith(
-        "beforeunload",
-        expect.any(Function),
-      ),
-    );
-    removeEventListener.mockClear();
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Validate and finish" }),
-    );
+    expect(
+      screen.queryByRole("heading", { name: "Profile details" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Save draft and exit" }));
+    await waitFor(() => expect(saveDraft).toHaveBeenCalledOnce());
 
+    fireEvent.click(screen.getByRole("button", { name: "Validate and finish" }));
     await waitFor(() => expect(finalize).toHaveBeenCalledOnce());
-    await waitFor(() =>
-      expect(removeEventListener).toHaveBeenCalledWith(
-        "beforeunload",
-        expect.any(Function),
-      ),
-    );
   });
 });

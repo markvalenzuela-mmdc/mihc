@@ -74,16 +74,16 @@ export function isEnrollmateFieldVisible(
   const condition = field.conditionalOn;
   if (!condition) return true;
 
-  return condition.equalsAny.some(
-    (value) => value === values[condition.field],
-  );
+  return condition.equalsAny.some((value) => value === values[condition.field]);
 }
 
 export function isEnrollmateFieldRendered(
   field: EnrollmateField,
   values: Record<string, unknown>,
 ) {
-  return isEnrollmateParentField(field) || isEnrollmateFieldVisible(field, values);
+  return (
+    isEnrollmateParentField(field) || isEnrollmateFieldVisible(field, values)
+  );
 }
 
 export function getEnrollmateFieldOptions(
@@ -128,9 +128,10 @@ export function clearUnavailableE2eProfileFormValues(
       const selectedValue = availableValues[field.name];
       if (selectedValue === undefined || selectedValue === "") continue;
 
-      const isAvailable = getEnrollmateFieldOptions(field, availableValues).some(
-        (option) => option.value === selectedValue,
-      );
+      const isAvailable = getEnrollmateFieldOptions(
+        field,
+        availableValues,
+      ).some((option) => option.value === selectedValue);
       if (!isAvailable) {
         delete availableValues[field.name];
         changed = true;
