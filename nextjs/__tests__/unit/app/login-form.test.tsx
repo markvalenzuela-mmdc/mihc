@@ -52,6 +52,7 @@ describe("LoginForm", () => {
       "type",
       "password",
     );
+    expect(screen.getByLabelText("Password")).toHaveClass("rounded-l-md");
     expect(screen.getByRole("button", { name: "Log in" })).toBeEnabled();
   });
 

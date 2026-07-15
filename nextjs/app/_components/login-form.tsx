@@ -146,6 +146,7 @@ export function LoginForm() {
                       <FieldLabel htmlFor={field.name}>Password</FieldLabel>
                       <InputGroup>
                         <InputGroupInput
+                          className="rounded-l-md"
                           id={field.name}
                           name={field.name}
                           type={showPassword ? "text" : "password"}
