@@ -73,7 +73,7 @@ function getUniqueMockEmail(firstName: string, lastName: string, faker: Faker) {
 
 function getMockIdentity(faker: Faker): MockIdentity {
   const marker = faker.helpers.arrayElement(UAT_NAME_MARKERS);
-  const firstName = `${marker} ${faker.person.firstName()}`;
+  const firstName = marker;
   const lastName = faker.person.lastName();
 
   return {

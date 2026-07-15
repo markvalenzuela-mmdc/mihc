@@ -307,15 +307,10 @@ describe("E2E profile form definition adapters", () => {
       { fixtures: [], faker },
     );
 
-    expect(generated.core.name).toEqual(expect.any(String));
-    expect(
-      markers.some((marker) => generated.core.name?.includes(marker)),
-    ).toBe(true);
-    expect(
-      markers.some((marker) =>
-        String(generated.enrollmate.givenName).includes(marker),
-      ),
-    ).toBe(true);
+    expect(markers).toContain(generated.enrollmate.givenName);
+    expect(generated.core.name).toMatch(
+      /^(SampleInternsTest|Interns|Intern) \S+$/,
+    );
   });
 
   it("fills a newly visible conditional field after a random checkbox", () => {
