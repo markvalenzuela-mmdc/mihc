@@ -72,7 +72,7 @@ function ProfileFormStepIntroduction({
 function ProfileFormLoadingState() {
   return (
     <div
-      className="flex min-h-screen items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-background"
       role="status"
       aria-label="Finalizing profile"
     >
