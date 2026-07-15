@@ -92,6 +92,7 @@ export function ProfileWorkspaceControls({
   selectedStepCount,
   selectionLocked,
   canRun,
+  isAutomatedPending,
   onSelectedStepCountChange,
   onAutomated,
   onManual,
@@ -101,8 +102,9 @@ export function ProfileWorkspaceControls({
   selectedStepCount: number;
   selectionLocked: boolean;
   canRun: boolean;
+  isAutomatedPending: boolean;
   onSelectedStepCountChange: (count: number) => void;
-  onAutomated: () => void;
+  onAutomated: (stepIds: string[]) => void;
   onManual: () => void;
 }) {
   const selectedRange =
@@ -121,11 +123,15 @@ export function ProfileWorkspaceControls({
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
-          onClick={onAutomated}
-          disabled={selectionLocked || !canRun}
+          onClick={() =>
+            onAutomated(
+              steps.slice(0, selectedStepCount).map((step) => step.id),
+            )
+          }
+          disabled={selectionLocked || !canRun || isAutomatedPending}
         >
           <PlayIcon className="size-4" />
-          Run selected steps locally
+          Run selected steps automatically
         </Button>
         <Button
           type="button"
@@ -144,7 +150,7 @@ export function ProfileWorkspaceControls({
           ? "This profile has no active validated application to run."
           : activeRun
             ? `Run #${activeRun.runNumber} is locked to ${selectedRange} until it completes.`
-            : "Remove steps from the end of the sequence, or add the next excluded step."}
+            : "Only step 1 is currently available for automatic runs."}
       </p>
       <ol className="space-y-2">
         <ProfileWorkspaceControlsStepSelector
@@ -174,7 +180,8 @@ function ProfileWorkspaceControlsStepSelector({
     const canRemove =
       isSelected && index === selectedStepCount - 1 && selectedStepCount > 1;
     const canAdd = !isSelected && index === selectedStepCount;
-    const isDisabled = selectionLocked || (!canRemove && !canAdd);
+    const isDisabled =
+      selectionLocked || index > 0 || (!canRemove && !canAdd);
 
     return (
       <li key={step.id}>
@@ -319,7 +326,7 @@ export function ProfileWorkspaceRunHistory({
         </>
       ) : (
         <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-          No runs yet. Start an automated or manual local session.
+          No runs yet. Start an automated or manual session.
         </p>
       )}
     </section>

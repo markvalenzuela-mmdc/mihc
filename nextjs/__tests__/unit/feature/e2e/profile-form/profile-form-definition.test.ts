@@ -293,6 +293,31 @@ describe("E2E profile form definition adapters", () => {
     expect(second.core.email).toBe(second.enrollmate.email);
   });
 
+  it("includes an accepted UAT marker in the generated first name", () => {
+    const flow = getEnrollmateFlowDefinition("bachelors");
+    const current = getEmptyFormValues("bachelors");
+    const markers = ["SampleInternsTest", "Interns", "Intern"];
+
+    faker.seed(42);
+    const generated = getE2eProfileStepMockValues(
+      flow,
+      1,
+      current,
+      "full",
+      { fixtures: [], faker },
+    );
+
+    expect(generated.core.name).toEqual(expect.any(String));
+    expect(
+      markers.some((marker) => generated.core.name?.includes(marker)),
+    ).toBe(true);
+    expect(
+      markers.some((marker) =>
+        String(generated.enrollmate.givenName).includes(marker),
+      ),
+    ).toBe(true);
+  });
+
   it("fills a newly visible conditional field after a random checkbox", () => {
     const flow = getEnrollmateFlowDefinition("bachelors");
     const current = getEmptyFormValues("bachelors");

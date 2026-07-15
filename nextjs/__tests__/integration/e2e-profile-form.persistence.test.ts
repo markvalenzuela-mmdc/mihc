@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { authUser, getDb, profileForms, profiles } from "@/lib/drizzle/db";
 import { E2eProfileFormErrorCode } from "@/feature/e2e/errors/e2e-profile-form.error";
 import { finalizeE2eProfileForm } from "@/feature/e2e/services/e2e-profile-form-finalization.service";
+import { profileFixtures } from "@/lib/drizzle/seed/profile/profile-fixtures";
 import { createProfileFormData } from "@/lib/drizzle/seed/seed-profiles";
 import { useIntegrationTestDatabase } from "./helpers/test-db";
 
@@ -96,18 +97,25 @@ describe("E2E profile form persistence", () => {
   });
 
   it("maps duplicate profile emails to a domain conflict", async () => {
+    const [seededProfile] = await getDb()
+      .select({ email: profiles.email, flowType: profiles.flowType })
+      .from(profiles)
+      .where(eq(profiles.id, profileFixtures[0]!.id));
+
+    expect(seededProfile).toBeDefined();
+
     await expect(
       finalizeE2eProfileForm(
         {
           core: {
             name: "Duplicate",
             middleName: "",
-            email: "ari.santos@example.edu",
-            flowType: "bachelors",
+            email: seededProfile!.email,
+            flowType: seededProfile!.flowType,
           },
           enrollmateData: createProfileFormData(
-            "bachelors",
-            "ari.santos@example.edu",
+            seededProfile!.flowType,
+            seededProfile!.email,
           ),
           userId,
         },

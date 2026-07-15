@@ -41,6 +41,8 @@ type MockIdentity = {
   mobile: string;
 };
 
+const UAT_NAME_MARKERS = ["SampleInternsTest", "Interns", "Intern"] as const;
+
 function isEmptyMockValue(field: EnrollmateField, value: unknown) {
   if (value === undefined || value === null) return true;
   if (field.type === "checkbox") return value === false;
@@ -70,7 +72,8 @@ function getUniqueMockEmail(firstName: string, lastName: string, faker: Faker) {
 }
 
 function getMockIdentity(faker: Faker): MockIdentity {
-  const firstName = faker.person.firstName();
+  const marker = faker.helpers.arrayElement(UAT_NAME_MARKERS);
+  const firstName = `${marker} ${faker.person.firstName()}`;
   const lastName = faker.person.lastName();
 
   return {
