@@ -162,7 +162,6 @@ export function LoginForm() {
                           aria-describedby={isInvalid ? errorId : undefined}
                         />
                         <InputGroupButton
-                          align="inline-end"
                           aria-label={
                             showPassword ? "Hide password" : "Show password"
                           }
