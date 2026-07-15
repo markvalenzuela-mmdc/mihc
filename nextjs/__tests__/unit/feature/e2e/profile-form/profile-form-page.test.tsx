@@ -283,7 +283,7 @@ describe("E2eProfileFormActions", () => {
         canMockCurrentStep
         currentStep={2}
         totalSteps={3}
-        pendingAction={undefined}
+        isPending={false}
         onMockCurrentStep={onMockCurrentStep}
         onPrevious={onPrevious}
         onContinue={onContinue}
@@ -327,13 +327,13 @@ describe("E2eProfileFormActions", () => {
     expect(onMockCurrentStep).toHaveBeenCalledWith("partial");
   });
 
-  it("shows the finish action on confirmation and disables every action while pending", () => {
+  it("disables every action while pending without rendering button spinners", () => {
     render(
       <E2eProfileFormActions
         canMockCurrentStep
         currentStep={3}
         totalSteps={3}
-        pendingAction="finalize"
+        isPending={true}
         onMockCurrentStep={vi.fn()}
         onPrevious={vi.fn()}
         onContinue={vi.fn()}
@@ -350,33 +350,19 @@ describe("E2eProfileFormActions", () => {
     expect(
       screen.getByRole("button", { name: "Validate and finish" }),
     ).toBeDisabled();
-    expect(screen.getByRole("group", { name: "Profile form actions" })).toHaveAttribute(
-      "aria-busy",
-      "true",
-    );
-    expect(screen.queryByText("Saving profile…")).not.toBeInTheDocument();
-    const finalizeButton = screen.getByRole("button", {
-      name: "Validate and finish",
-    });
-    expect(finalizeButton).toHaveAttribute("aria-busy", "true");
-    expect(
-      finalizeButton.querySelector('[data-slot="spinner"]'),
-    ).not.toBeNull();
-    expect(
-      screen.getByRole("button", { name: "Previous" }),
-    ).not.toHaveAttribute("aria-busy", "true");
     for (const button of screen.getAllByRole("button")) {
       expect(button).toBeDisabled();
     }
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
-  it("shows the previous action spinner while navigating backward", () => {
+  it("does not render action-specific loading indicators", () => {
     render(
       <E2eProfileFormActions
         canMockCurrentStep={false}
         currentStep={2}
         totalSteps={3}
-        pendingAction="previous"
+        isPending={true}
         onMockCurrentStep={vi.fn()}
         onPrevious={vi.fn()}
         onContinue={vi.fn()}
@@ -384,16 +370,9 @@ describe("E2eProfileFormActions", () => {
       />,
     );
 
-    const previousButton = screen.getByRole("button", { name: "Previous" });
-    const continueButton = screen.getByRole("button", { name: "Continue" });
-    expect(previousButton).toHaveAttribute("aria-busy", "true");
-    expect(
-      previousButton.querySelector('[data-slot="spinner"]'),
-    ).not.toBeNull();
-    expect(continueButton).not.toHaveAttribute("aria-busy", "true");
-    expect(
-      continueButton.querySelector('[data-slot="spinner"]'),
-    ).toBeNull();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
   });
 
   it("invokes finalize from the confirmation action", () => {
@@ -403,7 +382,7 @@ describe("E2eProfileFormActions", () => {
         canMockCurrentStep={false}
         currentStep={3}
         totalSteps={3}
-        pendingAction={undefined}
+        isPending={false}
         onMockCurrentStep={onFinalize}
         onPrevious={vi.fn()}
         onContinue={vi.fn()}
@@ -624,21 +603,49 @@ describe("E2eProfileFormPage", () => {
     expect(finalize).not.toHaveBeenCalled();
   });
 
-  it("keeps the finish action busy while final navigation is pending", () => {
+  it("shows a full-page loading state while final navigation is pending", () => {
     renderPage({
       isNavigating: true,
       searchParams: "?step=4",
     });
 
-    const finishButton = getProfileFormActionButton("Validate and finish");
-    expect(finishButton).toBeDisabled();
-    expect(finishButton).toHaveAttribute("aria-busy", "true");
     expect(
-      finishButton.querySelector('[data-slot="spinner"]'),
-    ).not.toBeNull();
-    expect(getProfileFormActionGroup()).toHaveAttribute(
-      "aria-busy",
-      "true",
+      screen.getByRole("status", { name: "Finalizing profile" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "Validate and finish" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows a full-page loading state while finalization is pending", async () => {
+    let resolveFinalize!: (
+      result: Awaited<ReturnType<FinalizeE2eProfileForm>>,
+    ) => void;
+    const finalize = vi.fn(
+      () =>
+        new Promise<Awaited<ReturnType<FinalizeE2eProfileForm>>>((resolve) => {
+          resolveFinalize = resolve;
+        }),
+    );
+    renderPage({ finalize });
+    fillValidCore();
+    await advanceToStep(4);
+
+    fireEvent.click(getProfileFormActionButton("Validate and finish"));
+
+    await waitFor(() => expect(finalize).toHaveBeenCalledOnce());
+    expect(
+      screen.getByRole("status", { name: "Finalizing profile" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "Validate and finish" }),
+    ).not.toBeInTheDocument();
+
+    resolveFinalize({ ok: true, data: { profileId: "profile-1" } });
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("status", { name: "Finalizing profile" }),
+      ).not.toBeInTheDocument(),
     );
   });
 

@@ -41,7 +41,7 @@ type RegisteredControlAccessibilityProps = {
   disabled?: boolean;
 };
 
-export type EnrollmateBoundField = {
+type EnrollmateBoundField = {
   FormField: ComponentType<RegisteredFormFieldProps>;
   FormSelect: ComponentType<
     {
@@ -88,6 +88,20 @@ function getErrorId(field: EnrollmateField) {
   return `enrollmate-${field.name.replace(/[^a-zA-Z0-9_-]/g, "-")}-error`;
 }
 
+function getInputType(field: EnrollmateField): HTMLInputTypeAttribute {
+  if (field.type === "email" || field.type === "tel" || field.type === "date") {
+    return field.type;
+  }
+
+  return (field.htmlInputType as HTMLInputTypeAttribute | undefined) ?? "text";
+}
+
+function getInputMode(field: EnrollmateField) {
+  if (field.type === "email") return "email" as const;
+  if (field.type === "tel") return "tel" as const;
+  return undefined;
+}
+
 function acceptsFreeEntry(field: EnrollmateField) {
   switch (field.optionSource?.kind) {
     case "cascade":
@@ -103,20 +117,6 @@ function acceptsFreeEntry(field: EnrollmateField) {
       throw new Error(`Unsupported EnrollMate option source: ${unsupported}`);
     }
   }
-}
-
-function getInputType(field: EnrollmateField): HTMLInputTypeAttribute {
-  if (field.type === "email" || field.type === "tel" || field.type === "date") {
-    return field.type;
-  }
-
-  return (field.htmlInputType as HTMLInputTypeAttribute | undefined) ?? "text";
-}
-
-function getInputMode(field: EnrollmateField) {
-  if (field.type === "email") return "email" as const;
-  if (field.type === "tel") return "tel" as const;
-  return undefined;
 }
 
 function renderControl({
@@ -258,17 +258,3 @@ export function EnrollmateFieldRenderer({
     </boundField.FormField>
   );
 }
-
-const ENROLLMATE_FIELD_TYPES = {
-  checkbox: true,
-  combobox: true,
-  date: true,
-  email: true,
-  file: true,
-  select: true,
-  tel: true,
-  text: true,
-  textarea: true,
-} satisfies Record<EnrollmateFieldType, true>;
-
-void ENROLLMATE_FIELD_TYPES;

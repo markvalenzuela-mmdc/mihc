@@ -17,7 +17,6 @@ import {
   E2eProfileFormValues,
   E2eProfileFormActionError,
   E2eProfileFormEditorStep,
-  E2eProfileFormPendingAction,
   E2eProfileMockMode,
 } from "../../types/e2e-profile-form.types";
 import {
@@ -28,6 +27,7 @@ import {
 import { getE2eProfileStepMockValues } from "../../utils/e2e-profile-form-mock.util";
 import { e2eProfileFormOptions } from "./e2e-profile-core-fields";
 import { E2eProfileFormPageBaseProps } from "./e2e-profile-form-page";
+import { stepParamKey, stepSearchParams } from "../e2e-testing.query-state";
 
 const CORE_FIELD_ORDER = [
   "core.name",
@@ -59,6 +59,30 @@ function getIssueErrors(
   }
 
   return errors;
+}
+
+function getOrderedErrorFields(
+  errors: E2eProfileFormFieldErrors,
+  steps: readonly E2eProfileFormEditorStep[],
+) {
+  const enrollmateFields = steps.flatMap((step) =>
+    step.sections.flatMap((section) =>
+      section.fields.map((field) => `enrollmate.${field.name}`),
+    ),
+  );
+  const order = [...CORE_FIELD_ORDER, ...enrollmateFields];
+  return Object.keys(errors).sort((left, right) => {
+    const leftIndex = order.indexOf(left);
+    const rightIndex = order.indexOf(right);
+    return (
+      (leftIndex < 0 ? order.length : leftIndex) -
+      (rightIndex < 0 ? order.length : rightIndex)
+    );
+  });
+}
+
+function getErrorMessages(errors: E2eProfileFormFieldErrors) {
+  return [...new Set(Object.values(errors).flat())];
 }
 
 function mergeFieldErrors(
@@ -97,52 +121,21 @@ function normalizeActionFieldErrors(
   );
 }
 
-function getOrderedErrorFields(
-  errors: E2eProfileFormFieldErrors,
-  steps: readonly E2eProfileFormEditorStep[],
-) {
-  const enrollmateFields = steps.flatMap((step) =>
-    step.sections.flatMap((section) =>
-      section.fields.map((field) => `enrollmate.${field.name}`),
-    ),
-  );
-  const order = [...CORE_FIELD_ORDER, ...enrollmateFields];
-  return Object.keys(errors).sort((left, right) => {
-    const leftIndex = order.indexOf(left);
-    const rightIndex = order.indexOf(right);
-    return (
-      (leftIndex < 0 ? order.length : leftIndex) -
-      (rightIndex < 0 ? order.length : rightIndex)
-    );
-  });
-}
-
-function getErrorMessages(errors: E2eProfileFormFieldErrors) {
-  return [...new Set(Object.values(errors).flat())];
-}
-
 function useE2eProfileFormController({
   finalize,
   fixtures,
   flows,
   onFinish,
-}: Pick<
-  E2eProfileFormPageBaseProps,
-  "flows" | "onFinish"
-> & {
+}: Pick<E2eProfileFormPageBaseProps, "flows" | "onFinish"> & {
   finalize: FinalizeE2eProfileForm;
   fixtures: readonly E2eProfileFixture[];
 }) {
   const [queryStep, setQueryStep] = useQueryState(
-    "step",
-    parseAsInteger
-      .withDefault(1)
-      .withOptions({ clearOnDefault: false }),
+    stepParamKey,
+    stepSearchParams[stepParamKey],
   );
-  const [pendingAction, setPendingAction] = useState<
-    E2eProfileFormPendingAction | undefined
-  >();
-  const isPending = pendingAction !== undefined;
+  const [isPending, setIsPending] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false);
   const [validatedSteps, setValidatedSteps] = useState<ReadonlySet<number>>(
     () => new Set(),
   );
@@ -349,14 +342,14 @@ function useE2eProfileFormController({
     if (!validateActiveStep()) return;
 
     pendingRef.current = true;
-    setPendingAction("continue");
+    setIsPending(true);
     try {
       setValidatedSteps((current) => new Set(current).add(activeStep.step));
       clearErrors();
       await setQueryStep(clampStep(activeStepNumber + 1, steps.length));
     } finally {
       pendingRef.current = false;
-      setPendingAction(undefined);
+      setIsPending(false);
     }
   }
 
@@ -376,7 +369,8 @@ function useE2eProfileFormController({
     }
 
     pendingRef.current = true;
-    setPendingAction("finalize");
+    setIsPending(true);
+    setIsFinalizing(true);
     try {
       const result = await finalize({
         core: validation.core,
@@ -392,7 +386,8 @@ function useE2eProfileFormController({
       applyActionError("unexpected");
     } finally {
       pendingRef.current = false;
-      setPendingAction(undefined);
+      setIsPending(false);
+      setIsFinalizing(false);
     }
   }
 
@@ -400,13 +395,13 @@ function useE2eProfileFormController({
     if (pendingRef.current || activeStepNumber <= 1) return;
 
     pendingRef.current = true;
-    setPendingAction("previous");
+    setIsPending(true);
     try {
       clearErrors();
       await setQueryStep(activeStepNumber - 1);
     } finally {
       pendingRef.current = false;
-      setPendingAction(undefined);
+      setIsPending(false);
     }
   }
 
@@ -479,9 +474,9 @@ function useE2eProfileFormController({
     flowType,
     form,
     goToPreviousStep,
+    isFinalizing,
     isPending,
     mockCurrentStep,
-    pendingAction,
     continueToNextStep,
     steps,
     validatedSteps,

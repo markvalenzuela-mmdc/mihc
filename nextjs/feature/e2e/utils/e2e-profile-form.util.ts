@@ -2,6 +2,7 @@ import type {
   EnrollmateField,
   EnrollmateFlowDefinition,
 } from "@mihc/enrollmate-contract";
+import { parseISO, isValid } from "date-fns";
 
 function getEnrollmateFields(flow: EnrollmateFlowDefinition) {
   return flow.steps.flatMap((step) =>
@@ -144,3 +145,9 @@ export function clearUnavailableE2eProfileFormValues(
   return availableValues;
 }
 
+export function parseDateValue(value: string) {
+  if (!value) return undefined;
+
+  const date = parseISO(value);
+  return isValid(date) ? date : undefined;
+}

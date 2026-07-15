@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useTransition } from "react";
-import { ChevronRightIcon } from "lucide-react";
+import { ChevronRightIcon, PlusIcon } from "lucide-react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { useQueryStates } from "nuqs";
 
@@ -56,6 +56,7 @@ function createColumns(openProfile: (profileId: string) => void) {
     columnHelper.accessor("flowType", {
       header: "Flow",
       size: 160,
+      cell: ({ getValue }) => <span className="capitalize">{getValue()}</span>,
       meta: {
         mobile: { align: "right" },
         sort: { enabled: false },
@@ -163,10 +164,8 @@ export function E2eTestingProfilesTable({
             Choose a profile to review enrollment data and run history.
           </p>
         </div>
-        <Link
-          href="/e2e-testing/profiles/new"
-          className={buttonVariants()}
-        >
+        <Link href="/e2e-testing/profiles/new" className={buttonVariants()}>
+          <PlusIcon className="size-4" aria-hidden="true" />
           New profile
         </Link>
       </div>
@@ -175,7 +174,7 @@ export function E2eTestingProfilesTable({
         state={{
           table: {
             data: profiles.data,
-            columns
+            columns,
           },
           limit: limit.state,
           pagination: pagination.state,

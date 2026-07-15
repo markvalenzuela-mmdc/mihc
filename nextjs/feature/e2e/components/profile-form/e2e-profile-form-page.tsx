@@ -8,6 +8,7 @@ import { E2eProfileFormActions } from "@/feature/e2e/components/profile-form/e2e
 import { E2eProfileFormProgress } from "@/feature/e2e/components/profile-form/e2e-profile-form-progress";
 import { EnrollmateFieldRenderer } from "@/feature/e2e/components/profile-form/enrollmate-field-renderer";
 import { EnrollmateSection } from "@/feature/e2e/components/profile-form/enrollmate-section";
+import { Spinner } from "@/components/ui/spinner";
 import type {
   E2eProfileFixture,
   E2eProfileFormEditorStep,
@@ -68,6 +69,18 @@ function ProfileFormStepIntroduction({
   );
 }
 
+function ProfileFormLoadingState() {
+  return (
+    <div
+      className="flex min-h-screen items-center justify-center"
+      role="status"
+      aria-label="Finalizing profile"
+    >
+      <Spinner className="size-8 text-primary" />
+    </div>
+  );
+}
+
 export function E2eProfileFormPage({
   finalize,
   fixtures,
@@ -82,7 +95,10 @@ export function E2eProfileFormPage({
     onFinish,
   });
   const isPending = controller.isPending || isNavigating;
-  const pendingAction = isNavigating ? "finalize" : controller.pendingAction;
+
+  if (controller.isFinalizing || isNavigating) {
+    return <ProfileFormLoadingState />;
+  }
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-8 py-6">
@@ -107,7 +123,7 @@ export function E2eProfileFormPage({
             currentStep={controller.activeStepNumber}
             totalSteps={controller.steps.length}
             placement="top"
-            pendingAction={pendingAction}
+            isPending={isPending}
             onMockCurrentStep={controller.mockCurrentStep}
             onPrevious={controller.goToPreviousStep}
             onContinue={() => void controller.continueToNextStep()}
@@ -168,7 +184,7 @@ export function E2eProfileFormPage({
             currentStep={controller.activeStepNumber}
             totalSteps={controller.steps.length}
             placement="bottom"
-            pendingAction={pendingAction}
+            isPending={isPending}
             onMockCurrentStep={controller.mockCurrentStep}
             onPrevious={controller.goToPreviousStep}
             onContinue={() => void controller.continueToNextStep()}

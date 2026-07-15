@@ -10,14 +10,6 @@ import { withForm } from "@/components/blocks/Form/use-form.hook";
 import type { E2eProfileFormValues } from "@/feature/e2e/types/e2e-profile-form.types";
 import { getDefaultE2eProfileFormValues } from "@/feature/e2e/utils/e2e-profile-form.util";
 
-const FLOW_ITEMS = [
-  { label: "Bachelor", value: "bachelors" },
-  { label: "Microcredential", value: "microcredentials" },
-] as const satisfies readonly {
-  label: string;
-  value: EnrollmateFlowType;
-}[];
-
 const defaultValues: E2eProfileFormValues = {
   core: {
     name: "",
@@ -85,12 +77,15 @@ export const E2eProfileCoreFields = withForm({
               {(field) => (
                 <field.FormField label="Application flow" required>
                   <field.FormSelect
-                    items={FLOW_ITEMS}
+                    items={[
+                      { label: "Bachelor", value: "bachelors" },
+                      { label: "Microcredential", value: "microcredentials" },
+                    ]}
                     placeholder="Select an application flow"
                     aria-required="true"
                   />
                 </field.FormField>
-                )}
+              )}
             </form.AppField>
           </fieldset>
         </div>

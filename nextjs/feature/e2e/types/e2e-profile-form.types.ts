@@ -15,11 +15,6 @@ export type E2eProfileFormValues = {
 
 export type E2eProfileMockMode = "full" | "partial";
 
-export type E2eProfileFormPendingAction =
-  | "previous"
-  | "continue"
-  | "finalize";
-
 export type E2eProfileFormFieldErrors = Record<string, string[]>;
 export type E2eProfileFormActionError =
   | E2eProfileFormFieldErrors

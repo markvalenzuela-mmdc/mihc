@@ -16,8 +16,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useFieldContext } from "@/components/blocks/Form/use-form.hook";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import type { E2eProfileFixture } from "@/feature/e2e/types/e2e-profile-form.types";
+import { parseDateValue } from "../../utils/e2e-profile-form.util";
 
 type ControlAccessibilityProps = {
   "aria-describedby"?: string;
@@ -32,13 +37,6 @@ type E2eProfileCheckboxControlProps = ControlAccessibilityProps;
 type E2eProfileDatePickerProps = ControlAccessibilityProps & {
   placeholder?: string;
 };
-
-function parseDateValue(value: string) {
-  if (!value) return undefined;
-
-  const date = parseISO(value);
-  return isValid(date) ? date : undefined;
-}
 
 export function E2eProfileDatePicker({
   "aria-describedby": ariaDescribedBy,
@@ -207,8 +205,8 @@ export function E2eProfileFixtureControl({
       onValueChange={(fixture) => field.handleChange(fixture ?? undefined)}
       itemToStringLabel={(fixture) => fixture.filename}
       itemToStringValue={(fixture) => fixture.fixtureUri}
-      isItemEqualToValue={
-        (fixture, value) => fixture.fixtureUri === value.fixtureUri
+      isItemEqualToValue={(fixture, value) =>
+        fixture.fixtureUri === value.fixtureUri
       }
     >
       <ComboboxInput
