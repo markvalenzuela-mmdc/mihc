@@ -49,13 +49,10 @@ export default function E2eProfileWorkspace({
   });
   const [isAutomatedPending, startTransition] = useTransition();
 
-  const [selectedStepCount, setSelectedStepCount] = useState(
-    () => data.activeRun?.steps.length ?? 1,
-  );
+  const [selectedStepCount, setSelectedStepCount] = useState(1);
 
   const effectiveStepCount =
-    activeRun?.steps.length ??
-    Math.min(selectedStepCount, stepDefinitions.length);
+    Math.min(selectedStepCount, stepDefinitions.length, 1);
 
   function onAutomated(stepIds: string[]) {
     startTransition(async () => {

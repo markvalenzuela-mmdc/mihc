@@ -53,6 +53,11 @@ const workspaceData = {
   stepDefinitions: steps,
 } as unknown as E2eProfileWorkspaceData;
 
+const workspaceDataWithMultiStepActiveRun = {
+  ...workspaceData,
+  activeRun: { runNumber: 1, steps },
+} as unknown as E2eProfileWorkspaceData;
+
 const emptyRuns = {
   meta: {
     isFirstPage: true,
@@ -119,5 +124,29 @@ describe("E2eProfileWorkspace", () => {
 
     resolveRequest({ ok: true, data: { correlationId: "corr-1" } });
     await waitFor(() => expect(automatedButton).toBeEnabled());
+  });
+
+  it("keeps disabled steps unchecked when an existing run contains more steps", () => {
+    render(
+      <Sheet open>
+        <SheetContent showCloseButton={false}>
+          <E2eProfileWorkspace
+            data={workspaceDataWithMultiStepActiveRun}
+            runs={emptyRuns}
+            isRunHistoryLoading={false}
+            isRunHistoryFetching={false}
+            isRunHistoryError={false}
+            selectedRun={null}
+          />
+        </SheetContent>
+      </Sheet>,
+    );
+
+    const checkboxes = screen.getAllByRole("checkbox");
+    expect(checkboxes[0]).toBeChecked();
+    for (const checkbox of checkboxes.slice(1)) {
+      expect(checkbox).toHaveAttribute("aria-disabled", "true");
+      expect(checkbox).not.toBeChecked();
+    }
   });
 });

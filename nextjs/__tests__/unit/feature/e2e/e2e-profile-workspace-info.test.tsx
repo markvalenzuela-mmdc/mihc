@@ -37,6 +37,7 @@ describe("ProfileWorkspaceControls", () => {
     expect(checkboxes).toHaveLength(8);
     for (const checkbox of checkboxes.slice(1)) {
       expect(checkbox).toHaveAttribute("aria-disabled", "true");
+      expect(checkbox).not.toBeChecked();
     }
   });
 
