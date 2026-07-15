@@ -1,22 +1,17 @@
 import { useAppForm } from "@/components/blocks/Form/use-form.hook";
 import {
   getEnrollmateFlowDefinition,
-  getEnrollmateStepValidator,
   getEnrollmateValidator,
 } from "@mihc/enrollmate-contract";
 import { useSelector } from "@tanstack/react-form";
-import { DeepKeys } from "@tanstack/react-table";
-import { useQueryState, parseAsInteger } from "nuqs";
-import { useState, useRef, useEffect, SyntheticEvent } from "react";
+import type { DeepKeys } from "@tanstack/react-table";
+import { useState, useRef, useEffect, type SyntheticEvent } from "react";
 import { E2eProfileFormErrorCodeToMessage } from "../../errors/e2e-profile-form.error";
-import { e2eProfileCoreSchema } from "../../schema/e2e-profile-form.schema";
-import {
+import type {
   FinalizeE2eProfileForm,
-  E2eProfileFormFieldErrors,
   E2eProfileFixture,
   E2eProfileFormValues,
   E2eProfileFormActionError,
-  E2eProfileFormEditorStep,
   E2eProfileMockMode,
 } from "../../types/e2e-profile-form.types";
 import {
@@ -26,100 +21,16 @@ import {
 } from "../../utils/e2e-profile-form.util";
 import { getE2eProfileStepMockValues } from "../../utils/e2e-profile-form-mock.util";
 import { e2eProfileFormOptions } from "./e2e-profile-core-fields";
-import { E2eProfileFormPageBaseProps } from "./e2e-profile-form-page";
-import { stepParamKey, stepSearchParams } from "../e2e-testing.query-state";
-
-const CORE_FIELD_ORDER = [
-  "core.name",
-  "core.middleName",
-  "core.email",
-  "core.flowType",
-] as const;
-
-type ValidationIssue = {
-  path: PropertyKey[];
-  message: string;
-};
-
-function clampStep(step: number, totalSteps: number) {
-  return Math.min(Math.max(step, 1), totalSteps);
-}
-
-function getIssueErrors(
-  issues: readonly ValidationIssue[],
-  prefix: "core" | "enrollmate",
-): E2eProfileFormFieldErrors {
-  const errors: E2eProfileFormFieldErrors = {};
-
-  for (const issue of issues) {
-    const firstPath = issue.path[0];
-    if (typeof firstPath !== "string") continue;
-    const fieldName = `${prefix}.${firstPath}`;
-    errors[fieldName] = [...(errors[fieldName] ?? []), issue.message];
-  }
-
-  return errors;
-}
-
-function getOrderedErrorFields(
-  errors: E2eProfileFormFieldErrors,
-  steps: readonly E2eProfileFormEditorStep[],
-) {
-  const enrollmateFields = steps.flatMap((step) =>
-    step.sections.flatMap((section) =>
-      section.fields.map((field) => `enrollmate.${field.name}`),
-    ),
-  );
-  const order = [...CORE_FIELD_ORDER, ...enrollmateFields];
-  return Object.keys(errors).sort((left, right) => {
-    const leftIndex = order.indexOf(left);
-    const rightIndex = order.indexOf(right);
-    return (
-      (leftIndex < 0 ? order.length : leftIndex) -
-      (rightIndex < 0 ? order.length : rightIndex)
-    );
-  });
-}
-
-function getErrorMessages(errors: E2eProfileFormFieldErrors) {
-  return [...new Set(Object.values(errors).flat())];
-}
-
-function mergeFieldErrors(
-  ...errorMaps: E2eProfileFormFieldErrors[]
-): E2eProfileFormFieldErrors {
-  return Object.assign({}, ...errorMaps);
-}
-
-function isFieldErrorMap(
-  error: E2eProfileFormActionError,
-): error is E2eProfileFormFieldErrors {
-  return typeof error === "object" && error !== null && !Array.isArray(error);
-}
-
-function normalizeActionFieldErrors(
-  errors: E2eProfileFormFieldErrors,
-): E2eProfileFormFieldErrors {
-  return Object.fromEntries(
-    Object.entries(errors).map(([fieldName, messages]) => {
-      if (
-        fieldName.startsWith("core.") ||
-        fieldName.startsWith("enrollmate.")
-      ) {
-        return [fieldName, messages];
-      }
-      if (
-        fieldName === "name" ||
-        fieldName === "middleName" ||
-        fieldName === "email" ||
-        fieldName === "flowType"
-      ) {
-        return [`core.${fieldName}`, messages];
-      }
-      return [`enrollmate.${fieldName}`, messages];
-    }),
-  );
-}
+import type { E2eProfileFormPageBaseProps } from "./e2e-profile-form-page";
+import {
+  getIssueErrors,
+  isFieldErrorMap,
+  normalizeActionFieldErrors,
+  validateProfileFormStep,
+} from "./e2e-profile-form-validation";
+import { useE2eProfileFormStep } from "./use-e2e-profile-form-step";
+import { useE2eProfileFormErrors } from "./use-e2e-profile-form-errors";
+import { useUnsavedProfileWarning } from "./use-unsaved-profile-warning";
 
 function useE2eProfileFormController({
   finalize,
@@ -130,17 +41,18 @@ function useE2eProfileFormController({
   finalize: FinalizeE2eProfileForm;
   fixtures: readonly E2eProfileFixture[];
 }) {
-  const [queryStep, setQueryStep] = useQueryState(
-    stepParamKey,
-    stepSearchParams[stepParamKey],
+  const resetNavigationRef = useRef<() => void>(() => undefined);
+  const clearErrorsRef = useRef<() => void>(() => undefined);
+  type PendingAction = "navigating" | "finalizing";
+  const pendingActionRef = useRef<PendingAction | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(
+    null,
   );
-  const [isPending, setIsPending] = useState(false);
-  const [isFinalizing, setIsFinalizing] = useState(false);
+  const isPending = pendingAction !== null;
+  const isFinalizing = pendingAction === "finalizing";
   const [validatedSteps, setValidatedSteps] = useState<ReadonlySet<number>>(
     () => new Set(),
   );
-  const [errorMessages, setErrorMessages] = useState<string[]>([]);
-  const pendingRef = useRef(false);
 
   const form = useAppForm({
     ...e2eProfileFormOptions,
@@ -172,8 +84,8 @@ function useE2eProfileFormController({
           getDefaultE2eProfileFormValues(getEnrollmateFlowDefinition(nextFlow)),
         );
         setValidatedSteps(new Set());
-        setErrorMessages([]);
-        void setQueryStep(1);
+        clearErrorsRef.current();
+        resetNavigationRef.current();
       },
     },
   });
@@ -184,84 +96,23 @@ function useE2eProfileFormController({
   );
   const isDirty = useSelector(form.store, (state) => state.isDirty);
   const steps = flows[flowType];
-  const activeStepNumber = clampStep(queryStep, steps.length);
-  const activeStep = steps[activeStepNumber - 1]!;
+  const navigation = useE2eProfileFormStep({ steps });
+  const { activeStep, activeStepNumber, goTo: goToStep } = navigation;
+  const errors = useE2eProfileFormErrors({
+    form,
+    steps,
+    activeStepNumber,
+    goToStep,
+  });
 
   useEffect(() => {
-    if (queryStep === activeStepNumber) return;
+    resetNavigationRef.current = () => {
+      void goToStep(1);
+    };
+    clearErrorsRef.current = errors.clear;
+  }, [errors.clear, goToStep]);
 
-    const timeout = window.setTimeout(() => {
-      void setQueryStep(activeStepNumber);
-    }, 0);
-    return () => window.clearTimeout(timeout);
-  }, [activeStepNumber, queryStep, setQueryStep]);
-
-  useEffect(() => {
-    if (!isDirty) return;
-
-    function warnBeforeUnload(event: BeforeUnloadEvent) {
-      event.preventDefault();
-    }
-
-    window.addEventListener("beforeunload", warnBeforeUnload);
-    return () => window.removeEventListener("beforeunload", warnBeforeUnload);
-  }, [isDirty]);
-
-  function applyFieldErrors(errors: E2eProfileFormFieldErrors) {
-    const allFields = [
-      ...CORE_FIELD_ORDER,
-      ...steps.flatMap((step) =>
-        step.sections.flatMap((section) =>
-          section.fields.map((field) => `enrollmate.${field.name}`),
-        ),
-      ),
-    ];
-
-    for (const fieldName of allFields) {
-      const field = fieldName as DeepKeys<E2eProfileFormValues>;
-      const currentMeta = form.getFieldMeta(field);
-      if (!currentMeta) continue;
-      form.setFieldMeta(field, (previous = currentMeta) => ({
-        ...previous,
-        isTouched: errors[fieldName] ? true : previous.isTouched,
-        errorMap: {
-          ...previous.errorMap,
-          onSubmit: errors[fieldName],
-        },
-      }));
-    }
-
-    setErrorMessages(getErrorMessages(errors));
-  }
-
-  function setFieldErrors(errors: E2eProfileFormFieldErrors) {
-    const orderedFields = getOrderedErrorFields(errors, steps);
-    const firstField = orderedFields[0];
-    const owningStep = firstField?.startsWith("enrollmate.")
-      ? steps.find((step) =>
-          step.sections.some((section) =>
-            section.fields.some(
-              (field) => `enrollmate.${field.name}` === firstField,
-            ),
-          ),
-        )
-      : undefined;
-
-    if (owningStep && owningStep.step !== activeStepNumber) {
-      setErrorMessages(getErrorMessages(errors));
-      void setQueryStep(owningStep.step).then(() => {
-        window.setTimeout(() => applyFieldErrors(errors), 0);
-      });
-      return;
-    }
-
-    applyFieldErrors(errors);
-  }
-
-  function clearErrors() {
-    setFieldErrors({});
-    setErrorMessages([]);
-  }
+  useUnsavedProfileWarning(isDirty);
 
   function markFieldsPristine(fieldNames: readonly string[]) {
     for (const fieldName of fieldNames) {
@@ -299,110 +150,96 @@ function useE2eProfileFormController({
     return cleanedValues;
   }
 
-  function validateActiveStep() {
-    const values = form.state.values;
-    const cleanedEnrollmateValues = getCleanedEnrollmateValues();
-    const coreValidation = e2eProfileCoreSchema.safeParse(values.core);
-    const stepValidation = getEnrollmateStepValidator(
+  function validateCurrentStep() {
+    return validateProfileFormStep({
+      core: form.state.values.core,
+      enrollmate: getCleanedEnrollmateValues(),
       flowType,
-      activeStep.step,
-    ).safeParse(cleanedEnrollmateValues);
-    const errors = mergeFieldErrors(
-      coreValidation.success
-        ? {}
-        : getIssueErrors(coreValidation.error.issues, "core"),
-      stepValidation.success
-        ? {}
-        : getIssueErrors(stepValidation.error.issues, "enrollmate"),
-    );
-
-    if (!coreValidation.success || !stepValidation.success) {
-      setFieldErrors(errors);
-      return undefined;
-    }
-
-    clearErrors();
-    return {
-      core: coreValidation.data,
-      enrollmate: cleanedEnrollmateValues,
-    };
+      stepNumber: activeStep.step,
+    });
   }
 
   function applyActionError(error: E2eProfileFormActionError) {
     if (isFieldErrorMap(error)) {
-      setFieldErrors(normalizeActionFieldErrors(error));
+      errors.show(normalizeActionFieldErrors(error));
       return;
     }
 
-    setErrorMessages([E2eProfileFormErrorCodeToMessage[error]]);
+    errors.showMessage(E2eProfileFormErrorCodeToMessage[error]);
+  }
+
+  async function runExclusive(
+    action: PendingAction,
+    operation: () => Promise<void>,
+  ) {
+    if (pendingActionRef.current) return;
+
+    pendingActionRef.current = action;
+    setPendingAction(action);
+    try {
+      await operation();
+    } finally {
+      pendingActionRef.current = null;
+      setPendingAction(null);
+    }
   }
 
   async function continueToNextStep() {
-    if (pendingRef.current) return;
-    if (!validateActiveStep()) return;
+    await runExclusive("navigating", async () => {
+      const validation = validateCurrentStep();
+      if (!validation.ok) {
+        errors.show(validation.errors);
+        return;
+      }
 
-    pendingRef.current = true;
-    setIsPending(true);
-    try {
       setValidatedSteps((current) => new Set(current).add(activeStep.step));
-      clearErrors();
-      await setQueryStep(clampStep(activeStepNumber + 1, steps.length));
-    } finally {
-      pendingRef.current = false;
-      setIsPending(false);
-    }
+      errors.clear();
+      await navigation.goNext();
+    });
   }
 
   async function finalizeProfile() {
-    if (pendingRef.current) return;
-    const validation = validateActiveStep();
-    if (!validation) return;
-
-    const completeValidation = getEnrollmateValidator(flowType).safeParse(
-      validation.enrollmate,
-    );
-    if (!completeValidation.success) {
-      setFieldErrors(
-        getIssueErrors(completeValidation.error.issues, "enrollmate"),
-      );
-      return;
-    }
-
-    pendingRef.current = true;
-    setIsPending(true);
-    setIsFinalizing(true);
-    try {
-      const result = await finalize({
-        core: validation.core,
-        enrollmateData: completeValidation.data,
-      });
-      if (!result.ok) {
-        applyActionError(result.error);
+    await runExclusive("finalizing", async () => {
+      const validation = validateCurrentStep();
+      if (!validation.ok) {
+        errors.show(validation.errors);
         return;
       }
-      clearErrors();
-      onFinish?.(result.data.profileId);
-    } catch {
-      applyActionError("unexpected");
-    } finally {
-      pendingRef.current = false;
-      setIsPending(false);
-      setIsFinalizing(false);
-    }
+
+      const completeValidation = getEnrollmateValidator(flowType).safeParse(
+        validation.enrollmate,
+      );
+      if (!completeValidation.success) {
+        errors.show(
+          getIssueErrors(completeValidation.error.issues, "enrollmate"),
+        );
+        return;
+      }
+
+      try {
+        const result = await finalize({
+          core: validation.core,
+          enrollmateData: completeValidation.data,
+        });
+        if (!result.ok) {
+          applyActionError(result.error);
+          return;
+        }
+        errors.clear();
+        onFinish?.(result.data.profileId);
+      } catch {
+        errors.showMessage(E2eProfileFormErrorCodeToMessage.unexpected);
+      }
+    });
   }
 
   async function goToPreviousStep() {
-    if (pendingRef.current || activeStepNumber <= 1) return;
+    if (activeStepNumber <= 1) return;
 
-    pendingRef.current = true;
-    setIsPending(true);
-    try {
-      clearErrors();
-      await setQueryStep(activeStepNumber - 1);
-    } finally {
-      pendingRef.current = false;
-      setIsPending(false);
-    }
+    await runExclusive("navigating", async () => {
+      errors.clear();
+      await navigation.goPrevious();
+    });
   }
 
   function clearMockUnavailableValues() {
@@ -432,7 +269,7 @@ function useE2eProfileFormController({
   }
 
   function mockCurrentStep(mode: E2eProfileMockMode) {
-    if (pendingRef.current) return;
+    if (pendingActionRef.current) return;
 
     const generated = getE2eProfileStepMockValues(
       getEnrollmateFlowDefinition(flowType),
@@ -456,11 +293,11 @@ function useE2eProfileFormController({
     }
 
     clearMockUnavailableValues();
-    clearErrors();
+    errors.clear();
   }
 
   function blockPendingFieldChange(event: SyntheticEvent) {
-    if (!pendingRef.current) return;
+    if (!pendingActionRef.current) return;
     event.preventDefault();
     event.stopPropagation();
   }
@@ -469,7 +306,7 @@ function useE2eProfileFormController({
     activeStep,
     activeStepNumber,
     blockPendingFieldChange,
-    errorMessages,
+    errorMessages: errors.messages,
     finalizeProfile,
     flowType,
     form,
