@@ -26,3 +26,15 @@ export const smokeTestRequestedSchema = z.object({
 });
 
 export type SmokeTestRequested = z.infer<typeof smokeTestRequestedSchema>;
+
+export const E2E_TEST_REQUESTED = "e2e-test/requested";
+
+export const e2eTestRequestedSchema = z.object({
+  profileId: z.string().uuid(),
+  stepIds: z.array(z.string().min(1)).min(1),
+  requestedBy: z.string().min(1),
+  correlationId: z.string().min(1),
+  requestedAt: z.string(),
+});
+
+export type E2eTestRequested = z.infer<typeof e2eTestRequestedSchema>;

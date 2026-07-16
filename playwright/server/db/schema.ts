@@ -10,7 +10,7 @@
  * from `.references()` on purpose — the reference metadata only feeds migrations,
  * and the DB itself still enforces the real FKs.
  */
-import { index, integer, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
+import { index, integer, jsonb, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 
 export const apps = pgTable("apps", {
   id: text("id").primaryKey(),
@@ -62,4 +62,71 @@ export const smokeRunsTestResults = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [index("idx_smoke_results_run_id").on(table.runId)],
+);
+
+// ── E2E tables ──────────────────────────────────────────────────────────────
+// Canonical source: nextjs/lib/drizzle/schema/profiles.ts & profile-forms.ts
+
+export const profiles = pgTable("profiles", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  flowType: text("flow_type").notNull().$type<"bachelors" | "microcredentials">(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const profileForms = pgTable("profile_forms", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  profileId: uuid("profile_id").notNull(),
+  definitionHash: text("definition_hash").notNull(),
+  data: jsonb("data").$type<Record<string, unknown>>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const e2eSteps = pgTable("e2e_steps", {
+  id: text("id").primaryKey(),
+  label: text("label").notNull(),
+  sortOrder: integer("sort_order").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const e2eRuns = pgTable(
+  "e2e_runs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    runNumber: integer("run_number").notNull(),
+    profileId: uuid("profile_id").notNull(),
+    status: text("status").notNull().$type<"completed" | "aborted">(),
+    startedBy: uuid("started_by"),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [unique().on(table.profileId, table.runNumber)],
+);
+
+export const e2eRunSteps = pgTable(
+  "e2e_run_steps",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    runId: uuid("run_id").notNull(),
+    stepId: text("step_id").notNull(),
+    status: text("status").notNull().$type<"success" | "failure" | "skipped">(),
+    durationSeconds: integer("duration_seconds"),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index("idx_e2e_run_steps_run_id").on(table.runId)],
+);
+
+export const e2eRunTests = pgTable(
+  "e2e_run_tests",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    runStepId: uuid("run_step_id").notNull(),
+    testName: text("test_name").notNull(),
+    status: text("status").notNull().$type<"success" | "failure" | "skipped">(),
+    durationMs: integer("duration_ms"),
+    errorMessage: text("error_message"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index("idx_e2e_run_tests_step_id").on(table.runStepId)],
 );

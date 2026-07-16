@@ -7,8 +7,13 @@
  * surfaced in the HTML report; `type='e2e'` and `target='enrollmate'` come from
  * the project metadata in `playwright.config.ts`.
  *
+ * When `E2E_PROFILE_DATA_FILE` is set (automated run from the consumer), the
+ * spec reads profile form data from that JSON file instead of generating
+ * fixture data. The `FLOW_TYPE` env var narrows execution to a single flow.
+ *
  * NOTE: a full run submits a real application to the UAT backend.
  */
+import { readFile } from 'node:fs/promises';
 import { test } from '@playwright/test';
 import {
   enrollmateFlowTypes,
@@ -25,7 +30,16 @@ import {
   submitForm,
 } from '../../../lib/enrollmate/apply-now-driver';
 
-for (const flowType of enrollmateFlowTypes) {
+// When E2E_PROFILE_DATA_FILE is set, use that data directly instead of
+// generating fixture data. This is the automated-run path.
+const profileDataFile = process.env.E2E_PROFILE_DATA_FILE;
+const explicitFlowType = process.env.FLOW_TYPE as (typeof enrollmateFlowTypes)[number] | undefined;
+
+const activeFlowTypes = explicitFlowType
+  ? [explicitFlowType]
+  : enrollmateFlowTypes;
+
+for (const flowType of activeFlowTypes) {
   test.describe(`EnrollMate Apply Now — ${flowType}`, () => {
     test(`completes the ${flowType} enrollment flow`, async ({ page }, testInfo) => {
       const flow = getEnrollmateFlowDefinition(flowType);
@@ -35,17 +49,28 @@ for (const flowType of enrollmateFlowTypes) {
         type: 'e2e',
       });
 
-      // Unique email per run keeps repeat UAT submissions from colliding.
-      const email = `e2e.${flowType}.${Date.now()}@example.edu`;
-      // The bachelors "Last School Attended" field is an async-search combobox;
-      // ticking "school not found" reveals a free-text field we can fill
-      // deterministically, so opt into that path.
-      const overrides: Record<string, unknown> =
-        flowType === 'bachelors' ? { email, schoolNotFound: true } : { email };
-      const data = createEnrollmateFixture(flowType, {
-        overrides,
-        resolveField: createEnrollmateValueResolver(email),
-      });
+      // Resolve form data: from profile data file (automated) or generate
+      // fixture data (manual run).
+      let data: Record<string, unknown>;
+      let email: string;
+
+      if (profileDataFile) {
+        const raw = await readFile(profileDataFile, 'utf8');
+        data = JSON.parse(raw) as Record<string, unknown>;
+        email = (data.email as string) ?? `e2e.${flowType}.${Date.now()}@example.edu`;
+      } else {
+        // Unique email per run keeps repeat UAT submissions from colliding.
+        email = `e2e.${flowType}.${Date.now()}@example.edu`;
+        // The bachelors "Last School Attended" field is an async-search combobox;
+        // ticking "school not found" reveals a free-text field we can fill
+        // deterministically, so opt into that path.
+        const overrides: Record<string, unknown> =
+          flowType === 'bachelors' ? { email, schoolNotFound: true } : { email };
+        data = createEnrollmateFixture(flowType, {
+          overrides,
+          resolveField: createEnrollmateValueResolver(email),
+        });
+      }
 
       const response = await page.goto(flow.endpoint);
       assertCheck(
