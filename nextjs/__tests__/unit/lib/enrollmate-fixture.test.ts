@@ -12,6 +12,7 @@ function resolveFixtureField(field: EnrollmateField) {
   if (field.type === "text" || field.type === "textarea") {
     return "Example value";
   }
+  if (field.name.toLowerCase().includes("province")) return "Rizal";
   if (field.name.toLowerCase().includes("citymun")) return "Tanay";
   if (field.name.toLowerCase().includes("barangay")) return "Sampaloc";
   if (field.optionSource?.kind === "external") return "Example value";

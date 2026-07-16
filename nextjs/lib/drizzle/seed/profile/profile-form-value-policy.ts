@@ -26,7 +26,6 @@ export function createProfileFormValueResolver(email: string) {
       studentCompany: "Mapúa Learning Solutions",
       otherStrand: "General Academic Strand",
       lastSchoolAttended: "Rizal National High School",
-      lastschOther: "Rizal National High School",
       medicalDiagnosisDescription: "Managed asthma",
       grdnOtherApplRelationship: "Aunt",
     };

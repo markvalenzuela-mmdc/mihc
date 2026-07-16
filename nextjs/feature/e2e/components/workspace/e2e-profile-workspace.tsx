@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useQueryState, useQueryStates } from "nuqs";
 import { Paginated } from "@/lib/drizzle/pagination";
+import { requestE2eTest } from "../../actions/request-e2e-test.action";
+import { toast } from "sonner";
 import {
   E2eProfileWorkspaceData,
   E2eRunHistoryItem,
@@ -45,16 +47,35 @@ export default function E2eProfileWorkspace({
     history: "push",
     shallow: true,
   });
+  const [isAutomatedPending, startTransition] = useTransition();
 
-  const [selectedStepCount, setSelectedStepCount] = useState(
-    () => data.activeRun?.steps.length ?? stepDefinitions.length,
-  );
+  const [selectedStepCount, setSelectedStepCount] = useState(1);
 
   const effectiveStepCount =
-    activeRun?.steps.length ??
-    Math.min(selectedStepCount, stepDefinitions.length);
+    Math.min(selectedStepCount, stepDefinitions.length, 1);
 
-  function onAutomated() {}
+  function onAutomated(stepIds: string[]) {
+    startTransition(async () => {
+      const result = await requestE2eTest({
+        profileId: profile.id,
+        stepIds,
+      });
+
+      if (result.ok) {
+        toast.success("E2E test enqueued", {
+          description:
+            "The selected E2E steps were sent to the test runner.",
+        });
+      } else {
+        toast.error("Could not start E2E test", {
+          description:
+            result.error === "forbidden"
+              ? "You must be signed in to start an E2E test."
+              : result.error,
+        });
+      }
+    });
+  }
 
   function onManual() {}
 
@@ -93,6 +114,7 @@ export default function E2eProfileWorkspace({
           selectedStepCount={effectiveStepCount}
           selectionLocked={selectionLocked}
           canRun={canRun}
+          isAutomatedPending={isAutomatedPending}
           onSelectedStepCountChange={setSelectedStepCount}
           onAutomated={onAutomated}
           onManual={onManual}

@@ -8,6 +8,7 @@ export {
   enrollmateDefinition,
   getEnrollmateFlowDefinition,
   getEnrollmateReusableOptionSets,
+  getEnrollmateStepValidator,
 } from "./registry";
 export { getEnrollmateValidator } from "./registry";
 export { profileOperationalDataSchema } from "./form-data.schema";

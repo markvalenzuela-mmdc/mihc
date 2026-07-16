@@ -10,7 +10,7 @@ import {
 } from "drizzle-orm/pg-core";
 import type { EnrollmateFlowType, ProfileOperationalData } from "@mihc/enrollmate-contract";
 
-import { users } from "./users";
+import { authUser } from "./auth";
 
 export const profiles = pgTable(
   "profiles",
@@ -38,8 +38,8 @@ export const profiles = pgTable(
         | "payment_verification"
         | "completed"
       >(),
-    createdBy: uuid("created_by").references(() => users.id),
-    updatedBy: uuid("updated_by").references(() => users.id),
+    createdBy: uuid("created_by").references(() => authUser.id),
+    updatedBy: uuid("updated_by").references(() => authUser.id),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -65,7 +65,7 @@ export const e2eRuns = pgTable(
     runNumber: integer("run_number").notNull(),
     profileId: uuid("profile_id").notNull().references(() => profiles.id),
     status: text("status").notNull().$type<"running" | "completed" | "aborted">(),
-    startedBy: uuid("started_by").references(() => users.id),
+    startedBy: uuid("started_by").references(() => authUser.id),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

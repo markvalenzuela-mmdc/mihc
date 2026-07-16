@@ -4,6 +4,7 @@ import type {
   EnrollmateConditionalRule,
   EnrollmateField,
   EnrollmateFlowDefinition,
+  EnrollmateStep,
   ProfileOperationalData,
 } from "./types";
 
@@ -12,6 +13,18 @@ const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 function optionalWhen<T extends z.ZodType>(schema: T, required: boolean, hasCondition: boolean) {
   if (hasCondition) return schema.optional();
   return required ? schema : schema.optional();
+}
+
+function optionalStringWhen(
+  schema: z.ZodType<string>,
+  required: boolean,
+  hasCondition: boolean,
+) {
+  if (required && !hasCondition) return schema;
+  return z.preprocess(
+    (value) => typeof value === "string" && value.trim() === "" ? undefined : value,
+    schema.optional(),
+  );
 }
 
 function conditionMatches(value: unknown, rule: EnrollmateConditionalRule) {
@@ -57,20 +70,22 @@ function fieldSchema(field: EnrollmateField) {
     case "checkbox":
       return optionalWhen(z.boolean(), field.required, hasCondition);
     case "email":
-      return optionalWhen(z.string().email(), field.required, hasCondition);
+      return optionalStringWhen(z.string().email(), field.required, hasCondition);
     case "date":
-      return optionalWhen(z.string().regex(datePattern, "Expected an ISO date."), field.required, hasCondition);
+      return optionalStringWhen(z.string().regex(datePattern, "Expected an ISO date."), field.required, hasCondition);
     case "file":
       return optionalWhen(fileSchema(field), field.required, hasCondition);
     default:
-      return optionalWhen(stringFieldSchema(field), field.required, hasCondition);
+      return optionalStringWhen(stringFieldSchema(field), field.required, hasCondition);
   }
 }
 
 function stringFieldSchema(field: EnrollmateField) {
   const validValues = field.options.map((option) => option.value);
   return validValues.length === 0
-    ? z.string()
+    ? z.string().refine((value) => value.trim() !== "", {
+      message: `${field.label} is required.`,
+    })
     : z.string().refine((value) => validValues.includes(value), {
       message: `${field.label} is not a captured option.`,
     });
@@ -120,29 +135,62 @@ function getDependentOptions(field: EnrollmateField, data: Record<string, unknow
   return field.optionsByDependency[data[field.optionSource.field] as string];
 }
 
-export function buildEnrollmateValidator(flow: EnrollmateFlowDefinition) {
-  const fields = flow.steps.flatMap((step) => step.sections.flatMap((section) => section.fields));
+function validateDependentOption(
+  field: EnrollmateField,
+  data: Record<string, unknown>,
+  context: z.RefinementCtx,
+) {
+  const value = data[field.name];
+  if (value === undefined || typeof value !== "string") return;
+
+  const dependentOptions = getDependentOptions(field, data);
+  if (dependentOptions && !dependentOptions.some((option) => option.value === value)) {
+    context.addIssue({
+      code: "custom",
+      path: [field.name],
+      message: `${field.label} is not valid for the selected major.`,
+    });
+  }
+}
+
+function buildFieldSetValidator(
+  allFields: EnrollmateField[],
+  validatedFields: EnrollmateField[],
+) {
+  const validatedNames = new Set(validatedFields.map((field) => field.name));
   const schema = z.object(
-    Object.fromEntries(fields.map((field) => [field.name, fieldSchema(field)])),
+    Object.fromEntries(
+      allFields.map((field) => [
+        field.name,
+        validatedNames.has(field.name)
+          ? fieldSchema(field)
+          : z.unknown().optional(),
+      ]),
+    ),
   ).strict();
 
   return schema.superRefine((data, context) => {
-    for (const field of fields) {
-      const value = data[field.name];
+    for (const field of validatedFields) {
       validateConditionalField(field, data, context);
-
-      if (value === undefined || typeof value !== "string") continue;
-
-      const dependentOptions = getDependentOptions(field, data);
-      if (dependentOptions && !dependentOptions.some((option) => option.value === value)) {
-        context.addIssue({
-          code: "custom",
-          path: [field.name],
-          message: `${field.label} is not valid for the selected major.`,
-        });
-      }
+      validateDependentOption(field, data, context);
     }
   });
+}
+
+export function buildEnrollmateValidator(flow: EnrollmateFlowDefinition) {
+  const fields = flow.steps.flatMap((step) => step.sections.flatMap((section) => section.fields));
+  return buildFieldSetValidator(fields, fields);
+}
+
+export function buildEnrollmateStepValidator(
+  flow: EnrollmateFlowDefinition,
+  step: EnrollmateStep,
+) {
+  const allFields = flow.steps.flatMap((candidate) =>
+    candidate.sections.flatMap((section) => section.fields),
+  );
+  const stepFields = step.sections.flatMap((section) => section.fields);
+  return buildFieldSetValidator(allFields, stepFields);
 }
 
 export const profileOperationalDataSchema: z.ZodType<ProfileOperationalData> = z

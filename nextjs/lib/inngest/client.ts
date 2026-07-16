@@ -10,6 +10,15 @@
 import { Inngest } from "inngest";
 
 export const SMOKE_TEST_REQUESTED = "smoke-test/requested";
+export const E2E_TEST_REQUESTED = "e2e-test/requested";
+
+export interface E2eTestRequestedData {
+  profileId: string;
+  stepIds: string[];
+  requestedBy: string;
+  correlationId: string;
+  requestedAt: string;
+}
 
 export type SmokeTestRequestedAppId = "website";
 export type SmokeTestTrigger = "manual" | "scheduled";
@@ -20,7 +29,7 @@ export interface SmokeTestRequestedData {
   suite: "smoke";
   trigger: SmokeTestTrigger;
   correlationId: string;
-  /** Operator user id for manual runs; null in v1 (attribution deferred). */
+  /** Operator user id for manual runs; absent for scheduled events. */
   requestedBy?: string | null;
   requestedAt: string;
 }

@@ -51,6 +51,12 @@ const dependentOptionSourceSchema = z.object({
   optionsByValue: z.record(z.string(), z.array(optionSchema).min(1)),
 }).strict();
 
+const dependentReusableOptionSourceSchema = z.object({
+  kind: z.literal("dependentReusable"),
+  field: z.string().min(1),
+  optionSet: z.string().min(1),
+}).strict();
+
 const cascadeOptionSourceSchema = z.object({ kind: z.literal("cascade") }).strict();
 const externalOptionSourceSchema = z.object({ kind: z.literal("external") }).strict();
 
@@ -58,9 +64,15 @@ const optionSourceSchema = z.discriminatedUnion("kind", [
   inlineOptionSourceSchema,
   reusableOptionSourceSchema,
   dependentOptionSourceSchema,
+  dependentReusableOptionSourceSchema,
   cascadeOptionSourceSchema,
   externalOptionSourceSchema,
 ]);
+
+const dependentOptionSetSchema = z.record(
+  z.string().min(1),
+  z.array(z.string().min(1)).min(1),
+);
 
 const commonFieldShape = {
   id: z.string().min(1),
@@ -166,6 +178,13 @@ const definitionSourceSchema = z.object({
     (optionSets) => Object.keys(optionSets).length > 0,
     "At least one reusable option set is required.",
   ),
+  reusableDependentOptionSets: z.record(
+    z.string().min(1),
+    dependentOptionSetSchema,
+  ).refine(
+    (optionSets) => Object.keys(optionSets).length > 0,
+    "At least one reusable dependent option set is required.",
+  ),
   templates: z.object({
     addressFieldsPattern: z.object({
       description: z.string().min(1),
@@ -208,6 +227,27 @@ function normalizeOptionSource(
         optionsByDependency: optionSource.optionsByValue,
         optionSource: { kind: "dependent", field: optionSource.field },
       };
+    case "dependentReusable": {
+      const valuesByDependency = source.reusableDependentOptionSets[optionSource.optionSet];
+      if (!valuesByDependency) {
+        throw new z.ZodError([{
+          code: "custom",
+          path: ["reusableDependentOptionSets", optionSource.optionSet],
+          message: `Missing reusable dependent option set: ${optionSource.optionSet}`,
+        }]);
+      }
+      const optionsByDependency = Object.fromEntries(
+        Object.entries(valuesByDependency).map(([dependency, values]) => [
+          dependency,
+          values.map((value) => ({ label: value, value })),
+        ]),
+      );
+      return {
+        options: [],
+        optionsByDependency,
+        optionSource: { kind: "dependent", field: optionSource.field },
+      };
+    }
     case "cascade":
     case "external":
       return { options: [], optionsByDependency: {}, optionSource: { kind: optionSource.kind } };
@@ -288,7 +328,10 @@ function validateDependentOptions(
   if (field.optionSource?.kind !== "dependent") return;
 
   const parent = fieldsByName.get(field.optionSource.field)!;
-  const parentOptions = new Set(parent.options.map((option) => option.value));
+  const parentOptions = new Set([
+    ...parent.options,
+    ...Object.values(parent.optionsByDependency).flat(),
+  ].map((option) => option.value));
   for (const value of Object.keys(field.optionsByDependency)) {
     if (parentOptions.has(value)) continue;
     throw new z.ZodError([{

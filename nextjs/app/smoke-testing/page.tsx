@@ -16,6 +16,7 @@ import { getPaginatedSmokeTestRuns } from "@/feature/smoke/services/smoke-test-r
 import { loadAppSearchParams } from "@/feature/smoke/components/smoke-testing.query-state";
 import SmokeRunDetailsSheet from "@/feature/smoke/components/smoke-run-details-sheet";
 import { SmokeTestRunStatus } from "@/feature/smoke/types/smoke-test-apps.types";
+import { requireAuthenticated } from "@/feature/auth/auth-guards";
 
 interface PageProps {
   searchParams: Promise<SearchParams>;
@@ -48,10 +49,11 @@ const getData = cache(async (searchParams: Promise<SearchParams>) => {
 });
 
 export default async function SmokeTestingPage({ searchParams }: PageProps) {
+  const user = await requireAuthenticated();
   const appsPromise = getData(searchParams);
 
   return (
-    <AppShell>
+    <AppShell user={user}>
       <MainShell
         title="Smoke Testing"
         subtitle="Monitor the latest application state, compare recent runs, and inspect individual test diagnostics."

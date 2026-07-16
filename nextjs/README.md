@@ -16,6 +16,23 @@ npx --yes pnpm@10.29.2 dev
 
 Open `http://localhost:3000`.
 
+### Local login
+
+After PostgreSQL is running and migrations have been applied, seed the local
+database from `nextjs/`:
+
+```powershell
+pnpm db:seed
+```
+
+Use these development-only credentials at `http://localhost:3000/`:
+
+- Email: `maintainer@example.com`
+- Password: `password123`
+
+The seed is safe to rerun and does not create this default account in
+production.
+
 ## Validation commands
 
 ```powershell

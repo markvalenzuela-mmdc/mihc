@@ -37,7 +37,7 @@ export default function E2eProfileWorkspaceSheet() {
       ...runLimitSearchParams,
     },
     {
-      shallow: false,
+      shallow: true,
       history: "push",
       startTransition,
     },
@@ -69,7 +69,7 @@ export default function E2eProfileWorkspaceSheet() {
         }
       }}
     >
-      <SheetContent className="w-full overflow-y-auto data-[side=right]:sm:max-w-3xl">
+      <SheetContent className="w-full data-[side=right]:sm:max-w-3xl">
         <E2eProfileWorkspaceSheetContent
           runId={runId}
           workspaceQuery={workspaceQuery}

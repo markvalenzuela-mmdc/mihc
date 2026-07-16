@@ -5,6 +5,7 @@ import {
   SMOKE_TEST_REQUESTED,
   type SmokeTestRequestedData,
 } from "@/lib/inngest/client";
+import { getCurrentUser } from "@/feature/auth/actions/auth.action";
 import { err, ok } from "@/utils/server-action-return";
 import { getSmokeTestTarget } from "../config/smoke-test-targets.config";
 
@@ -18,9 +19,12 @@ export type RequestSmokeTestResult =
  * and persists results. This action only enqueues — it does not wait for or read
  * the run.
  *
- * v1: website suite only, `requestedBy` is null (operator attribution deferred).
+ * v1: website suite only, with the authenticated operator attached when present.
  */
 export async function requestSmokeTest(appId: string): Promise<RequestSmokeTestResult> {
+  const user = await getCurrentUser();
+  if (!user) return err("forbidden");
+
   const target = getSmokeTestTarget(appId);
   if (!target) {
     return err("Smoke tests are not configured for this app yet.");
@@ -32,7 +36,7 @@ export async function requestSmokeTest(appId: string): Promise<RequestSmokeTestR
     suite: target.suite,
     trigger: "manual",
     correlationId,
-    requestedBy: null,
+    requestedBy: user.id,
     requestedAt: new Date().toISOString(),
   };
 

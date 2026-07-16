@@ -9,7 +9,7 @@
 | **Styling** | Tailwind CSS 4 |
 | **Database ORM** | Drizzle ORM with PostgreSQL |
 | **Auth** | better-auth |
-| **Form handling** | react-hook-form + Zod (`@hookform/resolvers/zod`) |
+| **Form handling** | TanStack Form + Zod |
 | **Data fetching** | TanStack Query v5 (`@tanstack/react-query`) |
 | **Table** | TanStack Table v8 (`@tanstack/react-table`) |
 | **i18n** | next-intl (locales: `en`, `ar`, `fr`) |

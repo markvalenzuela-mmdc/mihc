@@ -1,6 +1,9 @@
 import source from "./definitions/enrollmate-form-fields.json";
 import { parseEnrollmateDefinition } from "./form-definition.schema";
-import { buildEnrollmateValidator } from "./form-data.schema";
+import {
+  buildEnrollmateStepValidator,
+  buildEnrollmateValidator,
+} from "./form-data.schema";
 import type {
   EnrollmateDefinition,
   EnrollmateFlowDefinition,
@@ -14,6 +17,21 @@ export const enrollmateDefinition: EnrollmateDefinition =
 const validators = {
   bachelors: buildEnrollmateValidator(enrollmateDefinition.bachelors),
   microcredentials: buildEnrollmateValidator(enrollmateDefinition.microcredentials),
+};
+
+const stepValidators = {
+  bachelors: new Map(
+    enrollmateDefinition.bachelors.steps.map((step) => [
+      step.step,
+      buildEnrollmateStepValidator(enrollmateDefinition.bachelors, step),
+    ]),
+  ),
+  microcredentials: new Map(
+    enrollmateDefinition.microcredentials.steps.map((step) => [
+      step.step,
+      buildEnrollmateStepValidator(enrollmateDefinition.microcredentials, step),
+    ]),
+  ),
 };
 
 export function getEnrollmateFlowDefinition(
@@ -33,4 +51,13 @@ export function getEnrollmateReusableOptionSets(): EnrollmateReusableOptionSets 
 
 export function getEnrollmateValidator(flowType: EnrollmateFlowType) {
   return validators[flowType];
+}
+
+export function getEnrollmateStepValidator(
+  flowType: EnrollmateFlowType,
+  stepNumber: number,
+) {
+  const validator = stepValidators[flowType].get(stepNumber);
+  if (!validator) throw new Error(`Unknown ${flowType} step: ${stepNumber}`);
+  return validator;
 }

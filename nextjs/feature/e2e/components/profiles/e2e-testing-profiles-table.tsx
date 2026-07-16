@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useTransition } from "react";
-import { ChevronRightIcon } from "lucide-react";
+import { ChevronRightIcon, PlusIcon } from "lucide-react";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { useQueryStates } from "nuqs";
 
@@ -10,6 +11,7 @@ import {
   useDataTableLimit,
   useDataTablePagination,
 } from "@/components/blocks/DataTable/use-data-table";
+import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
 import { Paginated } from "@/lib/drizzle/pagination";
 import { E2eProfileSummary } from "../../types/e2e-testing.types";
@@ -54,6 +56,7 @@ function createColumns(openProfile: (profileId: string) => void) {
     columnHelper.accessor("flowType", {
       header: "Flow",
       size: 160,
+      cell: ({ getValue }) => <span className="capitalize">{getValue()}</span>,
       meta: {
         mobile: { align: "right" },
         sort: { enabled: false },
@@ -122,7 +125,7 @@ export function E2eTestingProfilesTable({
       ...runPaginationSearchParams,
     },
     {
-      shallow: false,
+      shallow: true,
       history: "push",
       startTransition,
     },
@@ -152,20 +155,26 @@ export function E2eTestingProfilesTable({
 
   return (
     <section className="space-y-3" aria-labelledby="profiles-title">
-      <div>
-        <h2 id="profiles-title" className="text-lg font-medium">
-          Test profiles
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Choose a profile to review enrollment data and run history.
-        </p>
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+        <div>
+          <h2 id="profiles-title" className="text-lg font-medium">
+            Test profiles
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Choose a profile to review enrollment data and run history.
+          </p>
+        </div>
+        <Link href="/e2e-testing/profiles/new" className={buttonVariants()}>
+          <PlusIcon className="size-4" aria-hidden="true" />
+          New profile
+        </Link>
       </div>
 
       <DataTable.Provider
         state={{
           table: {
             data: profiles.data,
-            columns
+            columns,
           },
           limit: limit.state,
           pagination: pagination.state,

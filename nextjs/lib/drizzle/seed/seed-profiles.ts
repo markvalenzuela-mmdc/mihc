@@ -1,28 +1,78 @@
 import {
+  getEnrollmateFlowDefinition,
+  getEnrollmateValidator,
   profileOperationalDataSchema,
 } from "@mihc/enrollmate-contract";
 import { getEnrollmateDefinitionHash } from "@mihc/enrollmate-contract/server";
-import { createEnrollmateFixture } from "@mihc/enrollmate-contract/testing";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { EnrollmateFlowType } from "@mihc/enrollmate-contract";
+
+import { getApprovedE2eProfileFixtures } from "@/feature/e2e/services/e2e-profile-fixtures.service";
+import type { E2eProfileFormValues } from "@/feature/e2e/types/e2e-profile-form.types";
+import { getE2eProfileStepMockValues } from "@/feature/e2e/utils/e2e-profile-form-mock.util";
+import {
+  clearUnavailableE2eProfileFormValues,
+  getDefaultE2eProfileFormValues,
+} from "@/feature/e2e/utils/e2e-profile-form.util";
 
 import { profileForms, profiles } from "../schema";
 import type * as schema from "../schema";
 import { profileFixtures } from "./profile/profile-fixtures";
-import { createProfileFormValueResolver } from "./profile/profile-form-value-policy";
+import { currentOperator } from "./seed-operator";
 
-export function createProfileFormData(flowType: EnrollmateFlowType, email: string, overrides?: Record<string, unknown>) {
-  return createEnrollmateFixture(flowType, {
-    overrides: { email, ...overrides },
-    resolveField: createProfileFormValueResolver(email),
+function createMockProfileData(flowType: EnrollmateFlowType) {
+  const flow = getEnrollmateFlowDefinition(flowType);
+  const current: E2eProfileFormValues = {
+    core: {
+      name: "",
+      middleName: "",
+      email: "",
+      flowType,
+    },
+    enrollmate: getDefaultE2eProfileFormValues(flow),
+  };
+  const fixtures = getApprovedE2eProfileFixtures();
+
+  for (const step of flow.steps) {
+    const generated = getE2eProfileStepMockValues(
+      flow,
+      step.step,
+      current,
+      "full",
+      { fixtures },
+    );
+
+    Object.assign(current.core, generated.core);
+    Object.assign(current.enrollmate, generated.enrollmate);
+    current.enrollmate = clearUnavailableE2eProfileFormValues(
+      flow,
+      current.enrollmate,
+    );
+  }
+
+  return current;
+}
+
+export function createProfileFormData(
+  flowType: EnrollmateFlowType,
+  email: string,
+) {
+  const generated = createMockProfileData(flowType);
+  const data = getEnrollmateValidator(flowType).parse({
+    ...generated.enrollmate,
+    email,
   });
+
+  return Object.fromEntries(
+    Object.entries(data).filter(([, value]) => value !== undefined),
+  );
 }
 
 export async function seedProfiles(tx: NodePgDatabase<typeof schema>) {
   const messages: string[] = [];
 
   for (const profile of profileFixtures) {
-    const { flowType, formOverrides, ...profileValues } = profile;
+    const generated = createMockProfileData(profile.flowType);
     const operationalData = profileOperationalDataSchema.parse({
       systemInfo: { isSentToApi: true },
     });
@@ -31,29 +81,29 @@ export async function seedProfiles(tx: NodePgDatabase<typeof schema>) {
     await tx
       .insert(profiles)
       .values({
-        ...profileValues,
-        flowType,
+        id: profile.id,
+        name: generated.core.name,
+        middleName: generated.core.middleName || null,
+        email: generated.core.email,
+        flowType: profile.flowType,
         status,
         operationalData,
-        createdBy: "8f0c506c-b865-42fc-992d-6eaeea7bf4c3",
-        updatedBy: "8f0c506c-b865-42fc-992d-6eaeea7bf4c3",
+        createdBy: currentOperator.id,
+        updatedBy: currentOperator.id,
       })
       .onConflictDoUpdate({
         target: profiles.id,
         set: {
-          name: profile.name,
-          email: profile.email,
-          flowType,
+          name: generated.core.name,
+          middleName: generated.core.middleName || null,
+          email: generated.core.email,
+          flowType: profile.flowType,
           status,
           operationalData,
         },
       });
 
-    const data = createProfileFormData(
-      flowType,
-      profile.email,
-      formOverrides,
-    );
+    const data = generated.enrollmate;
 
     await tx
       .insert(profileForms)
@@ -70,7 +120,7 @@ export async function seedProfiles(tx: NodePgDatabase<typeof schema>) {
         },
       });
 
-    messages.push(`Seeded profile: ${profile.name}`);
+    messages.push(`Seeded profile: ${generated.core.name}`);
   }
 
   return messages;

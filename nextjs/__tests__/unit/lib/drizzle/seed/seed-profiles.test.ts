@@ -7,26 +7,27 @@ import {
 import { profileFixtures } from "@/lib/drizzle/seed/profile/profile-fixtures";
 
 describe("profile seed form data", () => {
-  it("defines one parent flow and no form-level flow override per profile", () => {
+  it("keeps only stable scenario metadata in profile fixtures", () => {
     for (const profile of profileFixtures) {
-      expect(profile.flowType).toBeDefined();
-      expect(profile.formOverrides).not.toHaveProperty("flowType");
+      expect(profile.id).toEqual(expect.any(String));
+      expect(profile.flowType).toMatch(/^(bachelors|microcredentials)$/);
+      expect(profile.status).toEqual(expect.any(String));
+      expect(profile).not.toHaveProperty("name");
+      expect(profile).not.toHaveProperty("email");
+      expect(profile).not.toHaveProperty("formOverrides");
     }
   });
 
   it.each(profileFixtures)(
-    "creates realistic, valid form data for $name",
+    "creates valid generated form data for $flowType",
     (profile) => {
-      const data = createProfileFormData(
-        profile.flowType,
-        profile.email,
-        profile.formOverrides,
-      );
+      const email = "seed-test-" + profile.id + "@example.com";
+      const data = createProfileFormData(profile.flowType, email);
 
       expect(getEnrollmateValidator(profile.flowType).safeParse(data).success)
         .toBe(true);
       expect(JSON.stringify(data)).not.toMatch(/seeded (conditional )?value/i);
-      expect(data).toMatchObject(profile.formOverrides);
+      expect(data.email).toBe(email);
     },
   );
 });

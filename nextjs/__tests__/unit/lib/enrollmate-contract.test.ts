@@ -19,6 +19,7 @@ function resolveContractFixtureField(field: EnrollmateField) {
   if (field.type === "text" || field.type === "textarea") {
     return "Example value";
   }
+  if (field.name.toLowerCase().includes("province")) return "Rizal";
   if (field.name.toLowerCase().includes("citymun")) return "Tanay";
   if (field.name.toLowerCase().includes("barangay")) return "Sampaloc";
   if (field.optionSource?.kind === "external") return "Example value";
@@ -46,6 +47,7 @@ describe("EnrollMate contract", () => {
 
     expect(Object.keys(first).sort()).toEqual([
       "countryOptions",
+      "lastSchoolAttendedOptions",
       "nationalityOptions",
       "philippineProvinces",
       "religionOptions",
@@ -64,15 +66,60 @@ describe("EnrollMate contract", () => {
     );
 
     expect(parsedSource.schemaVersion).toBe(1);
+    expect(Object.keys(parsedSource.reusableDependentOptionSets)).toEqual([
+      "philippineMunicipalitiesByProvince",
+      "philippineBarangaysByMunicipality",
+    ]);
     expect(
       definition.bachelors.steps[1]?.sections.find((section) => section.label === "Guardian Information"),
     ).toMatchObject({ prefix: "grdn", description: expect.any(String) });
+    expect(parsedSource.reusableOptionSets.lastSchoolAttendedOptions).toHaveLength(10);
+    expect(parsedSource.reusableOptionSets.lastSchoolAttendedOptions).toContainEqual({
+      label: "Mapua University-Makati",
+      value: "Mapua University-Makati",
+    });
+    expect(fields.find((field) => field.name === "lastSchoolAttended")).toMatchObject({
+      options: parsedSource.reusableOptionSets.lastSchoolAttendedOptions,
+      optionSource: { kind: "reusable", optionSet: "lastSchoolAttendedOptions" },
+      conditionalOn: { field: "schoolNotFound", equalsAny: [false] },
+      required: false,
+      requiredWhenConditionMet: true,
+    });
     expect(fields).toContainEqual(expect.objectContaining({
       name: "lastschOther",
       conditionalOn: { field: "schoolNotFound", equalsAny: [true] },
     }));
     expect(fields.find((field) => field.name === "curraddrCitymun")?.automation)
       .toMatchObject({ exampleOptionsByParent: { Rizal: expect.arrayContaining(["Antipolo City"]) } });
+    const currentCitymun = fields.find((field) => field.name === "curraddrCitymun");
+    const currentBarangay = fields.find((field) => field.name === "curraddrBarangay");
+    expect(Object.keys(currentCitymun?.optionsByDependency ?? {})).toHaveLength(
+      source.reusableOptionSets.philippineProvinces.length,
+    );
+    expect(currentCitymun?.optionsByDependency.Aurora).toEqual(expect.arrayContaining([
+      { label: "Baler", value: "Baler" },
+    ]));
+    expect(currentBarangay?.optionsByDependency.Baler).toEqual(expect.arrayContaining([
+      { label: "Barangay III (Pob.)", value: "Barangay III (Pob.)" },
+    ]));
+    expect(currentCitymun)
+      .toMatchObject({
+        optionSource: { kind: "dependent", field: "curraddrProvince" },
+        optionsByDependency: {
+          Rizal: expect.arrayContaining([
+            { label: "Antipolo City", value: "Antipolo City" },
+          ]),
+        },
+      });
+    expect(currentBarangay)
+      .toMatchObject({
+        optionSource: { kind: "dependent", field: "curraddrCitymun" },
+        optionsByDependency: {
+          Tanay: expect.arrayContaining([
+            { label: "Sampaloc", value: "Sampaloc" },
+          ]),
+        },
+      });
   });
 
   it("rejects undocumented source properties", () => {
@@ -162,6 +209,25 @@ describe("EnrollMate contract", () => {
     expect(missingVisibleValue.success).toBe(false);
     expect(missingVisibleValue.error?.issues).toContainEqual(expect.objectContaining({
       path: ["lastschOther"],
+      message: expect.stringContaining("required"),
+    }));
+
+    const validManualValue = validator.safeParse({
+      ...createValidBachelorData(),
+      schoolNotFound: true,
+      lastSchoolAttended: undefined,
+      lastschOther: "Example Academy",
+    });
+    expect(validManualValue.success).toBe(true);
+
+    const missingPrimaryValue = validator.safeParse({
+      ...createValidBachelorData(),
+      schoolNotFound: false,
+      lastSchoolAttended: undefined,
+    });
+    expect(missingPrimaryValue.success).toBe(false);
+    expect(missingPrimaryValue.error?.issues).toContainEqual(expect.objectContaining({
+      path: ["lastSchoolAttended"],
       message: expect.stringContaining("required"),
     }));
   });

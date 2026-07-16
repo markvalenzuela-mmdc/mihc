@@ -1,7 +1,7 @@
-import { boolean, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 export const authUser = pgTable("user", {
-  id: text("id").primaryKey(),
+  id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
@@ -14,8 +14,8 @@ export const authUser = pgTable("user", {
 });
 
 export const authSession = pgTable("session", {
-  id: text("id").primaryKey(),
-  userId: text("user_id")
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
     .notNull()
     .references(() => authUser.id),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
@@ -30,8 +30,8 @@ export const authSession = pgTable("session", {
 });
 
 export const authAccount = pgTable("account", {
-  id: text("id").primaryKey(),
-  userId: text("user_id")
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
     .notNull()
     .references(() => authUser.id),
   providerId: text("provider_id").notNull(),
@@ -51,7 +51,7 @@ export const authAccount = pgTable("account", {
 });
 
 export const authVerification = pgTable("verification", {
-  id: text("id").primaryKey(),
+  id: uuid("id").defaultRandom().primaryKey(),
   identifier: text("identifier").notNull(),
   value: text("value").notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
