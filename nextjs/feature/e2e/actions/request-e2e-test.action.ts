@@ -1,6 +1,7 @@
 "use server";
 
 import { getCurrentUser } from "@/feature/auth/actions/auth.action";
+import { getDb } from "@/lib/drizzle/db";
 import {
   E2E_TEST_REQUESTED,
   inngest,
@@ -12,7 +13,8 @@ export type RequestE2eTestResult =
   | ReturnType<typeof ok<{ correlationId: string }>>
   | ReturnType<typeof err<string>>;
 
-const E2E_TEST_ENQUEUE_ERROR = "Failed to enqueue E2E test. Please try again.";
+const E2E_TEST_ENQUEUE_ERROR =
+  "Failed to enqueue E2E test. Please try again.";
 
 export async function requestE2eTest({
   profileId,
@@ -30,6 +32,18 @@ export async function requestE2eTest({
     stepIds.some((stepId) => !stepId.trim())
   ) {
     return err("A profile and at least one E2E step are required.");
+  }
+
+  // Pre-flight: reject if this profile already has a running run
+  const db = getDb();
+  const existing = await db.query.e2eRuns.findFirst({
+    where: (t, { and, eq }) =>
+      and(eq(t.profileId, profileId), eq(t.status, "running")),
+  });
+  if (existing) {
+    return err(
+      `Run #${existing.runNumber} is still in progress for this profile.`,
+    );
   }
 
   const correlationId = crypto.randomUUID();

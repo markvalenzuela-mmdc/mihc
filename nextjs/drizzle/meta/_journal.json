@@ -29,6 +29,13 @@
       "when": 1784031532092,
       "tag": "0003_absent_toad_men",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1784600000000,
+      "tag": "0005_yellow_lady_mastermind",
+      "breakpoints": true
     }
   ]
 }

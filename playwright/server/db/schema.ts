@@ -10,7 +10,8 @@
  * from `.references()` on purpose — the reference metadata only feeds migrations,
  * and the DB itself still enforces the real FKs.
  */
-import { index, integer, jsonb, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { index, integer, jsonb, pgTable, text, timestamp, unique, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 export const apps = pgTable("apps", {
   id: text("id").primaryKey(),
@@ -94,13 +95,18 @@ export const e2eRuns = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     runNumber: integer("run_number").notNull(),
     profileId: uuid("profile_id").notNull(),
-    status: text("status").notNull().$type<"completed" | "aborted">(),
+    status: text("status").notNull().$type<"running" | "completed" | "aborted">(),
     startedBy: uuid("started_by"),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (table) => [unique().on(table.profileId, table.runNumber)],
+  (table) => [
+    unique().on(table.profileId, table.runNumber),
+    uniqueIndex("unique_running_per_profile")
+      .on(table.profileId)
+      .where(sql`${table.status} = 'running'`),
+  ],
 );
 
 export const e2eRunSteps = pgTable(
@@ -109,7 +115,7 @@ export const e2eRunSteps = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     runId: uuid("run_id").notNull(),
     stepId: text("step_id").notNull(),
-    status: text("status").notNull().$type<"success" | "failure" | "skipped">(),
+    status: text("status").notNull().$type<"success" | "failure" | "untested">(),
     durationSeconds: integer("duration_seconds"),
     note: text("note"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "unique_running_per_profile" ON "e2e_runs" USING btree ("profile_id") WHERE "e2e_runs"."status" = 'running';

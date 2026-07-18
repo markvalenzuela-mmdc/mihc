@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   index,
   integer,
@@ -6,6 +7,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import type { EnrollmateFlowType, ProfileOperationalData } from "@mihc/enrollmate-contract";
@@ -70,7 +72,12 @@ export const e2eRuns = pgTable(
     completedAt: timestamp("completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (table) => [unique().on(table.profileId, table.runNumber)],
+  (table) => [
+    unique().on(table.profileId, table.runNumber),
+    uniqueIndex("unique_running_per_profile")
+      .on(table.profileId)
+      .where(sql`${table.status} = 'running'`),
+  ],
 );
 
 export const e2eRunSteps = pgTable(
@@ -81,7 +88,7 @@ export const e2eRunSteps = pgTable(
     stepId: text("step_id").notNull().references(() => e2eSteps.id),
     status: text("status")
       .notNull()
-      .$type<"queued" | "running" | "success" | "failure">(),
+      .$type<"queued" | "running" | "success" | "failure" | "untested">(),
     durationSeconds: integer("duration_seconds"),
     note: text("note"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

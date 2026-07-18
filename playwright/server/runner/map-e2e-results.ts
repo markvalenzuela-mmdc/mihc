@@ -30,7 +30,7 @@ export interface MappedE2eStepTest {
 
 export interface MappedE2eStep {
   stepId: string;
-  status: "success" | "failure";
+  status: "success" | "failure" | "untested";
   durationSeconds: number | null;
   tests: MappedE2eStepTest[];
 }
@@ -121,7 +121,11 @@ function collectSpecs(suites: PwSuite[] | undefined, out: PwSpec[]): void {
   }
 }
 
-export function mapE2eResults(report: PlaywrightJsonReport | null, selectedStepIds: string[]): MappedE2eRun {
+export function mapE2eResults(
+  report: PlaywrightJsonReport | null,
+  exitCode: number | null,
+  selectedStepIds: string[],
+): MappedE2eRun {
   if (!report) {
     return { status: "aborted", durationSeconds: null, steps: [] };
   }
@@ -181,11 +185,12 @@ export function mapE2eResults(report: PlaywrightJsonReport | null, selectedStepI
   for (const stepId of selectedStepIds) {
     const tests = stepTests.get(stepId) ?? [];
 
-    // A step with no tests matching the selected cycle is still created
-    // (empty / no assertions recorded) so the operator sees the gap.
+    // A step with no tests matching the selected cycle is still created (so
+    // the operator sees the gap) but its status is "untested" — not falsely
+    // labelled "success".
     const failed = tests.filter((t) => t.status === "failure").length;
-    const status: "success" | "failure" = failed > 0 ? "failure" : "success";
-    // No tests at all is still "success" — the step wasn't exercised.
+    const status: "success" | "failure" | "untested" =
+      tests.length === 0 ? "untested" : failed > 0 ? "failure" : "success";
 
     steps.push({
       stepId,
@@ -195,10 +200,17 @@ export function mapE2eResults(report: PlaywrightJsonReport | null, selectedStepI
     });
   }
 
-  // Overall run status: aborted only when no specs produced any flow-matched
-  // results. Steps with zero tests (unexercised cycle phases) don't abort the run.
-  const anyRan = steps.some((s) => s.tests.length > 0) || flowType !== null;
-  const overallStatus: "completed" | "aborted" = anyRan ? "completed" : "aborted";
+  // Overall run status:
+  //   completed — at least one assertion was recorded (even if it failed).
+  //   aborted — zero assertions were recorded, meaning the suite either
+  //   crashed before the first assertCheck (browser crash, malformed profile,
+  //   timeout on page.goto) or the Playwright report was null/empty.
+  //
+  // exitCode is intentionally ignored here — a zero exit with zero checks is
+  // still an aborted run (nothing was tested). A non-zero exit with some
+  // checks is a completed run (some tests ran before the crash).
+  const overallStatus: "completed" | "aborted" =
+    totalChecks === 0 ? "aborted" : "completed";
 
   return { status: overallStatus, durationSeconds, steps };
 }

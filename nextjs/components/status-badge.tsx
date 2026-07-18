@@ -27,7 +27,8 @@ type Status =
   | "verification"
   | "enrollment_confirmation"
   | "for_payment"
-  | "payment_verification";
+  | "payment_verification"
+  | "untested";
 
 const statusConfig = {
   success: {
@@ -89,6 +90,10 @@ const statusConfig = {
   payment_verification: {
     icon: TriangleAlertIcon,
     className: "border-orange-500/30 bg-orange-500/10 text-orange-300",
+  },
+  untested: {
+    icon: MinusCircleIcon,
+    className: "border-slate-500/30 bg-slate-500/10 text-slate-300",
   },
 } satisfies Record<
   Status,
