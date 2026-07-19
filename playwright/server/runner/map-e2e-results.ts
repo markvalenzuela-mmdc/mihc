@@ -135,6 +135,8 @@ export function mapE2eResults(
 
   // Group check annotations by resolved lifecycle step
   const stepTests = new Map<string, MappedE2eStepTest[]>();
+
+  const stepPwDurations = new Map<string, number[]>();
   let flowType: string | null = null;
   let totalChecks = 0;
 
@@ -152,6 +154,8 @@ export function mapE2eResults(
         flowType = extractFlowType(allFlowAnnotations);
       }
 
+      let testStepId: string | null = null;
+
       // Process check annotations
       for (const annotation of annotations) {
         const check = parseCheckAnnotation(annotation);
@@ -164,6 +168,8 @@ export function mapE2eResults(
           stepId = fallbackStepId;
         }
 
+        if (testStepId === null) testStepId = stepId;
+
         totalChecks++;
 
         if (!stepTests.has(stepId)) stepTests.set(stepId, []);
@@ -174,11 +180,13 @@ export function mapE2eResults(
           errorMessage: check.status === "fail" ? (check.message ?? null) : null,
         });
       }
+
+      if (testStepId !== null && last?.duration != null) {
+        if (!stepPwDurations.has(testStepId)) stepPwDurations.set(testStepId, []);
+        stepPwDurations.get(testStepId)!.push(last.duration);
+      }
     }
   }
-
-  const durationSeconds =
-    typeof report.stats?.duration === "number" ? Math.round(report.stats.duration / 1000) : null;
 
   const steps: MappedE2eStep[] = [];
 
@@ -187,10 +195,14 @@ export function mapE2eResults(
 
     // A step with no tests matching the selected cycle is still created (so
     // the operator sees the gap) but its status is "untested" — not falsely
-    // labelled "success".
+    
     const failed = tests.filter((t) => t.status === "failure").length;
     const status: "success" | "failure" | "untested" =
       tests.length === 0 ? "untested" : failed > 0 ? "failure" : "success";
+
+    const pwDurations = stepPwDurations.get(stepId) ?? [];
+    const stepDurationMs = pwDurations.reduce((sum, d) => sum + d, 0);
+    const durationSeconds = stepDurationMs > 0 ? Math.round(stepDurationMs / 1000) : null;
 
     steps.push({
       stepId,
@@ -212,5 +224,7 @@ export function mapE2eResults(
   const overallStatus: "completed" | "aborted" =
     totalChecks === 0 ? "aborted" : "completed";
 
-  return { status: overallStatus, durationSeconds, steps };
+  const runDurationSeconds = steps.reduce((sum, s) => sum + (s.durationSeconds ?? 0), 0);
+
+  return { status: overallStatus, durationSeconds: runDurationSeconds > 0 ? runDurationSeconds : null, steps };
 }
