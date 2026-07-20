@@ -38,6 +38,10 @@ export function isEnrollmateParentField(field: EnrollmateField) {
   return getParentStatusFieldName(field.name) !== undefined;
 }
 
+function isEnrollmateLastSchoolAttendedField(field: EnrollmateField) {
+  return field.name === "lastSchoolAttended";
+}
+
 export function isEnrollmateParentFieldDisabled(
   field: EnrollmateField,
   values: Record<string, unknown>,
@@ -56,7 +60,8 @@ export function isEnrollmateFieldDisabled(
 ) {
   return (
     isEnrollmateParentFieldDisabled(field, values) ||
-    (field.name === "lastSchoolAttended" && values.schoolNotFound === true)
+    (isEnrollmateLastSchoolAttendedField(field) &&
+      values.schoolNotFound === true)
   );
 }
 
@@ -94,7 +99,7 @@ export function isEnrollmateFieldRendered(
 ) {
   return (
     isEnrollmateParentField(field) ||
-    field.name === "lastSchoolAttended" ||
+    isEnrollmateLastSchoolAttendedField(field) ||
     isEnrollmateFieldVisible(field, values)
   );
 }
