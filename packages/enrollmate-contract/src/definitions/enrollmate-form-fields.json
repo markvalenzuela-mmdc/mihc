@@ -946,6 +946,48 @@
         "value": "Others"
       }
     ],
+    "lastSchoolAttendedOptions": [
+      {
+        "label": "Mapua University-Makati",
+        "value": "Mapua University-Makati"
+      },
+      {
+        "label": "Mapua University-Manila",
+        "value": "Mapua University-Manila"
+      },
+      {
+        "label": "Rizal National High School",
+        "value": "Rizal National High School"
+      },
+      {
+        "label": "Manila Science High School",
+        "value": "Manila Science High School"
+      },
+      {
+        "label": "Philippine Science High School",
+        "value": "Philippine Science High School"
+      },
+      {
+        "label": "Ateneo de Manila University, Inc.",
+        "value": "Ateneo de Manila University, Inc."
+      },
+      {
+        "label": "De La Salle-Araneta University",
+        "value": "De La Salle-Araneta University"
+      },
+      {
+        "label": "University of Santo Tomas",
+        "value": "University of Santo Tomas"
+      },
+      {
+        "label": "Adamson University",
+        "value": "Adamson University"
+      },
+      {
+        "label": "Polytechnic University of the Philippines",
+        "value": "Polytechnic University of the Philippines"
+      }
+    ],
     "suffixOptions": [
       {
         "label": "Jr",
@@ -49154,10 +49196,18 @@
                   "name": "lastSchoolAttended",
                   "label": "Last School Attended",
                   "type": "combobox",
-                  "required": true,
-                  "description": "Typeahead combobox. Includes 'Tick this checkbox if the school is not found' checkbox which reveals a manual entry text input.",
+                  "required": false,
+                  "description": "Choose from the available schools. If the school is not found, check the box to enter it manually.",
+                  "visibleWhen": {
+                    "field": "schoolNotFound",
+                    "equalsAny": [
+                      false
+                    ]
+                  },
+                  "requiredWhenVisible": true,
                   "optionSource": {
-                    "kind": "external"
+                    "kind": "reusable",
+                    "optionSet": "lastSchoolAttendedOptions"
                   }
                 },
                 {

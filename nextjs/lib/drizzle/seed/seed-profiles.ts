@@ -50,6 +50,18 @@ function createMockProfileData(flowType: EnrollmateFlowType) {
     );
   }
 
+  const lastSchoolAttended = flow.steps
+    .flatMap((step) => step.sections)
+    .flatMap((section) => section.fields)
+    .find((field) => field.name === "lastSchoolAttended");
+  const listedSchool = lastSchoolAttended?.options[0]?.value;
+
+  if (listedSchool) {
+    current.enrollmate.schoolNotFound = false;
+    current.enrollmate.lastSchoolAttended = listedSchool;
+    delete current.enrollmate.lastschOther;
+  }
+
   return current;
 }
 

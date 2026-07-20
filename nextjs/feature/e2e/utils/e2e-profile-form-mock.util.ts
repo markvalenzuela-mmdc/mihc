@@ -404,6 +404,7 @@ export function getE2eProfileStepMockValues(
       isEnrollmateFieldRendered(field, currentValues.enrollmate),
     ]),
   );
+  const generatedVisibleFields = new Set<string>();
 
   for (let pass = 0; pass < Math.max(fields.length * 3, 1); pass += 1) {
     let changed = false;
@@ -423,7 +424,15 @@ export function getE2eProfileStepMockValues(
 
       const isVisible = isEnrollmateFieldRendered(field, workingValues);
       const isDisabled = isEnrollmateParentFieldDisabled(field, workingValues);
+      if (
+        isVisible &&
+        !isDisabled &&
+        generatedVisibleFields.has(field.name)
+      ) {
+        continue;
+      }
       if (!isVisible || isDisabled) {
+        generatedVisibleFields.delete(field.name);
         changed =
           setGeneratedValue(
             field,
@@ -444,7 +453,20 @@ export function getE2eProfileStepMockValues(
       );
       if (value === undefined) continue;
 
-      changed = setGeneratedValue(field, value, workingValues, result) || changed;
+      const valueChanged = setGeneratedValue(
+        field,
+        value,
+        workingValues,
+        result,
+      );
+      if (
+        mode === "full" &&
+        !Object.hasOwn(result.enrollmate, field.name)
+      ) {
+        result.enrollmate[field.name] = value;
+      }
+      changed = valueChanged || changed;
+      generatedVisibleFields.add(field.name);
     }
 
     changed =

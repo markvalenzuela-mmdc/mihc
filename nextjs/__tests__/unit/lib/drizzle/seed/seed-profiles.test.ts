@@ -1,4 +1,7 @@
-import { getEnrollmateValidator } from "@mihc/enrollmate-contract";
+import {
+  getEnrollmateReusableOptionSets,
+  getEnrollmateValidator,
+} from "@mihc/enrollmate-contract";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -23,6 +26,17 @@ describe("profile seed form data", () => {
     (profile) => {
       const email = "seed-test-" + profile.id + "@example.com";
       const data = createProfileFormData(profile.flowType, email);
+
+      if (profile.flowType === "bachelors") {
+        const schoolOptions =
+          getEnrollmateReusableOptionSets().lastSchoolAttendedOptions.map(
+            (option) => option.value,
+          );
+
+        expect(data.schoolNotFound).toBe(false);
+        expect(schoolOptions).toContain(data.lastSchoolAttended);
+        expect(data).not.toHaveProperty("lastschOther");
+      }
 
       expect(getEnrollmateValidator(profile.flowType).safeParse(data).success)
         .toBe(true);

@@ -72,7 +72,7 @@ describe("E2E profile form definition adapters", () => {
     ).toBe(true);
     expect(
       isEnrollmateFieldVisible(lastSchoolAttended, { schoolNotFound: true }),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       isEnrollmateFieldVisible(lastschOther, { schoolNotFound: true }),
     ).toBe(true);
@@ -87,7 +87,7 @@ describe("E2E profile form definition adapters", () => {
         schoolNotFound: true,
         lastSchoolAttended: "Mapua University-Makati",
       }),
-    ).toHaveProperty("lastSchoolAttended", "Mapua University-Makati");
+    ).not.toHaveProperty("lastSchoolAttended");
   });
 
   it("keeps parent fields rendered and clears non-living parent values", () => {
