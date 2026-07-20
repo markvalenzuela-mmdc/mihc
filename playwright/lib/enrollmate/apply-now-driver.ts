@@ -41,7 +41,7 @@ async function run(fn: () => Promise<void>): Promise<StepOutcome> {
     await fn();
     return { ok: true };
   } catch (error) {
-    return { ok: false, message: String(error).slice(0, 200) };
+    return { ok: false, message: String(error) };
   }
 }
 
@@ -170,6 +170,101 @@ export async function fillStep(
   return { ok: true };
 }
 
+/** Attempt to extract the names of fields that failed validation. */
+async function extractValidationErrors(page: Page): Promise<string | null> {
+  try {
+    // Strategy 1: aria-invalid on inputs (standard ARIA pattern)
+    const invalidFields = page.locator('[aria-invalid="true"]');
+    const ariaCount = await invalidFields.count();
+    if (ariaCount > 0) {
+      const entries: string[] = [];
+      for (let i = 0; i < ariaCount; i++) {
+        const field = invalidFields.nth(i);
+        const tag = await field.evaluate((el) => el.tagName.toLowerCase()).catch(() => null);
+        if (!tag || !['input', 'select', 'textarea'].includes(tag)) continue;
+        const fieldName = await resolveFieldName(field);
+        const errorMsg = await resolveFieldError(field);
+        const entry = errorMsg ? `${fieldName}: ${errorMsg}` : fieldName;
+        entries.push(entry);
+      }
+      if (entries.length > 0) return entries.join('; ');
+    }
+
+    // Strategy 2: error-text elements with a known class (UAT: text-mapua-red-400)
+    // Each error element is a sibling of its associated input inside a shared
+    // container (col-span-12 sm:col-span-3).
+    const errorElements = page.locator('.text-mapua-red-400');
+    const errorCount = await errorElements.count();
+    if (errorCount > 0) {
+      const entries: string[] = [];
+      for (let i = 0; i < errorCount; i++) {
+        const err = errorElements.nth(i);
+        const result = await err.evaluate((el) => {
+          const container = el.parentElement?.parentElement;
+          if (!container) return null;
+          const input = container.querySelector('input, select, textarea');
+          const name = input?.getAttribute('name') ?? input?.getAttribute('aria-label') ?? null;
+          const msg = el.textContent?.trim();
+          if (!name || !msg) return null;
+          return { name, msg };
+        }).catch(() => null);
+        if (result) entries.push(`${result.name}: ${result.msg}`);
+      }
+      if (entries.length > 0) return entries.join('; ');
+    }
+
+    // Strategy 3: standalone [role="alert"] elements
+    const alerts = page.locator('[role="alert"]');
+    const alertCount = await alerts.count();
+    if (alertCount > 0) {
+      const messages: string[] = [];
+      for (let i = 0; i < alertCount; i++) {
+        const text = await alerts.nth(i).textContent().catch(() => null);
+        if (text && text.trim()) messages.push(text.trim());
+      }
+      if (messages.length > 0) return messages.join('; ');
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function resolveFieldName(field: Locator): Promise<string> {
+  const name = await field.getAttribute('name').catch(() => null);
+  if (name) return name;
+  const ariaLabel = await field.getAttribute('aria-label').catch(() => null);
+  if (ariaLabel) return ariaLabel;
+  const placeholder = await field.getAttribute('placeholder').catch(() => null);
+  if (placeholder) return placeholder;
+  return 'unknown';
+}
+
+async function resolveFieldError(field: Locator): Promise<string | null> {
+  return field.evaluate((el) => {
+    const errorId = el.getAttribute('aria-describedby') ?? el.getAttribute('aria-errormessage');
+    if (errorId) {
+      const errorEl = document.getElementById(errorId);
+      if (errorEl) {
+        const text = errorEl.textContent?.trim();
+        if (text && /is required|must be|is invalid|please enter|should be|enter a valid|enter your|can'?t be blank|is empty/i.test(text)) return text;
+      }
+    }
+
+    const parent = el.parentElement;
+    if (!parent) return null;
+
+    for (const sibling of parent.children) {
+      if (sibling === el) continue;
+      const text = sibling.textContent?.trim();
+      if (text && /is required|must be|is invalid|please enter|should be|enter a valid|enter your|can'?t be blank|is empty/i.test(text)) return text;
+    }
+
+    return null;
+  }).catch(() => null);
+}
+
 /** Advance to the next wizard step, verifying the form actually moved on. */
 export async function advanceStep(page: Page): Promise<StepOutcome> {
   return run(async () => {
@@ -184,7 +279,8 @@ export async function advanceStep(page: Page): Promise<StepOutcome> {
       .isVisible()
       .catch(() => false);
     if (blocked) {
-      throw new Error('form did not advance — a required field is missing or invalid');
+      const detail = await extractValidationErrors(page);
+      throw new Error(detail ? `required field(s) missing or invalid: ${detail}` : 'a required field is missing or invalid');
     }
     await page.waitForLoadState('networkidle').catch(() => {});
   });

@@ -56,14 +56,33 @@ export function describeCheck(name: string): string {
   if (cta) {
     return `The "${cta[1]}" call-to-action was missing, hidden, disabled, or pointed to the wrong link`;
   }
+  const stepFilled = name.match(/^step-(\d+) \((.+)\): filled$/);
+  if (stepFilled) {
+    return `Step ${stepFilled[1]} "${stepFilled[2]}" could not be filled`;
+  }
+  const stepAdvanced = name.match(/^step-(\d+) \((.+)\): advanced$/);
+  if (stepAdvanced) {
+    return `Step ${stepAdvanced[1]} "${stepAdvanced[2]}" did not advance`;
+  }
   switch (name) {
     case "page-loads":
       return "Page did not return a successful response";
     case "key-content":
       return "Expected page content did not render";
+    case "submit":
+      return "Form submission failed";
+    case "submission-confirmed":
+      return "Submission confirmation not received";
     default:
       return name;
   }
+}
+
+export function formatE2eCheckError(checkName: string, checkMessage?: string): string {
+  const described = describeCheck(checkName);
+  if (!checkMessage) return described;
+  const cleaned = checkMessage.replace(/^Error:\s*/, "");
+  return `${described} — ${cleaned}`;
 }
 
 export interface FormatFailureInput {

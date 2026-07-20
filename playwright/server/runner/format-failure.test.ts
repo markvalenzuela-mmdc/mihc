@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { describeCheck, formatFailure, type PwAnnotation } from "./format-failure";
+import { describeCheck, formatE2eCheckError, formatFailure, type PwAnnotation } from "./format-failure";
 
 /** Build a `check` annotation as `lib/checks.ts` `assertCheck` serializes it. */
 function check(name: string, status: "pass" | "fail", message?: string): PwAnnotation {
@@ -89,4 +89,48 @@ test("describeCheck maps each known name and passes unknown through", () => {
     'The "Apply Now" call-to-action did not navigate to its expected destination',
   );
   assert.equal(describeCheck("some-future-check"), "some-future-check");
+});
+
+test("describeCheck maps E2E step filled names", () => {
+  assert.equal(
+    describeCheck("step-1 (Student Info): filled"),
+    'Step 1 "Student Info" could not be filled',
+  );
+  assert.equal(
+    describeCheck("step-3 (Payment Details): filled"),
+    'Step 3 "Payment Details" could not be filled',
+  );
+});
+
+test("describeCheck maps E2E step advanced names", () => {
+  assert.equal(
+    describeCheck("step-2 (Education): advanced"),
+    'Step 2 "Education" did not advance',
+  );
+});
+
+test("describeCheck maps submit and submission-confirmed", () => {
+  assert.equal(describeCheck("submit"), "Form submission failed");
+  assert.equal(describeCheck("submission-confirmed"), "Submission confirmation not received");
+});
+
+test("formatE2eCheckError returns described name + message", () => {
+  assert.equal(
+    formatE2eCheckError("step-1 (Student Info): filled", 'field "email": not found'),
+    'Step 1 "Student Info" could not be filled — field "email": not found',
+  );
+});
+
+test("formatE2eCheckError strips Error: prefix from caught errors", () => {
+  assert.equal(
+    formatE2eCheckError("step-1 (Student's Information): advanced", "Error: a required field is missing or invalid"),
+    'Step 1 "Student\'s Information" did not advance — a required field is missing or invalid',
+  );
+});
+
+test("formatE2eCheckError returns described name only when no message", () => {
+  assert.equal(
+    formatE2eCheckError("submit"),
+    "Form submission failed",
+  );
 });

@@ -134,6 +134,7 @@ export async function completeE2eRun(input: CompleteE2eRunInput): Promise<void> 
             stepId: step.stepId,
             status: step.status,
             durationSeconds: step.durationSeconds,
+            note: step.note ?? null,
           })),
         )
         .returning({ id: e2eRunSteps.id, stepId: e2eRunSteps.stepId });

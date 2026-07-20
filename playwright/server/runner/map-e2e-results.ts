@@ -6,6 +6,7 @@
  * Side-effect free so the mapping is unit-testable.
  */
 import type { PlaywrightJsonReport } from "./map-results";
+import { formatE2eCheckError } from "./format-failure";
 
 /**
  * Maps a check-name substring to the lifecycle step ID it belongs to.
@@ -33,6 +34,7 @@ export interface MappedE2eStep {
   status: "success" | "failure" | "untested";
   durationSeconds: number | null;
   tests: MappedE2eStepTest[];
+  note?: string | null;
 }
 
 export interface MappedE2eRun {
@@ -133,6 +135,10 @@ export function mapE2eResults(
   const specs: PwSpec[] = [];
   collectSpecs(report.suites, specs);
 
+  const pwErrors = (report.errors ?? [])
+    .filter((e) => typeof e.message === "string" && e.message.length > 0)
+    .map((e) => e.message as string);
+
   // Group check annotations by resolved lifecycle step
   const stepTests = new Map<string, MappedE2eStepTest[]>();
 
@@ -177,7 +183,7 @@ export function mapE2eResults(
           testName: check.name,
           status: check.status === "pass" ? "success" : "failure",
           durationMs: last?.duration ?? null,
-          errorMessage: check.status === "fail" ? (check.message ?? null) : null,
+          errorMessage: check.status === "fail" ? formatE2eCheckError(check.name, check.message) : null,
         });
       }
 
@@ -223,6 +229,10 @@ export function mapE2eResults(
   // checks is a completed run (some tests ran before the crash).
   const overallStatus: "completed" | "aborted" =
     totalChecks === 0 ? "aborted" : "completed";
+
+  if (overallStatus === "aborted" && pwErrors.length > 0 && steps.length > 0) {
+    steps[0].note = pwErrors.join("\n");
+  }
 
   const runDurationSeconds = steps.reduce((sum, s) => sum + (s.durationSeconds ?? 0), 0);
 
