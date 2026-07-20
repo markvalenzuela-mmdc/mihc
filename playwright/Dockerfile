@@ -47,7 +47,6 @@ COPY --from=verified /app/playwright/playwright.config.ts ./playwright/playwrigh
 COPY --from=verified /app/playwright/tsconfig.json ./playwright/tsconfig.json
 COPY --from=verified /app/playwright/config ./playwright/config
 COPY --from=verified /app/playwright/lib ./playwright/lib
-COPY --from=verified /app/playwright/reporters ./playwright/reporters
 COPY --from=verified /app/playwright/server ./playwright/server
 COPY --from=verified /app/playwright/tests ./playwright/tests
 

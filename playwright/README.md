@@ -17,7 +17,6 @@ This project has two separate execution surfaces:
 - `server/` — Hono/Inngest consumer server, database helpers, and co-located
   runner implementation tests.
 - `lib/` — browser-suite helpers (`results.ts`, `smoke.ts`).
-- `reporters/` — custom browser-suite reporter that writes JSON results.
 - `config/` — page and CTA configuration.
 
 Server tests belong under `server/__tests__/unit` or
