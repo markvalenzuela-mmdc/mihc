@@ -332,6 +332,20 @@ describe("EnrollmateFieldRenderer", () => {
     );
   });
 
+  it("keeps the known-school field visible and disables it when the school is not found", () => {
+    const definition = getField("lastSchoolAttended");
+
+    render(
+      <RendererHarness
+        definition={definition}
+        initialValue=""
+        values={{ schoolNotFound: true }}
+      />,
+    );
+
+    expect(screen.getByLabelText(definition.label)).toBeDisabled();
+  });
+
   it("associates labels and descriptions and announces field errors", async () => {
     const definition = getFieldByOptionSource("external");
     render(

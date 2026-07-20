@@ -15,7 +15,7 @@ import { FieldDescription } from "@/components/ui/field";
 import type { E2eProfileFixture } from "@/feature/e2e/types/e2e-profile-form.types";
 import {
   getEnrollmateFieldOptions,
-  isEnrollmateParentFieldDisabled,
+  isEnrollmateFieldDisabled,
   isEnrollmateFieldRendered,
 } from "@/feature/e2e/utils/e2e-profile-form.util";
 import {
@@ -225,7 +225,7 @@ export function EnrollmateFieldRenderer({
     ? getDescriptionId(definition)
     : undefined;
   const errorId = getErrorId(definition);
-  const isDisabled = isEnrollmateParentFieldDisabled(definition, values);
+  const isDisabled = isEnrollmateFieldDisabled(definition, values);
   const isRequired =
     !isDisabled &&
     (definition.required ||

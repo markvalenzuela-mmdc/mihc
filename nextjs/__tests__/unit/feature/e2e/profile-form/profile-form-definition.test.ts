@@ -15,6 +15,7 @@ import {
   clearUnavailableE2eProfileFormValues,
   getDefaultE2eProfileFormValues,
   getEnrollmateFieldOptions,
+  isEnrollmateFieldDisabled,
   isEnrollmateFieldRendered,
   isEnrollmateParentFieldDisabled,
   isEnrollmateFieldVisible,
@@ -72,6 +73,17 @@ describe("E2E profile form definition adapters", () => {
     ).toBe(true);
     expect(
       isEnrollmateFieldVisible(lastSchoolAttended, { schoolNotFound: true }),
+    ).toBe(false);
+    expect(
+      isEnrollmateFieldRendered(lastSchoolAttended, { schoolNotFound: true }),
+    ).toBe(true);
+    expect(
+      isEnrollmateFieldDisabled(lastSchoolAttended, { schoolNotFound: true }),
+    ).toBe(true);
+    expect(
+      isEnrollmateFieldDisabled(lastSchoolAttended, {
+        schoolNotFound: false,
+      }),
     ).toBe(false);
     expect(
       isEnrollmateFieldVisible(lastschOther, { schoolNotFound: true }),

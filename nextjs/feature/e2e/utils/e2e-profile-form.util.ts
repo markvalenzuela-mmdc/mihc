@@ -50,6 +50,16 @@ export function isEnrollmateParentFieldDisabled(
   );
 }
 
+export function isEnrollmateFieldDisabled(
+  field: EnrollmateField,
+  values: Record<string, unknown>,
+) {
+  return (
+    isEnrollmateParentFieldDisabled(field, values) ||
+    (field.name === "lastSchoolAttended" && values.schoolNotFound === true)
+  );
+}
+
 export function getDefaultE2eProfileFormValues(
   flow: EnrollmateFlowDefinition,
 ): Record<string, unknown> {
@@ -83,7 +93,9 @@ export function isEnrollmateFieldRendered(
   values: Record<string, unknown>,
 ) {
   return (
-    isEnrollmateParentField(field) || isEnrollmateFieldVisible(field, values)
+    isEnrollmateParentField(field) ||
+    field.name === "lastSchoolAttended" ||
+    isEnrollmateFieldVisible(field, values)
   );
 }
 

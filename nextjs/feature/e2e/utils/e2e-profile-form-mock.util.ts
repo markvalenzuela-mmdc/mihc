@@ -13,8 +13,8 @@ import type {
 import {
   getEmptyEnrollmateFieldValue,
   getEnrollmateFieldOptions,
+  isEnrollmateFieldDisabled,
   isEnrollmateFieldRendered,
-  isEnrollmateParentFieldDisabled,
 } from "./e2e-profile-form.util";
 
 export type E2eProfileStepMockValues = {
@@ -203,7 +203,7 @@ function canResolveRequiredFiles(
       field.type !== "file" ||
       (!field.required && !field.requiredWhenConditionMet) ||
       !isEnrollmateFieldRendered(field, values) ||
-      isEnrollmateParentFieldDisabled(field, values)
+      isEnrollmateFieldDisabled(field, values)
     ) {
       return true;
     }
@@ -300,7 +300,7 @@ function getShouldGenerateField(
 ) {
   const { field } = context;
   const isVisible = isEnrollmateFieldRendered(field, workingValues);
-  const isDisabled = isEnrollmateParentFieldDisabled(field, workingValues);
+  const isDisabled = isEnrollmateFieldDisabled(field, workingValues);
 
   if (!isVisible || isDisabled) {
     return hasMeaningfulMockValue(field, workingValues[field.name]);
@@ -347,7 +347,7 @@ function enforceRequiredCheckboxGroups(
     const candidates = checkboxFields.filter(
       (field) =>
         isEnrollmateFieldRendered(field, workingValues) &&
-        !isEnrollmateParentFieldDisabled(field, workingValues) &&
+        !isEnrollmateFieldDisabled(field, workingValues) &&
         canResolveRequiredFiles(
           fields,
           { ...workingValues, [field.name]: true },
@@ -423,7 +423,7 @@ export function getE2eProfileStepMockValues(
       if (!shouldGenerate) continue;
 
       const isVisible = isEnrollmateFieldRendered(field, workingValues);
-      const isDisabled = isEnrollmateParentFieldDisabled(field, workingValues);
+      const isDisabled = isEnrollmateFieldDisabled(field, workingValues);
       if (
         isVisible &&
         !isDisabled &&
