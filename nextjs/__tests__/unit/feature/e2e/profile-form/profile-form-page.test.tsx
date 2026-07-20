@@ -495,6 +495,34 @@ describe("E2eProfileFormPage", () => {
     expect(fatherName).toBeDisabled();
   });
 
+  it("clears and disables Last School Attended when the school is not found", async () => {
+    renderPage();
+    await chooseOption("Last School Attended", "Mapua University-Makati");
+
+    const lastSchool = screen.getByRole("combobox", {
+      name: "Last School Attended",
+    });
+    const schoolNotFound = screen.getByRole("checkbox", {
+      name: "Tick this checkbox if the school is not found",
+    });
+
+    fireEvent.click(schoolNotFound);
+
+    await waitFor(() => expect(lastSchool).toHaveValue(""));
+    expect(lastSchool).toBeDisabled();
+    expect(
+      screen.getByRole("textbox", { name: "Last School Attended (Other)" }),
+    ).toBeEnabled();
+
+    fireEvent.click(schoolNotFound);
+
+    await waitFor(() => expect(lastSchool).toBeEnabled());
+    expect(lastSchool).toHaveValue("");
+    expect(
+      screen.queryByRole("textbox", { name: "Last School Attended (Other)" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("keeps an invalid active step in place without moving focus", async () => {
     contractValidation.stepSafeParse.mockReturnValue({
       success: false,

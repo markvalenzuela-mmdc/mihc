@@ -60,7 +60,8 @@ function useE2eProfileFormController({
       onChange: ({ fieldApi, formApi }) => {
         if (
           fieldApi.name === "enrollmate.fthrDeceased" ||
-          fieldApi.name === "enrollmate.mthrDeceased"
+          fieldApi.name === "enrollmate.mthrDeceased" ||
+          fieldApi.name === "enrollmate.schoolNotFound"
         ) {
           formApi.setFieldValue(
             "enrollmate",

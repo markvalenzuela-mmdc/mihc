@@ -325,7 +325,7 @@ describe("E2E profile form definition adapters", () => {
     );
   });
 
-  it("fills a newly visible conditional field after a random checkbox", () => {
+  it("keeps mocked Last School Attended branches mutually exclusive", () => {
     const flow = getEnrollmateFlowDefinition("bachelors");
     const current = getEmptyFormValues("bachelors");
     let sawCheckedBranch = false;
@@ -337,7 +337,7 @@ describe("E2E profile form definition adapters", () => {
         flow,
         1,
         current,
-        "partial",
+        "full",
         { fixtures: [], faker },
       );
       const values = clearUnavailableE2eProfileFormValues(flow, {
@@ -347,10 +347,14 @@ describe("E2E profile form definition adapters", () => {
 
       if (values.schoolNotFound === true) {
         sawCheckedBranch = true;
+        expect(values).not.toHaveProperty("lastSchoolAttended");
         expect(values.lastschOther).toEqual(expect.any(String));
         expect(values.lastschOther).not.toBe("");
       } else {
         sawUncheckedBranch = true;
+        expect(values.lastSchoolAttended).toEqual(expect.any(String));
+        expect(values.lastSchoolAttended).not.toBe("");
+        expect(values).not.toHaveProperty("lastschOther");
       }
     }
 
