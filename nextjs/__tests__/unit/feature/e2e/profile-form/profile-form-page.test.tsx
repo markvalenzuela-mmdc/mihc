@@ -645,19 +645,29 @@ describe("E2eProfileFormPage", () => {
     expect(finalize).not.toHaveBeenCalled();
   });
 
-  it("shows partial guardian mock values immediately after both parents become unavailable", async () => {
+  it("shows partial guardian mock values immediately for living parents and Others", async () => {
     renderPage();
     fillValidCore();
     await advanceToStep(2);
 
-    await chooseIndexedOption("Living Status", 0, "Unknown");
-    await chooseIndexedOption("Living Status", 1, "Deceased");
+    await chooseIndexedOption("Living Status", 0, "Living");
+    await chooseIndexedOption("Living Status", 1, "Living");
+    await chooseOption(
+      "Who do you want to assign as your guardian?",
+      "Others",
+    );
 
     fireEvent.click(getProfileFormActionButton("Mock current step"));
     fireEvent.click(
       screen.getByRole("button", { name: "Random partial fill" }),
     );
 
+    expect(
+      screen.getByRole("textbox", { name: "Father First name" }),
+    ).not.toHaveValue("");
+    expect(
+      screen.getByRole("textbox", { name: "Mother First name" }),
+    ).not.toHaveValue("");
     expect(
       screen.getByRole("combobox", {
         name: "Who do you want to assign as your guardian?",
@@ -677,10 +687,10 @@ describe("E2eProfileFormPage", () => {
     ).not.toHaveTextContent("Select an option");
     expect(
       screen.getAllByRole("combobox", { name: "Living Status" })[0],
-    ).toHaveTextContent("Unknown");
+    ).toHaveTextContent("Living");
     expect(
       screen.getAllByRole("combobox", { name: "Living Status" })[1],
-    ).toHaveTextContent("Deceased");
+    ).toHaveTextContent("Living");
   });
 
   it("shows a full-page loading state while final navigation is pending", () => {

@@ -14,6 +14,7 @@ import type {
   E2eProfileFormEditorStep,
   FinalizeE2eProfileForm,
 } from "@/feature/e2e/types/e2e-profile-form.types";
+import { getEmptyEnrollmateFieldValue } from "@/feature/e2e/utils/e2e-profile-form.util";
 import { Separator } from "@/components/ui/separator";
 import useE2eProfileFormController from "./use-e2e-profile-form-controller";
 
@@ -157,6 +158,11 @@ export function E2eProfileFormPage({
                           renderField={({ definition, fixtures, values }) => (
                             <controller.form.AppField
                               name={`enrollmate.${definition.name}`}
+                              defaultValue={
+                                getEmptyEnrollmateFieldValue(
+                                  definition,
+                                ) as never
+                              }
                             >
                               {(field) => (
                                 <EnrollmateFieldRenderer

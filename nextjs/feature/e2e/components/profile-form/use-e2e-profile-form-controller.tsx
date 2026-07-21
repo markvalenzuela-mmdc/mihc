@@ -286,14 +286,12 @@ function useE2eProfileFormController({
       form.setFieldValue(
         `core.${fieldName}` as DeepKeys<E2eProfileFormValues>,
         value as never,
-        { dontRunListeners: true },
       );
     }
     for (const [fieldName, value] of Object.entries(generated.enrollmate)) {
       form.setFieldValue(
         `enrollmate.${fieldName}` as DeepKeys<E2eProfileFormValues>,
         value as never,
-        { dontRunListeners: true },
       );
     }
 
