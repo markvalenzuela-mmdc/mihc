@@ -6,7 +6,7 @@
   "scripts": {
     "test": "playwright test",
     "test:smoke": "playwright test tests/smoke --project=chromium --reporter=html",
-    "test:e2e": "NODE_OPTIONS='--import tsx' playwright test tests/e2e --project=enrollmate",
+    "test:e2e": "node --import tsx ./node_modules/@playwright/test/cli.js test tests/e2e --project=enrollmate",
     "test:unit": "node --import tsx --test server/**/*.test.ts",
     "typecheck": "tsc --noEmit",
     "report": "playwright show-report",
