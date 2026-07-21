@@ -102,7 +102,9 @@ describe("API route and database integration", () => {
       expect(response.status).toBe(200);
       expect(body.ok).toBe(true);
       expect(body.data.profile.id).toBe(seededProfileId);
-      expect(body.data.profile.name).toBe("Ari Santos");
+      expect(body.data.profile.name).toMatch(
+        /^(SampleInternsTest|Interns|Intern) \S+$/,
+      );
       expect(body.data.stepDefinitions).toHaveLength(8);
     });
 

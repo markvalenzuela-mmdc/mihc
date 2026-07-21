@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  findActiveRun: vi.fn(),
   getCurrentUser: vi.fn(),
   inngestSend: vi.fn(),
 }));
@@ -14,11 +15,20 @@ vi.mock("@/lib/inngest/client", () => ({
     send: mocks.inngestSend,
   },
 }));
+vi.mock("@/lib/drizzle/db", () => ({
+  getDb: () => ({
+    query: {
+      e2eRuns: { findFirst: mocks.findActiveRun },
+    },
+  }),
+}));
 
 import { requestE2eTest } from "@/feature/e2e/actions/request-e2e-test.action";
 
 describe("requestE2eTest", () => {
   beforeEach(() => {
+    mocks.findActiveRun.mockReset();
+    mocks.findActiveRun.mockResolvedValue(null);
     mocks.getCurrentUser.mockReset();
     mocks.inngestSend.mockReset();
   });
@@ -69,6 +79,19 @@ describe("requestE2eTest", () => {
     ).resolves.toEqual({
       ok: false,
       error: "A profile and at least one E2E step are required.",
+    });
+    expect(mocks.inngestSend).not.toHaveBeenCalled();
+  });
+
+  it("rejects a profile that already has a running run", async () => {
+    mocks.getCurrentUser.mockResolvedValue({ id: "user-1" });
+    mocks.findActiveRun.mockResolvedValue({ runNumber: 12 });
+
+    await expect(
+      requestE2eTest({ profileId: "profile-1", stepIds: ["new"] }),
+    ).resolves.toEqual({
+      ok: false,
+      error: "Run #12 is still in progress for this profile.",
     });
     expect(mocks.inngestSend).not.toHaveBeenCalled();
   });

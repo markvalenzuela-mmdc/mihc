@@ -12,6 +12,18 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
+vi.mock("@/feature/auth/auth-guards", () => ({
+  requireAuthenticated: vi.fn().mockResolvedValue({
+    id: "user-1",
+    name: "Test Operator",
+    email: "operator@example.com",
+  }),
+}));
+
+vi.mock("@/feature/e2e/actions/e2e-profile-form.action", () => ({
+  finalizeE2eProfileFormAction: vi.fn(),
+}));
+
 const capturedFormProps = vi.hoisted(() => ({
   flows: undefined as
     | Record<"bachelors" | "microcredentials", E2eProfileFormEditorStep[]>
@@ -132,8 +144,8 @@ describe("E2E profile creation navigation", () => {
     );
   });
 
-  it("passes both serialized contract flows to the client form", () => {
-    render(<NewE2eProfilePage />);
+  it("passes both serialized contract flows to the client form", async () => {
+    render(await NewE2eProfilePage());
 
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(

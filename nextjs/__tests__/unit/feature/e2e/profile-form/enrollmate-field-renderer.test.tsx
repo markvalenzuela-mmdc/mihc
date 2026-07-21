@@ -60,6 +60,18 @@ function getFieldByOptionSource(
   return field;
 }
 
+function getExternalField(): EnrollmateField {
+  const field = getField("programFocus");
+
+  return {
+    ...field,
+    id: "externalProgramFocus",
+    name: "externalProgramFocus",
+    options: [],
+    optionSource: { kind: "external" },
+  };
+}
+
 function getVisibilityValues(field: EnrollmateField) {
   return field.conditionalOn
     ? { [field.conditionalOn.field]: field.conditionalOn.equalsAny[0] }
@@ -233,7 +245,7 @@ describe("EnrollmateFieldRenderer", () => {
   });
 
   it("accepts free-entry strings for external option sources", async () => {
-    const definition = getFieldByOptionSource("external");
+    const definition = getExternalField();
     render(
       <RendererHarness
         definition={definition}
@@ -398,7 +410,7 @@ describe("EnrollmateFieldRenderer", () => {
   });
 
   it("associates labels and descriptions and announces field errors", async () => {
-    const definition = getFieldByOptionSource("external");
+    const definition = getExternalField();
     render(
       <RendererHarness
         definition={definition}
@@ -432,7 +444,7 @@ describe("EnrollmateFieldRenderer", () => {
     ],
     ["programFocus", {}, "combobox"],
   ])(
-    "forwards description and required metadata to the %s registered control",
+    "forwards contract metadata to the %s registered control",
     (fieldName, values, role) => {
     const definition = getField(fieldName);
     render(
@@ -443,7 +455,11 @@ describe("EnrollmateFieldRenderer", () => {
     );
 
     const control = screen.getByRole(role, { name: definition.label });
-    expect(control).toHaveAccessibleDescription(definition.description);
+    if (definition.description) {
+      expect(control).toHaveAccessibleDescription(definition.description);
+    } else {
+      expect(control).not.toHaveAccessibleDescription();
+    }
     expect(control).toHaveAttribute("aria-required", "true");
     expect(screen.getByText("(required)")).toBeVisible();
     },
