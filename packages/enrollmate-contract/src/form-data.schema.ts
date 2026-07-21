@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { getAvailableEnrollmateGuardianAssignments } from "./guardian-assignment";
 import type {
   EnrollmateConditionalRule,
   EnrollmateField,
@@ -153,6 +154,29 @@ function validateDependentOption(
   }
 }
 
+function validateGuardianAssignment(
+  field: EnrollmateField,
+  data: Record<string, unknown>,
+  context: z.RefinementCtx,
+) {
+  if (field.name !== "guardian") return;
+
+  const value = data[field.name];
+  if (typeof value !== "string") return;
+
+  const availableOptions = getAvailableEnrollmateGuardianAssignments(
+    field.options,
+    data,
+  );
+  if (availableOptions.some((option) => option.value === value)) return;
+
+  context.addIssue({
+    code: "custom",
+    path: [field.name],
+    message: `${field.label} is not available for the selected parent statuses.`,
+  });
+}
+
 function buildFieldSetValidator(
   allFields: EnrollmateField[],
   validatedFields: EnrollmateField[],
@@ -173,6 +197,7 @@ function buildFieldSetValidator(
     for (const field of validatedFields) {
       validateConditionalField(field, data, context);
       validateDependentOption(field, data, context);
+      validateGuardianAssignment(field, data, context);
     }
   });
 }

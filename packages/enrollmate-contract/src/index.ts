@@ -12,6 +12,7 @@ export {
 } from "./registry";
 export { getEnrollmateValidator } from "./registry";
 export { profileOperationalDataSchema } from "./form-data.schema";
+export { getAvailableEnrollmateGuardianAssignments } from "./guardian-assignment";
 export type {
   EnrollmateDefinition,
   EnrollmateField,

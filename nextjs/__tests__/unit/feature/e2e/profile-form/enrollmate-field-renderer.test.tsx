@@ -346,6 +346,57 @@ describe("EnrollmateFieldRenderer", () => {
     expect(screen.getByLabelText(definition.label)).toBeDisabled();
   });
 
+  it("enables Specify Guardian Relationship only for the Others relationship", () => {
+    const definition = getField("grdnOtherApplRelationship");
+
+    render(
+      <RendererHarness
+        definition={definition}
+        values={{
+          guardian: "Others",
+          grdnApplRelationship: "Grandparent",
+        }}
+      />,
+    );
+
+    expect(screen.getByLabelText(definition.label)).toBeDisabled();
+    expect(screen.getByLabelText(definition.label)).not.toHaveAttribute(
+      "aria-required",
+      "true",
+    );
+
+    cleanup();
+    render(
+      <RendererHarness
+        definition={definition}
+        values={{
+          guardian: "Others",
+          grdnApplRelationship: "Others",
+        }}
+      />,
+    );
+
+    expect(screen.getByLabelText(definition.label)).toBeEnabled();
+    expect(screen.getByLabelText(definition.label)).toHaveAttribute(
+      "aria-required",
+      "true",
+    );
+    expect(screen.getByText("(required)")).toBeVisible();
+
+    cleanup();
+    render(
+      <RendererHarness
+        definition={definition}
+        values={{
+          guardian: "Father",
+          grdnApplRelationship: "Others",
+        }}
+      />,
+    );
+
+    expect(screen.queryByLabelText(definition.label)).not.toBeInTheDocument();
+  });
+
   it("associates labels and descriptions and announces field errors", async () => {
     const definition = getFieldByOptionSource("external");
     render(

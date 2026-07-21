@@ -2,12 +2,25 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  getAvailableEnrollmateGuardianAssignments,
   getEnrollmateFlowDefinition,
   getEnrollmateReusableOptionSets,
   getEnrollmateStepValidator,
   getEnrollmateValidator,
 } from "@mihc/enrollmate-contract";
 import { createEnrollmateFixture } from "@mihc/enrollmate-contract/testing";
+
+const guardianAssignmentCases = [
+  ["Living", "Living", ["Father", "Mother", "Others"]],
+  ["Living", "Unknown", ["Father", "Others"]],
+  ["Living", "Deceased", ["Father", "Others"]],
+  ["Unknown", "Living", ["Mother", "Others"]],
+  ["Deceased", "Living", ["Mother", "Others"]],
+  ["Unknown", "Unknown", ["Others"]],
+  ["Unknown", "Deceased", ["Others"]],
+  ["Deceased", "Unknown", ["Others"]],
+  ["Deceased", "Deceased", ["Others"]],
+] as const;
 
 function createFixture(
   flowType: "bachelors" | "microcredentials",
@@ -75,6 +88,16 @@ function getConditionalFieldCase() {
   assert.fail("Expected a normalized required conditional field case.");
 }
 
+function getBachelorsField(fieldName: string) {
+  const field = getEnrollmateFlowDefinition("bachelors").steps
+    .flatMap((step) => step.sections)
+    .flatMap((section) => section.fields)
+    .find((candidate) => candidate.name === fieldName);
+
+  if (!field) assert.fail(`Missing bachelors field: ${fieldName}`);
+  return field;
+}
+
 test("Playwright can consume shared EnrollMate reusable options", () => {
   const optionSets = getEnrollmateReusableOptionSets();
 
@@ -102,6 +125,73 @@ test("Playwright can consume the shared EnrollMate fixture builder", () => {
   });
 
   assert.equal(data.email, "applicant@example.edu");
+});
+
+test("filters Guardian Assignment options by living parent status", () => {
+  const guardian = getBachelorsField("guardian");
+
+  for (const [fatherStatus, motherStatus, expected] of guardianAssignmentCases) {
+    const options = getAvailableEnrollmateGuardianAssignments(
+      guardian.options,
+      {
+        fthrDeceased: fatherStatus,
+        mthrDeceased: motherStatus,
+      },
+    );
+
+    assert.deepEqual(
+      options.map((option) => option.value),
+      expected,
+      `${fatherStatus}/${motherStatus}`,
+    );
+  }
+});
+
+test("requires Others when both parents are unavailable", () => {
+  const unavailableCases = guardianAssignmentCases.filter(
+    ([fatherStatus, motherStatus]) =>
+      fatherStatus !== "Living" && motherStatus !== "Living",
+  );
+
+  for (const [fatherStatus, motherStatus] of unavailableCases) {
+    const values = createFixture("bachelors", {
+      fthrDeceased: fatherStatus,
+      mthrDeceased: motherStatus,
+      guardian: "Others",
+    });
+
+    assert.equal(
+      getEnrollmateValidator("bachelors").safeParse(values).success,
+      true,
+      `${fatherStatus}/${motherStatus} accepts Others`,
+    );
+
+    for (const guardian of ["Father", "Mother"] as const) {
+      for (const validator of [
+        getEnrollmateValidator("bachelors"),
+        getEnrollmateStepValidator("bachelors", 2),
+      ]) {
+        const result = validator.safeParse({
+          ...values,
+          guardian,
+        });
+
+        assert.equal(
+          result.success,
+          false,
+          `${fatherStatus}/${motherStatus} rejects ${guardian}`,
+        );
+        if (!result.success) {
+          assert.ok(
+            result.error.issues.some(
+              (issue) =>
+                issue.path.length === 1 && issue.path[0] === "guardian",
+            ),
+          );
+        }
+      }
+    }
+  }
 });
 
 test("validates only the selected EnrollMate step", () => {
@@ -152,7 +242,10 @@ test("accepts empty UI defaults for hidden conditional email and date fields", (
   const fatherEmail = fields.find((field) => field.name === "fthrEmail")!;
   const fatherBirthdate = fields.find((field) => field.name === "fthrBirthdate")!;
   const values = {
-    ...createFixture("bachelors", { [fatherStatus.name]: "Deceased" }),
+    ...createFixture("bachelors", {
+      [fatherStatus.name]: "Deceased",
+      guardian: "Others",
+    }),
     [fatherEmail.name]: "",
     [fatherBirthdate.name]: "",
   };

@@ -2,6 +2,7 @@ import type {
   EnrollmateField,
   EnrollmateFlowDefinition,
 } from "@mihc/enrollmate-contract";
+import { getAvailableEnrollmateGuardianAssignments } from "@mihc/enrollmate-contract";
 import { parseISO, isValid } from "date-fns";
 
 function getEnrollmateFields(flow: EnrollmateFlowDefinition) {
@@ -42,6 +43,14 @@ function isEnrollmateLastSchoolAttendedField(field: EnrollmateField) {
   return field.name === "lastSchoolAttended";
 }
 
+function isEnrollmateGuardianAssignmentField(field: EnrollmateField) {
+  return field.name === "guardian";
+}
+
+function isEnrollmateSpecifyGuardianRelationshipField(field: EnrollmateField) {
+  return field.name === "grdnOtherApplRelationship";
+}
+
 export function isEnrollmateParentFieldDisabled(
   field: EnrollmateField,
   values: Record<string, unknown>,
@@ -61,7 +70,10 @@ export function isEnrollmateFieldDisabled(
   return (
     isEnrollmateParentFieldDisabled(field, values) ||
     (isEnrollmateLastSchoolAttendedField(field) &&
-      values.schoolNotFound === true)
+      values.schoolNotFound === true) ||
+    (isEnrollmateSpecifyGuardianRelationshipField(field) &&
+      values.guardian === "Others" &&
+      values.grdnApplRelationship !== "Others")
   );
 }
 
@@ -97,6 +109,10 @@ export function isEnrollmateFieldRendered(
   field: EnrollmateField,
   values: Record<string, unknown>,
 ) {
+  if (isEnrollmateSpecifyGuardianRelationshipField(field)) {
+    return values.guardian === "Others";
+  }
+
   return (
     isEnrollmateParentField(field) ||
     isEnrollmateLastSchoolAttendedField(field) ||
@@ -108,6 +124,9 @@ export function getEnrollmateFieldOptions(
   field: EnrollmateField,
   values: Record<string, unknown>,
 ): EnrollmateField["options"] {
+  if (isEnrollmateGuardianAssignmentField(field)) {
+    return getAvailableEnrollmateGuardianAssignments(field.options, values);
+  }
   if (field.optionSource?.kind !== "dependent") return field.options;
 
   const dependencyValue = values[field.optionSource.field];
@@ -127,6 +146,17 @@ export function clearUnavailableE2eProfileFormValues(
 
     for (const field of fields) {
       if (!isEnrollmateFieldVisible(field, availableValues)) {
+        if (
+          isEnrollmateSpecifyGuardianRelationshipField(field) &&
+          availableValues.guardian === "Others"
+        ) {
+          const emptyValue = getEmptyEnrollmateFieldValue(field);
+          if (availableValues[field.name] !== emptyValue) {
+            availableValues[field.name] = emptyValue;
+            changed = true;
+          }
+          continue;
+        }
         if (isEnrollmateParentField(field)) {
           const emptyValue = getEmptyEnrollmateFieldValue(field);
           if (availableValues[field.name] !== emptyValue) {
@@ -136,6 +166,21 @@ export function clearUnavailableE2eProfileFormValues(
           continue;
         }
         if (Object.hasOwn(availableValues, field.name)) {
+          delete availableValues[field.name];
+          changed = true;
+        }
+        continue;
+      }
+
+      if (isEnrollmateGuardianAssignmentField(field)) {
+        const selectedValue = availableValues[field.name];
+        if (
+          typeof selectedValue === "string" &&
+          selectedValue !== "" &&
+          !getEnrollmateFieldOptions(field, availableValues).some(
+            (option) => option.value === selectedValue,
+          )
+        ) {
           delete availableValues[field.name];
           changed = true;
         }

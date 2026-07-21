@@ -23,6 +23,17 @@ import {
 import { getE2eProfileStepMockValues } from "@/feature/e2e/utils/e2e-profile-form-mock.util";
 
 const bachelors = getEnrollmateFlowDefinition("bachelors");
+const guardianAssignmentCases = [
+  ["Living", "Living", ["Father", "Mother", "Others"]],
+  ["Living", "Unknown", ["Father", "Others"]],
+  ["Living", "Deceased", ["Father", "Others"]],
+  ["Unknown", "Living", ["Mother", "Others"]],
+  ["Deceased", "Living", ["Mother", "Others"]],
+  ["Unknown", "Unknown", ["Others"]],
+  ["Unknown", "Deceased", ["Others"]],
+  ["Deceased", "Unknown", ["Others"]],
+  ["Deceased", "Deceased", ["Others"]],
+] as const;
 
 function getBachelorsField(fieldName: string) {
   const field = bachelors.steps
@@ -130,6 +141,38 @@ describe("E2E profile form definition adapters", () => {
         mthrGivenName: "Existing Mother",
       }),
     );
+  });
+
+  it("filters Guardian Assignment options by living parent status", () => {
+    const guardian = getBachelorsField("guardian");
+
+    for (const [fatherStatus, motherStatus, expected] of guardianAssignmentCases) {
+      expect(
+        getEnrollmateFieldOptions(guardian, {
+          fthrDeceased: fatherStatus,
+          mthrDeceased: motherStatus,
+        }).map((option) => option.value),
+        `${fatherStatus}/${motherStatus}`,
+      ).toEqual(expected);
+    }
+  });
+
+  it("clears unavailable guardian selections and disabled specify values", () => {
+    expect(
+      clearUnavailableE2eProfileFormValues(bachelors, {
+        fthrDeceased: "Deceased",
+        mthrDeceased: "Unknown",
+        guardian: "Father",
+      }),
+    ).not.toHaveProperty("guardian");
+
+    expect(
+      clearUnavailableE2eProfileFormValues(bachelors, {
+        guardian: "Others",
+        grdnApplRelationship: "Grandparent",
+        grdnOtherApplRelationship: "Family friend",
+      }),
+    ).toHaveProperty("grdnOtherApplRelationship", "");
   });
 
   it("resolves dependent options from the current values", () => {
@@ -277,6 +320,46 @@ describe("E2E profile form definition adapters", () => {
       }
     },
   );
+
+  it("generates an allowed Guardian Assignment for every parent-status combination", () => {
+    const flow = getEnrollmateFlowDefinition("bachelors");
+
+    for (const [fatherStatus, motherStatus, expected] of guardianAssignmentCases) {
+      faker.seed(42);
+      const current = getEmptyFormValues("bachelors");
+      const full = getE2eProfileStepMockValues(flow, 2, current, "full", {
+        fixtures: [],
+        faker,
+      });
+      current.enrollmate = clearUnavailableE2eProfileFormValues(flow, {
+        ...current.enrollmate,
+        ...full.enrollmate,
+        fthrDeceased: fatherStatus,
+        mthrDeceased: motherStatus,
+        guardian: "",
+      });
+
+      const generated = getE2eProfileStepMockValues(
+        flow,
+        2,
+        current,
+        "partial",
+        { fixtures: [], faker },
+      );
+      const values = clearUnavailableE2eProfileFormValues(flow, {
+        ...current.enrollmate,
+        ...generated.enrollmate,
+      });
+
+      expect(expected, `${fatherStatus}/${motherStatus}`).toContain(
+        values.guardian,
+      );
+      expect(
+        getEnrollmateStepValidator("bachelors", 2).safeParse(values).success,
+        `${fatherStatus}/${motherStatus} mock validity`,
+      ).toBe(true);
+    }
+  });
 
   it("uses a fresh coherent email for each mock invocation", () => {
     const flow = getEnrollmateFlowDefinition("bachelors");
