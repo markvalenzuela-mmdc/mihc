@@ -135,9 +135,11 @@ export function mapE2eResults(
   const specs: PwSpec[] = [];
   collectSpecs(report.suites, specs);
 
-  const pwErrors = (report.errors ?? [])
-    .filter((e) => typeof e.message === "string" && e.message.length > 0)
-    .map((e) => e.message as string);
+  const pwErrors = new Set(
+    (report.errors ?? [])
+      .filter((e) => typeof e.message === "string" && e.message.length > 0)
+      .map((e) => e.message as string),
+  );
 
   // Group check annotations by resolved lifecycle step
   const stepTests = new Map<string, MappedE2eStepTest[]>();
@@ -153,6 +155,16 @@ export function mapE2eResults(
       const attempts = test.results ?? [];
       const last = attempts[attempts.length - 1];
       const annotations = test.annotations ?? last?.annotations ?? [];
+      const attemptErrors = last?.errors?.length
+        ? last.errors
+        : last?.error
+          ? [last.error]
+          : [];
+      for (const error of attemptErrors) {
+        if (typeof error.message === "string" && error.message.length > 0) {
+          pwErrors.add(error.message);
+        }
+      }
 
       // Determine flow type from both levels of annotations
       if (!flowType) {
@@ -230,8 +242,8 @@ export function mapE2eResults(
   const overallStatus: "completed" | "aborted" =
     totalChecks === 0 ? "aborted" : "completed";
 
-  if (overallStatus === "aborted" && pwErrors.length > 0 && steps.length > 0) {
-    steps[0].note = pwErrors.join("\n");
+  if (overallStatus === "aborted" && pwErrors.size > 0 && steps.length > 0) {
+    steps[0].note = [...pwErrors].join("\n");
   }
 
   const runDurationSeconds = steps.reduce((sum, s) => sum + (s.durationSeconds ?? 0), 0);

@@ -40,7 +40,6 @@ export async function runE2e(opts: RunE2eOptions): Promise<RunE2eResult> {
 
   const env: NodeJS.ProcessEnv = {
     ...process.env,
-    NODE_OPTIONS: "--import tsx",
     E2E_PROFILE_DATA_FILE: dataPath,
     FLOW_TYPE: flowType,
     PLAYWRIGHT_JSON_OUTPUT_FILE: reportPath,

@@ -3,6 +3,12 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "paths": {
+      "@mihc/enrollmate-contract": ["../packages/enrollmate-contract/src/index.ts"],
+      "@mihc/enrollmate-contract/server": ["../packages/enrollmate-contract/src/server.ts"],
+      "@mihc/enrollmate-contract/testing": ["../packages/enrollmate-contract/src/testing.ts"],
+      "zod": ["./node_modules/zod/index"]
+    },
     "types": ["node"],
     "strict": true,
     "esModuleInterop": true,

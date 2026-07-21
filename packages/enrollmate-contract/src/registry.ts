@@ -1,4 +1,4 @@
-import source from "./definitions/enrollmate-form-fields.json";
+import source from "./definitions/enrollmate-form-fields.json" with { type: "json" };
 import { parseEnrollmateDefinition } from "./form-definition.schema";
 import {
   buildEnrollmateStepValidator,
