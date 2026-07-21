@@ -147,6 +147,20 @@ async function chooseOption(controlName: string, optionName: string) {
   fireEvent.click(option);
 }
 
+async function chooseIndexedOption(
+  controlName: string,
+  controlIndex: number,
+  optionName: string,
+) {
+  fireEvent.click(
+    screen.getAllByRole("combobox", { name: controlName })[controlIndex]!,
+  );
+  const option = await screen.findByRole("option", { name: optionName });
+  fireEvent.pointerDown(option);
+  fireEvent.pointerUp(option);
+  fireEvent.click(option);
+}
+
 async function advanceToStep(
   targetStep: number,
   stepDefinitions: readonly E2eProfileFormEditorStep[] = bachelorSteps,
@@ -629,6 +643,44 @@ describe("E2eProfileFormPage", () => {
       ).toMatch(/\S+\s+\S+/),
     );
     expect(finalize).not.toHaveBeenCalled();
+  });
+
+  it("shows partial guardian mock values immediately after both parents become unavailable", async () => {
+    renderPage();
+    fillValidCore();
+    await advanceToStep(2);
+
+    await chooseIndexedOption("Living Status", 0, "Unknown");
+    await chooseIndexedOption("Living Status", 1, "Deceased");
+
+    fireEvent.click(getProfileFormActionButton("Mock current step"));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Random partial fill" }),
+    );
+
+    expect(
+      screen.getByRole("combobox", {
+        name: "Who do you want to assign as your guardian?",
+      }),
+    ).toHaveTextContent("Others");
+    expect(
+      screen.getByRole("textbox", { name: "Guardian First name" }),
+    ).not.toHaveValue("");
+    expect(
+      screen.getByRole("combobox", { name: "Relationship to Applicant" }),
+    ).not.toHaveTextContent("Select an option");
+    expect(
+      screen.getByRole("button", { name: "Guardian Birthdate" }),
+    ).not.toHaveTextContent("Pick a date");
+    expect(
+      screen.getByRole("combobox", { name: "Guardian Current Country" }),
+    ).not.toHaveTextContent("Select an option");
+    expect(
+      screen.getAllByRole("combobox", { name: "Living Status" })[0],
+    ).toHaveTextContent("Unknown");
+    expect(
+      screen.getAllByRole("combobox", { name: "Living Status" })[1],
+    ).toHaveTextContent("Deceased");
   });
 
   it("shows a full-page loading state while final navigation is pending", () => {
