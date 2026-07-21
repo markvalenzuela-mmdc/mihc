@@ -51496,6 +51496,122 @@
                       }
                     ]
                   }
+                },
+                {
+                  "id": "certificationProgram",
+                  "name": "certificationProgram",
+                  "label": "Certification Program",
+                  "type": "select",
+                  "required": true,
+                  "description": "Dynamically loaded based on Certification Field; options from Salesforce.",
+                  "placeholderValue": "",
+                  "visibleWhen": {
+                    "field": "certificationField",
+                    "equalsAny": [
+                      "AI, Tech, and Data",
+                      "Business & Marketing",
+                      "English Language Training",
+                      "Virtual Assistance"
+                    ]
+                  },
+                  "optionSource": {
+                    "kind": "dependent",
+                    "field": "certificationField",
+                    "optionsByValue": {
+                      "AI, Tech, and Data": [
+                        {
+                          "label": "AI Fundamentals",
+                          "value": "AI Fundamentals"
+                        },
+                        {
+                          "label": "IBM Data Analytics",
+                          "value": "IBM Data Analytics"
+                        },
+                        {
+                          "label": "IBM Data Engineering",
+                          "value": "IBM Data Engineering"
+                        },
+                        {
+                          "label": "IBM Data Science",
+                          "value": "IBM Data Science"
+                        },
+                        {
+                          "label": "IBM Full Stack Software Developer",
+                          "value": "IBM Full Stack Software Developer"
+                        },
+                        {
+                          "label": "Meta Database Engineer",
+                          "value": "Meta Database Engineer"
+                        },
+                        {
+                          "label": "Meta Front-End Developer",
+                          "value": "Meta Front-End Developer"
+                        }
+                      ],
+                      "Business & Marketing": [
+                        {
+                          "label": "Adobe Content Creator",
+                          "value": "Adobe Content Creator"
+                        },
+                        {
+                          "label": "Adobe Graphic Designer",
+                          "value": "Adobe Graphic Designer"
+                        },
+                        {
+                          "label": "Google Digital Marketing & E-Commerce",
+                          "value": "Google Digital Marketing & E-Commerce"
+                        },
+                        {
+                          "label": "Google UX Design",
+                          "value": "Google UX Design"
+                        },
+                        {
+                          "label": "Intuit Academy Bookkeeping",
+                          "value": "Intuit Academy Bookkeeping"
+                        },
+                        {
+                          "label": "Meta Marketing Analytics",
+                          "value": "Meta Marketing Analytics"
+                        },
+                        {
+                          "label": "Salesforce Sales Development Representative",
+                          "value": "Salesforce Sales Development Representative"
+                        },
+                        {
+                          "label": "Salesforce Sales Operations",
+                          "value": "Salesforce Sales Operations"
+                        }
+                      ],
+                      "English Language Training": [
+                        {
+                          "label": "ESL Instructor",
+                          "value": "ESL Instructor"
+                        },
+                        {
+                          "label": "IELTS Preparation",
+                          "value": "IELTS Preparation"
+                        }
+                      ],
+                      "Virtual Assistance": [
+                        {
+                          "label": "Virtual Assistance Career Starter",
+                          "value": "Virtual Assistance Career Starter"
+                        },
+                        {
+                          "label": "Virtual Assistance Pro+",
+                          "value": "Virtual Assistance Pro+"
+                        },
+                        {
+                          "label": "Virtual Assistance: Getting to Work (Marketplace Pro)",
+                          "value": "Virtual Assistance: Getting to Work (Marketplace Pro)"
+                        },
+                        {
+                          "label": "Virtual Assistance: Getting to Work (Solo-preneur Personal Branding)",
+                          "value": "Virtual Assistance: Getting to Work (Solo-preneur Personal Branding)"
+                        }
+                      ]
+                    }
+                  }
                 }
               ]
             },
@@ -51748,6 +51864,20 @@
                         "label": "No",
                         "value": "No"
                       }
+                    ]
+                  }
+                },
+                {
+                  "id": "onlinePlatformsSpecification",
+                  "name": "onlinePlatformsSpecification",
+                  "label": "Specify Online Platforms",
+                  "type": "textarea",
+                  "required": false,
+                  "requiredWhenVisible": true,
+                  "visibleWhen": {
+                    "field": "onlineLearningPlatforms",
+                    "equalsAny": [
+                      "Yes"
                     ]
                   }
                 }
