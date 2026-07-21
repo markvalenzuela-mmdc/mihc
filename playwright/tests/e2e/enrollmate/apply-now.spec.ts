@@ -58,14 +58,22 @@ for (const flowType of activeFlowTypes) {
         const raw = await readFile(profileDataFile, 'utf8');
         data = JSON.parse(raw) as Record<string, unknown>;
         email = (data.email as string) ?? `e2e.${flowType}.${Date.now()}@example.edu`;
+        // Ensure the async combobox fallback is always wired up for bachelors.
+        if (flowType === 'bachelors') {
+          data.schoolNotFound = true;
+          if (!data.lastschOther) {
+            data.lastschOther = data.lastSchoolAttended ?? 'Rizal National High School';
+          }
+        }
       } else {
         // Unique email per run keeps repeat UAT submissions from colliding.
         email = `e2e.${flowType}.${Date.now()}@example.edu`;
-        // The bachelors "Last School Attended" field is an async-search combobox;
-        // ticking "school not found" reveals a free-text field we can fill
-        // deterministically, so opt into that path.
+
         const overrides: Record<string, unknown> =
-          flowType === 'bachelors' ? { email, schoolNotFound: true } : { email };
+          flowType === 'bachelors'
+            ? { email, schoolNotFound: true, lastSchoolAttended: 'Rizal National High School' }
+            : { email };
+            
         data = createEnrollmateFixture(flowType, {
           overrides,
           resolveField: createEnrollmateValueResolver(email),

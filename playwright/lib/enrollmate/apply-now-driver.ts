@@ -95,15 +95,54 @@ async function setSelectLike(
   }
 }
 
+/**
+ * Drive an async-search combobox (e.g. Last School Attended) by typing the
+ * target value and selecting it from the API-populated dropdown. If the value
+ * isn't found (API slow, school unknown, etc.) the function returns without
+ * throwing so the companion "not found" checkbox + free-text fallback fields
+ * can handle the input.
+ */
+async function setAsyncCombobox(
+  page: Page,
+  field: EnrollmateField,
+  value: string,
+): Promise<void> {
+  const locator = await resolveLocator(page, field);
+  await locator.scrollIntoViewIfNeeded().catch(() => {});
+
+  await locator.click();
+  // The UAT combobox is an <input type="text" role="combobox">; filling it
+  // triggers an XHR that populates a [role="listbox"] dropdown.
+  await locator.fill(value);
+
+  // Wait for the typeahead dropdown to appear (API round-trip).
+  const listbox = page.getByRole('listbox');
+  await listbox.waitFor({ state: 'visible', timeout: 10_000 });
+
+  // Click the matching option.
+  const option = page.getByRole('option', { name: value, exact: false });
+  await option.first().click();
+
+  // Wait for the dropdown to close.
+  await listbox.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
+}
+
 async function setField(
   page: Page,
   field: EnrollmateField,
   value: unknown,
 ): Promise<void> {
-  // External async-search comboboxes (e.g. Last School Attended) are driven via
-  // their "not found" checkbox + free-text companion field instead — there is
-  // nothing to enter into the combobox itself.
-  if (field.type === 'combobox' && field.optionSource?.kind === 'external') {
+  // Async-search comboboxes (e.g. Last School Attended) are typeahead inputs
+  // driven by an API. Try the typeahead first; if the value isn't found in the
+  // API, fall back silently so the companion "not found" checkbox + free-text
+  // field (processed separately in fillStep) can handle the input.
+  if (field.type === 'combobox' && field.optionSource?.kind !== 'inline') {
+    try {
+      await setAsyncCombobox(page, field, String(value));
+    } catch {
+      // Not found — the fallback fields (schoolNotFound + lastschOther) will
+      // be processed when fillStep reaches them in the same section.
+    }
     return;
   }
 
@@ -139,6 +178,20 @@ export async function fillStep(
     for (const field of section.fields) {
       const value = data[field.name];
       if (value === undefined) continue;
+
+      if (field.conditionalOn) {
+        const conditionValue = data[field.conditionalOn.field];
+        if (
+          typeof conditionValue !== 'string' &&
+          typeof conditionValue !== 'boolean'
+        ) {
+          continue;
+        }
+        if (!field.conditionalOn.equalsAny.includes(conditionValue)) {
+          continue;
+        }
+      }
+
       try {
         await setField(page, field, value);
         if (field.type === 'checkbox' && value === true) groupHasSelection = true;
@@ -282,7 +335,10 @@ export async function advanceStep(page: Page): Promise<StepOutcome> {
       const detail = await extractValidationErrors(page);
       throw new Error(detail ? `required field(s) missing or invalid: ${detail}` : 'a required field is missing or invalid');
     }
-    await page.waitForLoadState('networkidle').catch(() => {});
+    // Let the new step's content settle — dependent selects (province/city/barangay
+    // cascades) fetch data on mount. Avoid networkidle which can hang when async
+    // components fire continuous API calls (e.g. polling, debounced searches).
+    await page.waitForTimeout(3_000);
   });
 }
 
