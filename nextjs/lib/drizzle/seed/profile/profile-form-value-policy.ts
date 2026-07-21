@@ -6,7 +6,7 @@ export function createProfileFormValueResolver(email: string) {
 
     if (field.type === "email") return email;
     if (field.type === "date") return "1980-01-01";
-    if (field.type === "tel") return "09170000000";
+    if (field.type === "tel") return "639170000000";
     if (fieldName.includes("country")) return "Philippines";
     if (fieldName.includes("province")) return "Rizal";
     if (fieldName.endsWith("givenname")) return "Maria";

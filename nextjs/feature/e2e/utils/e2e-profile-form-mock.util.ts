@@ -84,7 +84,7 @@ function getMockIdentity(faker: Faker): MockIdentity {
     birthdate: formatMockDate(
       faker.date.birthdate({ min: 18, max: 35, mode: "age" }),
     ),
-    mobile: `09${faker.string.numeric(9)}`,
+    mobile: `639${faker.string.numeric(9)}`,
   };
 }
 
