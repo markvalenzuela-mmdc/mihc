@@ -15,6 +15,7 @@ import {
   SmokeTestRunResults,
 } from "../types/smoke-test-apps.types";
 import { format } from "date-fns";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function SmokeRunDetails({
   appName,
@@ -45,7 +46,11 @@ export default function SmokeRunDetails({
           <Metric label="Failed" value={String(details.failed)} />
           <Metric
             label="Duration"
-            value={formatDurationSeconds(details.durationSeconds ?? 0)}
+            value={
+              details.status === "running"
+                ? "In progress"
+                : formatDurationSeconds(details.durationSeconds ?? 0)
+            }
           />
           <Metric
             label="Started by"
@@ -63,6 +68,12 @@ export default function SmokeRunDetails({
             </p>
           </div>
           <div className="space-y-2">
+            {details.status === "running" && results.length === 0 ? (
+              <div className="flex items-center gap-2 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                <Spinner />
+                <p>Waiting for test results…</p>
+              </div>
+            ) : null}
             {results.map((test) => (
               <article key={test.id} className="rounded-lg border p-4">
                 <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">

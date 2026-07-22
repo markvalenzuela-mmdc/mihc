@@ -115,6 +115,7 @@ export function SmokeTestingAppsCard({ apps }: { apps: SmokeTestApp[] }) {
                         title={`Run ${run.runNumber}: ${run.status}`}
                         className={cn(
                           "h-1.5 flex-1 rounded-full",
+                          run.status === "running" && "bg-blue-400",
                           run.status === "success" && "bg-emerald-400",
                           run.status === "degraded" && "bg-amber-400",
                           run.status === "failure" && "bg-red-400",

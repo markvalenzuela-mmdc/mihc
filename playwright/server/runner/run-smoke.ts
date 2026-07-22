@@ -4,9 +4,9 @@
  * mapping/persistence so browser crashes are isolated to this boundary.
  *
  * The suite is invoked via the local Playwright binary (not `pnpm exec`, which
- * runs a deps-verify step on every call) with `--reporter=json` written to a
- * temp file (`PLAYWRIGHT_JSON_OUTPUT_FILE`). The child cwd is the `playwright/`
- * package root — required so relative spec paths resolve.
+ * runs a deps-verify step on every call) with the incremental and JSON
+ * reporters. JSON output is written to `PLAYWRIGHT_JSON_OUTPUT_FILE`. The child
+ * cwd is the `playwright/` package root so relative spec paths resolve.
  */
 import { spawn } from "node:child_process";
 import { readFile, rm } from "node:fs/promises";
@@ -23,6 +23,7 @@ const PLAYWRIGHT_BIN = join(PACKAGE_ROOT, "node_modules", ".bin", `playwright${p
 
 export interface RunSmokeOptions {
   correlationId: string;
+  runId: string;
   target: SmokeTarget;
   logger: Logger;
 }
@@ -33,13 +34,15 @@ export interface RunSmokeResult {
 }
 
 export async function runSmoke(opts: RunSmokeOptions): Promise<RunSmokeResult> {
-  const { correlationId, target, logger } = opts;
+  const { correlationId, runId, target, logger } = opts;
   const reportPath = join(tmpdir(), `smoke-report-${correlationId}.json`);
 
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     PLAYWRIGHT_BASE_URL: target.baseUrl,
     PLAYWRIGHT_JSON_OUTPUT_FILE: reportPath,
+    SMOKE_RUN_ID: runId,
+    SMOKE_CORRELATION_ID: correlationId,
   };
 
   logger.info("suite_spawn", { reportPath, appId: target.appId, testPath: target.testPath });
@@ -47,7 +50,12 @@ export async function runSmoke(opts: RunSmokeOptions): Promise<RunSmokeResult> {
   const exitCode = await new Promise<number | null>((resolvePromise) => {
     const child = spawn(
       PLAYWRIGHT_BIN,
-      ["test", target.testPath, `--project=${target.project}`, "--reporter=json"],
+      [
+        "test",
+        target.testPath,
+        `--project=${target.project}`,
+        "--reporter=./server/reporter/incremental-smoke-reporter.ts,json",
+      ],
       { cwd: PACKAGE_ROOT, env, shell: platform() === "win32" },
     );
 

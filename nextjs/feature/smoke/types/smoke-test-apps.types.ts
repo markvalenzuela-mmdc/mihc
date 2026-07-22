@@ -1,10 +1,10 @@
-export const SmokeTestRunStatus = ["success", "degraded", "failure"] as const;
+export const SmokeTestRunStatus = ["running", "success", "degraded", "failure"] as const;
 
 export type SmokeTestRunStatus = (typeof SmokeTestRunStatus)[number];
 
 export type SmokeTestRunTrigger = "manual" | "scheduled";
 
-export type SmokeTestRunResultsStatus = "success" | "failure" | "skipped";
+export type SmokeTestRunResultsStatus = "running" | "success" | "failure" | "skipped";
 
 export type SmokeTestApp = {
   id: string;
@@ -30,6 +30,7 @@ export type SmokeTestRun = {
   durationSeconds: number | null;
   startedBy: string | null;
   checkedAt: Date;
+  completedAt: Date | null;
 };
 
 export type SmokeTestRunResults = {
@@ -42,4 +43,6 @@ export type SmokeTestRunResults = {
   durationMs: number | null;
   errorMessage: string | null;
   errorStack: string | null;
+  startedAt: Date;
+  completedAt: Date | null;
 };

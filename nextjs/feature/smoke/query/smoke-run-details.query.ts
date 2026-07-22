@@ -1,12 +1,12 @@
 import {
   queryOptions,
   useQuery,
-  useSuspenseQuery,
 } from "@tanstack/react-query";
 import {
   SmokeTestRun,
   SmokeTestRunResults,
 } from "../types/smoke-test-apps.types";
+import { SMOKE_POLL_INTERVAL_MS } from "../config/smoke-polling.config";
 
 export type SmokeRunDetailsData = {
   appName: string;
@@ -16,12 +16,18 @@ export type SmokeRunDetailsData = {
 
 type SmokeRunDetailsResponse = {
   appName: string;
-  details: Omit<SmokeTestRun, "createdAt" | "checkedAt"> & {
+  details: Omit<SmokeTestRun, "createdAt" | "checkedAt" | "completedAt"> & {
     createdAt: string;
     checkedAt: string;
+    completedAt: string | null;
   };
-  results: (Omit<SmokeTestRunResults, "createdAt"> & {
+  results: (Omit<
+    SmokeTestRunResults,
+    "createdAt" | "startedAt" | "completedAt"
+  > & {
     createdAt: string;
+    startedAt: string;
+    completedAt: string | null;
   })[];
 };
 
@@ -56,14 +62,25 @@ export const smokeRunDetailsOptions = (runId: string) =>
           ...payload.data.details,
           createdAt: new Date(payload.data.details.createdAt),
           checkedAt: new Date(payload.data.details.checkedAt),
+          completedAt: payload.data.details.completedAt
+            ? new Date(payload.data.details.completedAt)
+            : null,
         },
         results: payload.data.results.map((result) => ({
           ...result,
           createdAt: new Date(result.createdAt),
+          startedAt: new Date(result.startedAt),
+          completedAt: result.completedAt
+            ? new Date(result.completedAt)
+            : null,
         })),
       };
     },
     enabled: runId.length > 0,
+    refetchInterval: (query) =>
+      query.state.data?.details.status === "running"
+        ? SMOKE_POLL_INTERVAL_MS
+        : false,
   });
 
 export function useQuerySmokeRunDetails(runId: string) {

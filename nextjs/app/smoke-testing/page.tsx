@@ -40,11 +40,15 @@ const getData = cache(async (searchParams: Promise<SearchParams>) => {
       ? (tab as SmokeTestRunStatus)
       : undefined,
   });
+  const hasActiveRun = apps.some((smokeApp) =>
+    smokeApp.smokeRuns.some((run) => run.status === "running"),
+  );
 
   return {
     appName: apps.find((a) => a.id === app)?.name ?? null,
     apps,
     smokeRuns,
+    hasActiveRun,
   };
 });
 
@@ -69,6 +73,7 @@ export default async function SmokeTestingPage({ searchParams }: PageProps) {
                 <SmokeTestingTable
                   appName={data.appName}
                   smokeRuns={data.smokeRuns}
+                  hasActiveRun={data.hasActiveRun}
                 />
                 <SmokeRunDetailsSheet />
               </>

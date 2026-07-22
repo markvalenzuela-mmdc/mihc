@@ -1,10 +1,11 @@
 /**
  * Pure mapping from Playwright's built-in `--reporter=json` output to the shape
- * persisted in `smoke_runs` + `smoke_runs_test_results`.
+ * used to finalize `smoke_runs`.
  *
  * Kept side-effect free so it is unit-testable without spawning a browser. The
  * consumer (`smoke-consumer.ts`) feeds it the parsed report (or `null` when the
- * suite could not run) and hands the result to `persist-run.ts`.
+ * suite could not run) and uses the terminal status and duration to finalize
+ * the incrementally persisted run.
  *
  * Report shape verified against @playwright/test 1.61.1
  * (playwright/types/testReporter.d.ts → JSONReport). Only the fields we read are

@@ -1,6 +1,6 @@
 {
-  "id": "18a73158-ac53-418d-93fe-cf9ee4ee93cf",
-  "prevId": "3ca1ecbd-e686-4599-8a90-dff0b47fccb0",
+  "id": "6da8e896-2201-45c4-851b-5e1125daeac8",
+  "prevId": "18a73158-ac53-418d-93fe-cf9ee4ee93cf",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -162,6 +162,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -286,6 +292,19 @@
         "error_stack": {
           "name": "error_stack",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },

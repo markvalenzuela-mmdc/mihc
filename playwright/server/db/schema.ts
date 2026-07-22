@@ -31,7 +31,7 @@ export const smokeRuns = pgTable(
     appId: text("app_id")
       .notNull()
       .references(() => apps.id),
-    status: text("status").notNull().$type<"success" | "degraded" | "failure">(),
+    status: text("status").notNull().$type<"running" | "success" | "degraded" | "failure">(),
     trigger: text("trigger").notNull().$type<"scheduled" | "manual">(),
     total: integer("total").notNull().default(0),
     passed: integer("passed").notNull().default(0),
@@ -39,6 +39,7 @@ export const smokeRuns = pgTable(
     durationSeconds: integer("duration_seconds"),
     startedBy: uuid("started_by"),
     checkedAt: timestamp("checked_at", { withTimezone: true }).notNull(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
@@ -56,10 +57,12 @@ export const smokeRunsTestResults = pgTable(
       .references(() => smokeRuns.id),
     testName: text("test_name").notNull(),
     testFile: text("test_file"),
-    status: text("status").notNull().$type<"success" | "failure" | "skipped">(),
+    status: text("status").notNull().$type<"running" | "success" | "failure" | "skipped">(),
     durationMs: integer("duration_ms"),
     errorMessage: text("error_message"),
     errorStack: text("error_stack"),
+    startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [index("idx_smoke_results_run_id").on(table.runId)],

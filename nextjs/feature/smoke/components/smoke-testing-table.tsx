@@ -23,6 +23,7 @@ import { useQueryState } from "nuqs";
 import { runParamKey } from "./smoke-testing.query-state";
 import { requestSmokeTest } from "../actions/request-smoke-test.action";
 import { toast } from "sonner";
+import { useSmokeRunPolling } from "../hooks/use-smoke-run-polling";
 
 const columnHelper = createColumnHelper<SmokeTestRun>();
 
@@ -151,12 +152,15 @@ function createColumns(openRun: (runId: string) => void) {
 export function SmokeTestingTable({
   appName,
   smokeRuns,
+  hasActiveRun,
 }: {
   appName: string | null;
   smokeRuns: Paginated<SmokeTestRun>;
+  hasActiveRun: boolean;
 }) {
   const [, startTransition] = useTransition();
   const [, setSelectedRunId] = useQueryState(runParamKey);
+  const { startAwaitingRun } = useSmokeRunPolling(hasActiveRun);
 
   const { meta, data: runs } = smokeRuns;
 
@@ -199,6 +203,7 @@ export function SmokeTestingTable({
 
       const result = await requestSmokeTest(appName);
       if (result.ok) {
+        startAwaitingRun();
         toast.success("Smoke test enqueued", {
           description:
             `${appName} smoke run was requested. Results are recorded by the test runner.`,
