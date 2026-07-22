@@ -1,2 +1,0 @@
-export const SMOKE_POLL_INTERVAL_MS = 2_000;
-export const SMOKE_RUN_START_TIMEOUT_MS = 60_000;

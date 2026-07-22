@@ -1,6 +1,6 @@
 services:
   app-pgdog:
-    image: ghcr.io/pgdogdev/pgdog:v0.1.26
+    image: ghcr.io/pgdogdev/pgdog:v0.1.31
     restart: unless-stopped
     ports:
       - "6432:6432"

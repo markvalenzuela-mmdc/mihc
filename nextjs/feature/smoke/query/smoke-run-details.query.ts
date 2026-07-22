@@ -6,7 +6,6 @@ import {
   SmokeTestRun,
   SmokeTestRunResults,
 } from "../types/smoke-test-apps.types";
-import { SMOKE_POLL_INTERVAL_MS } from "../config/smoke-polling.config";
 
 export type SmokeRunDetailsData = {
   appName: string;
@@ -77,10 +76,6 @@ export const smokeRunDetailsOptions = (runId: string) =>
       };
     },
     enabled: runId.length > 0,
-    refetchInterval: (query) =>
-      query.state.data?.details.status === "running"
-        ? SMOKE_POLL_INTERVAL_MS
-        : false,
   });
 
 export function useQuerySmokeRunDetails(runId: string) {

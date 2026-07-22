@@ -17,7 +17,7 @@ No application code, schemas, migrations, Dockerfiles, or app images are include
 - `docker/services/inngest/compose.yml` ΓÇö Inngest, Inngest PostgreSQL, and Inngest Redis
 - `docker/services/pgadmin/compose.yml` ΓÇö pgAdmin
 - `docker/compose.deploy.yml` ΓÇö deploy entrypoint that includes deploy-variant Compose files and the Next.js service
-- `docker/services/pgdog-postgres/compose.deploy.yml` ΓÇö deploy app PostgreSQL and PgBouncer
+- `docker/services/pgdog-postgres/compose.yml` ΓÇö local and deploy app PostgreSQL plus PgDog
 - `docker/services/inngest/compose.deploy.yml` ΓÇö deploy Redis and Inngest (shared Postgres/Redis)
 - `docker/services/pgadmin/compose.deploy.yml` ΓÇö deploy pgAdmin (server mode + MFA)
 
@@ -172,11 +172,21 @@ Use `inngest-postgres`, not `localhost`, because pgAdmin runs inside Docker. Ins
 | Aspect | Local | Deploy |
 |---|---|---|
 | Credentials | Service-local `.env` files | Supplied via env secrets |
-| Connection pool | PgDog (port 6432) | PgBouncer (internal) |
+| Connection pool | PgDog (port 6432) | PgDog (internal) |
 | Inngest databases | Dedicated inngest-postgres + inngest-redis | Shared postgres + redis services |
 | pgAdmin mode | Desktop mode | Server mode + MFA |
 | Port exposure | PgDog and pgAdmin have fixed local ports; Inngest dependencies use dynamic host ports | Deployment-specific |
 | Service layout | Included service-owned Compose files | Included deploy-variant Compose files |
+
+## Smoke Testing live updates
+
+Smoke Testing uses PostgreSQL `LISTEN`/`NOTIFY` through PgDog to invalidate
+database-backed UI state over a Next.js SSE route. PgDog pub/sub must remain
+enabled with `pub_sub_channel_size = 4096`.
+
+The SSE route sends a heartbeat every 20 seconds. A deployment proxy must pass
+`text/event-stream` responses without buffering and must allow idle connections
+longer than the heartbeat interval.
 
 ## Deploy Commands
 

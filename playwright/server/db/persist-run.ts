@@ -3,7 +3,7 @@
  * so an active run and every observed result remain visible while Playwright is
  * still executing.
  */
-import { and, eq, max, sql } from "drizzle-orm";
+import { and, eq, max, sql, type SQL } from "drizzle-orm";
 import type { Logger } from "../logger";
 import type { RunStatus, TestResultStatus } from "../runner/map-results";
 import { db, type Db } from "./client";
@@ -12,6 +12,15 @@ import { smokeRuns, smokeRunsTestResults } from "./schema";
 const MAX_ATTEMPTS = 3;
 const UNIQUE_VIOLATION = "23505";
 const INTERRUPTED_ERROR = "Test execution was interrupted before completion";
+const SMOKE_RUN_CHANGED_CHANNEL = "smoke_run_changed";
+
+interface SqlExecutor {
+  execute(query: SQL): Promise<unknown>;
+}
+
+async function notifySmokeRunChanged(executor: SqlExecutor, runId: string): Promise<void> {
+  await executor.execute(sql`select pg_notify(${SMOKE_RUN_CHANGED_CHANNEL}, ${runId})`);
+}
 
 export interface CreateSmokeRunInput {
   appId: string;
@@ -92,6 +101,7 @@ export async function createSmokeRun(
           })
           .returning({ id: smokeRuns.id });
 
+        await notifySmokeRunChanged(tx, inserted.id);
         logger.info("smoke_run_created", { runId: inserted.id, runNumber });
         return { runId: inserted.id, runNumber };
       });
@@ -134,6 +144,7 @@ export async function startSmokeTestResult(
       .set({ total: sql`${smokeRuns.total} + 1` })
       .where(eq(smokeRuns.id, runId));
 
+    await notifySmokeRunChanged(tx, runId);
     logger.info("smoke_test_started", { runId, resultId: inserted.id, testName });
     return { resultId: inserted.id };
   });
@@ -169,6 +180,7 @@ export async function completeSmokeTestResult(
         .where(eq(smokeRuns.id, runId));
     }
 
+    await notifySmokeRunChanged(tx, runId);
     logger.info("smoke_test_completed", { runId, resultId, status });
   });
 }
@@ -214,6 +226,7 @@ export async function finalizeSmokeRun(
       })
       .where(eq(smokeRuns.id, runId));
 
+    await notifySmokeRunChanged(tx, runId);
     logger.info("smoke_run_finalized", { runId, status, total: results.length, passed, failed });
   });
 }

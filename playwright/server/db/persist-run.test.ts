@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import type { SQL } from "drizzle-orm";
+import { PgDialect } from "drizzle-orm/pg-core";
 import type { Logger } from "../logger";
 import {
   completeSmokeTestResult,
@@ -20,12 +22,19 @@ interface CapturedWrite {
   values: Record<string, unknown> | Record<string, unknown>[];
 }
 
+const dialect = new PgDialect();
+
 function createFakeDb(initialStatuses: string[] = []) {
   const inserts: CapturedWrite[] = [];
   const updates: CapturedWrite[] = [];
+  const executions: SQL[] = [];
   const statuses = [...initialStatuses];
 
   const tx = {
+    async execute(query: SQL) {
+      executions.push(query);
+      return [];
+    },
     select(shape: Record<string, unknown>) {
       return {
         from() {
@@ -73,7 +82,15 @@ function createFakeDb(initialStatuses: string[] = []) {
     },
     inserts,
     updates,
+    executions,
   };
+}
+
+function assertSmokeNotification(executions: SQL[], runId: string) {
+  assert.equal(executions.length, 1);
+  const query = dialect.sqlToQuery(executions[0]);
+  assert.equal(query.sql, "select pg_notify($1, $2)");
+  assert.deepEqual(query.params, ["smoke_run_changed", runId]);
 }
 
 test("createSmokeRun commits a running row before execution", async () => {
@@ -109,6 +126,7 @@ test("createSmokeRun commits a running row before execution", async () => {
       completedAt: null,
     },
   });
+  assertSmokeNotification(fake.executions, "run-1");
 });
 
 test("startSmokeTestResult inserts only the observed test and increments total", async () => {
@@ -143,6 +161,7 @@ test("startSmokeTestResult inserts only the observed test and increments total",
   });
   assert.equal(fake.updates.at(-1)?.table, smokeRuns);
   assert.ok("total" in (fake.updates.at(-1)?.values ?? {}));
+  assertSmokeNotification(fake.executions, "run-1");
 });
 
 test("completeSmokeTestResult updates the observed row and matching aggregate", async () => {
@@ -175,6 +194,7 @@ test("completeSmokeTestResult updates the observed row and matching aggregate", 
   assert.equal(fake.updates[1].table, smokeRuns);
   assert.ok("failed" in fake.updates[1].values);
   assert.equal("passed" in fake.updates[1].values, false);
+  assertSmokeNotification(fake.executions, "run-1");
 });
 
 test("finalizeSmokeRun preserves completed rows and normalizes interrupted rows", async () => {
@@ -212,4 +232,5 @@ test("finalizeSmokeRun preserves completed rows and normalizes interrupted rows"
       completedAt,
     },
   });
+  assertSmokeNotification(fake.executions, "run-1");
 });
