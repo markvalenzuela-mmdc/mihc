@@ -5,6 +5,23 @@ import type {
 import { getAvailableEnrollmateGuardianAssignments } from "@mihc/enrollmate-contract";
 import { parseISO, isValid } from "date-fns";
 
+const PH_MOBILE_MAX_LENGTH = 12;
+
+export function sanitizeMobile(value: string) {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length === 0) return "";
+
+  if (digits.startsWith("0")) {
+    return `63${digits.slice(1)}`.slice(0, PH_MOBILE_MAX_LENGTH);
+  }
+
+  if (digits.startsWith("63")) {
+    return digits.slice(0, PH_MOBILE_MAX_LENGTH);
+  }
+
+  return `63${digits}`.slice(0, PH_MOBILE_MAX_LENGTH);
+}
+
 function getEnrollmateFields(flow: EnrollmateFlowDefinition) {
   return flow.steps.flatMap((step) =>
     step.sections.flatMap((section) => section.fields),

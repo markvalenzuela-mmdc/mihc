@@ -1,6 +1,6 @@
 "use client";
 
-import { format, isValid, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useCallback, useState } from "react";
 
@@ -23,24 +23,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import type { E2eProfileFixture } from "@/feature/e2e/types/e2e-profile-form.types";
-import { parseDateValue } from "../../utils/e2e-profile-form.util";
-
-const PH_MOBILE_MAX_LENGTH = 12;
-
-function sanitizeMobile(value: string) {
-  const digits = value.replace(/\D/g, "");
-  if (digits.length === 0) return "";
-
-  if (digits.startsWith("0")) {
-    return `63${digits.slice(1)}`.slice(0, PH_MOBILE_MAX_LENGTH);
-  }
-
-  if (digits.startsWith("63")) {
-    return digits.slice(0, PH_MOBILE_MAX_LENGTH);
-  }
-
-  return `63${digits}`.slice(0, PH_MOBILE_MAX_LENGTH);
-}
+import { parseDateValue, sanitizeMobile } from "../../utils/e2e-profile-form.util";
 
 type ControlAccessibilityProps = {
   "aria-describedby"?: string;
