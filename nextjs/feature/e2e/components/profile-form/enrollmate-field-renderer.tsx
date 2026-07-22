@@ -23,6 +23,7 @@ import {
   E2eProfileDatePicker,
   E2eProfileFixtureControl,
   E2eProfileFreeEntryCombobox,
+  E2eProfilePhoneInput,
 } from "./e2e-profile-form-controls";
 
 type RegisteredFormFieldProps = PropsWithChildren<
@@ -157,13 +158,20 @@ function renderControl({
   switch (definition.type) {
     case "text":
     case "email":
-    case "tel":
       return (
         <boundField.FormTextInput
           {...accessibility}
           disabled={isDisabled}
           type={getInputType(definition)}
           inputMode={getInputMode(definition)}
+          placeholder={definition.placeholder}
+        />
+      );
+    case "tel":
+      return (
+        <E2eProfilePhoneInput
+          {...accessibility}
+          disabled={isDisabled}
           placeholder={definition.placeholder}
         />
       );

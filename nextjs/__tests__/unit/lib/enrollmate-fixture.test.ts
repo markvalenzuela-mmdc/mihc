@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 function resolveFixtureField(field: EnrollmateField) {
   if (field.type === "email") return "applicant@example.edu";
   if (field.type === "date") return "2000-01-01";
-  if (field.type === "tel") return "09170000000";
+  if (field.type === "tel") return "639170000000";
   if (field.type === "text" || field.type === "textarea") {
     return "Example value";
   }

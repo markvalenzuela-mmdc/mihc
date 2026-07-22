@@ -11,6 +11,11 @@ import type {
 
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 
+export const PH_MOBILE_PATTERN = /^639\d{9}$/;
+
+export const PH_MOBILE_ERROR =
+  "Must be a valid Philippine mobile number (e.g. 639171234567).";
+
 function optionalWhen<T extends z.ZodType>(schema: T, required: boolean, hasCondition: boolean) {
   if (hasCondition) return schema.optional();
   return required ? schema : schema.optional();
@@ -76,6 +81,12 @@ function fieldSchema(field: EnrollmateField) {
       return optionalStringWhen(z.string().regex(datePattern, "Expected an ISO date."), field.required, hasCondition);
     case "file":
       return optionalWhen(fileSchema(field), field.required, hasCondition);
+    case "tel":
+      return optionalStringWhen(
+        z.string().regex(PH_MOBILE_PATTERN, `${field.label} ${PH_MOBILE_ERROR}`),
+        field.required,
+        hasCondition,
+      );
     default:
       return optionalStringWhen(stringFieldSchema(field), field.required, hasCondition);
   }

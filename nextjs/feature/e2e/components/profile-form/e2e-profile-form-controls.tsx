@@ -2,7 +2,7 @@
 
 import { format, isValid, parseISO } from "date-fns";
 import { CalendarIcon } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import {
   Combobox,
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/combobox";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useFieldContext } from "@/components/blocks/Form/use-form.hook";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -23,6 +24,23 @@ import {
 } from "@/components/ui/popover";
 import type { E2eProfileFixture } from "@/feature/e2e/types/e2e-profile-form.types";
 import { parseDateValue } from "../../utils/e2e-profile-form.util";
+
+const PH_MOBILE_MAX_LENGTH = 12;
+
+function sanitizeMobile(value: string) {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length === 0) return "";
+
+  if (digits.startsWith("0")) {
+    return `63${digits.slice(1)}`.slice(0, PH_MOBILE_MAX_LENGTH);
+  }
+
+  if (digits.startsWith("63")) {
+    return digits.slice(0, PH_MOBILE_MAX_LENGTH);
+  }
+
+  return `63${digits}`.slice(0, PH_MOBILE_MAX_LENGTH);
+}
 
 type ControlAccessibilityProps = {
   "aria-describedby"?: string;
@@ -115,6 +133,49 @@ export function E2eProfileCheckboxControl({
       className="order-first size-5 max-w-5 rounded-sm border-2"
       checked={field.state.value}
       onCheckedChange={(checked) => field.handleChange(checked)}
+      onBlur={field.handleBlur}
+      aria-label={ariaLabel}
+      aria-describedby={ariaDescribedBy}
+      aria-errormessage={isInvalid ? ariaErrorMessage : undefined}
+      aria-invalid={isInvalid}
+      aria-required={ariaRequired}
+    />
+  );
+}
+
+type E2eProfilePhoneInputProps = ControlAccessibilityProps & {
+  placeholder?: string;
+};
+
+export function E2eProfilePhoneInput({
+  "aria-describedby": ariaDescribedBy,
+  "aria-errormessage": ariaErrorMessage,
+  "aria-label": ariaLabel,
+  "aria-required": ariaRequired,
+  disabled,
+  placeholder,
+}: E2eProfilePhoneInputProps) {
+  const field = useFieldContext<string>();
+  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      field.handleChange(sanitizeMobile(e.target.value));
+    },
+    [field],
+  );
+
+  return (
+    <Input
+      id={field.name}
+      name={field.name}
+      type="tel"
+      inputMode="tel"
+      autoComplete="tel"
+      placeholder={placeholder}
+      disabled={disabled}
+      value={field.state.value}
+      onChange={handleChange}
       onBlur={field.handleBlur}
       aria-label={ariaLabel}
       aria-describedby={ariaDescribedBy}

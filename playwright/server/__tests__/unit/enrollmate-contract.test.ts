@@ -31,7 +31,7 @@ function createFixture(
     resolveField: (field) => {
       if (field.type === "email") return "applicant@example.edu";
       if (field.type === "date") return "2000-01-01";
-      if (field.type === "tel") return "09170000000";
+      if (field.type === "tel") return "639170000000";
       if (field.options.length > 0) return field.options[0]!.value;
       if (["text", "textarea", "combobox"].includes(field.type)) {
         return "Example value";
@@ -113,7 +113,7 @@ test("Playwright can consume the shared EnrollMate fixture builder", () => {
     resolveField: (field) => {
       if (field.type === "email") return "applicant@example.edu";
       if (field.type === "date") return "2000-01-01";
-      if (field.type === "tel") return "09170000000";
+      if (field.type === "tel") return "639170000000";
       if (field.options.length > 0) return field.options[0]!.value;
       if (field.type === "text" || field.type === "textarea") {
         return "Example value";
