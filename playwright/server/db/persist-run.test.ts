@@ -5,7 +5,7 @@ import { PgDialect } from "drizzle-orm/pg-core";
 import type { Logger } from "../logger";
 import {
   completeSmokeTestResult,
-  createSmokeRun,
+  claimSmokeRun,
   finalizeSmokeRun,
   startSmokeTestResult,
 } from "./persist-run";
@@ -24,7 +24,15 @@ interface CapturedWrite {
 
 const dialect = new PgDialect();
 
-function createFakeDb(initialStatuses: string[] = []) {
+interface FakeDbOptions {
+  claimedRun?: boolean;
+  insertedResult?: boolean;
+  existingResultId?: string;
+  completedResult?: boolean;
+  finalizedRun?: boolean;
+}
+
+function createFakeDb(initialStatuses: string[] = [], options: FakeDbOptions = {}) {
   const inserts: CapturedWrite[] = [];
   const updates: CapturedWrite[] = [];
   const executions: SQL[] = [];
@@ -41,6 +49,9 @@ function createFakeDb(initialStatuses: string[] = []) {
           return {
             async where() {
               if ("value" in shape) return [{ value: 2 }];
+              if ("id" in shape) {
+                return options.existingResultId ? [{ id: options.existingResultId }] : [];
+              }
               return statuses.map((status) => ({ status }));
             },
           };
@@ -48,13 +59,18 @@ function createFakeDb(initialStatuses: string[] = []) {
       };
     },
     insert(table: unknown) {
+      const returning = async () => {
+        if (table === smokeRunsTestResults && options.insertedResult === false) return [];
+        return [{ id: table === smokeRuns ? "run-1" : "result-1" }];
+      };
       return {
         values(values: Record<string, unknown> | Record<string, unknown>[]) {
           inserts.push({ table, values });
           return {
-            async returning() {
-              return [{ id: table === smokeRuns ? "run-1" : "result-1" }];
+            onConflictDoNothing() {
+              return { returning };
             },
+            returning,
           };
         },
       };
@@ -68,7 +84,18 @@ function createFakeDb(initialStatuses: string[] = []) {
               if (statuses[index] === "running") statuses[index] = "failure";
             }
           }
-          return { async where() {} };
+          return {
+            where() {
+              return {
+                async returning() {
+                  if (table === smokeRuns && options.claimedRun === false) return [];
+                  if (table === smokeRunsTestResults && options.completedResult === false) return [];
+                  if (table === smokeRuns && options.finalizedRun === false) return [];
+                  return [{ id: "run-1" }];
+                },
+              };
+            },
+          };
         },
       };
     },
@@ -93,40 +120,41 @@ function assertSmokeNotification(executions: SQL[], runId: string) {
   assert.deepEqual(query.params, ["smoke_run_changed", runId]);
 }
 
-test("createSmokeRun commits a running row before execution", async () => {
+test("claimSmokeRun changes a queued row to running before execution", async () => {
   const fake = createFakeDb();
-  const checkedAt = new Date("2026-07-22T08:00:00.000Z");
+  const startedAt = new Date("2026-07-22T08:00:00.000Z");
 
-  const created = await createSmokeRun(
+  const claimed = await claimSmokeRun(
     {
-      appId: "website",
-      trigger: "manual",
-      requestedBy: "11111111-1111-1111-1111-111111111111",
-      checkedAt,
+      runId: "run-1",
+      startedAt,
       logger,
     },
     fake.db as never,
   );
 
-  assert.deepEqual(created, { runId: "run-1", runNumber: 3 });
-  assert.equal(fake.inserts.length, 1);
-  assert.deepEqual(fake.inserts[0], {
+  assert.equal(claimed, true);
+  assert.deepEqual(fake.updates[0], {
     table: smokeRuns,
-    values: {
-      runNumber: 3,
-      appId: "website",
-      status: "running",
-      trigger: "manual",
-      total: 0,
-      passed: 0,
-      failed: 0,
-      durationSeconds: null,
-      startedBy: "11111111-1111-1111-1111-111111111111",
-      checkedAt,
-      completedAt: null,
-    },
+    values: { status: "running", startedAt },
   });
   assertSmokeNotification(fake.executions, "run-1");
+});
+
+test("claimSmokeRun ignores a run that is no longer queued", async () => {
+  const fake = createFakeDb([], { claimedRun: false });
+
+  const claimed = await claimSmokeRun(
+    {
+      runId: "run-1",
+      startedAt: new Date("2026-07-22T08:00:00.000Z"),
+      logger,
+    },
+    fake.db as never,
+  );
+
+  assert.equal(claimed, false);
+  assert.equal(fake.executions.length, 0);
 });
 
 test("startSmokeTestResult inserts only the observed test and increments total", async () => {
@@ -136,6 +164,8 @@ test("startSmokeTestResult inserts only the observed test and increments total",
   const created = await startSmokeTestResult(
     {
       runId: "run-1",
+      testId: "landing-check",
+      retryAttempt: 0,
       testName: "loads the landing page",
       testFile: "tests/smoke/landing.spec.ts",
       startedAt,
@@ -149,6 +179,8 @@ test("startSmokeTestResult inserts only the observed test and increments total",
     table: smokeRunsTestResults,
     values: {
       runId: "run-1",
+      testId: "landing-check",
+      retryAttempt: 0,
       testName: "loads the landing page",
       testFile: "tests/smoke/landing.spec.ts",
       status: "running",
@@ -164,11 +196,51 @@ test("startSmokeTestResult inserts only the observed test and increments total",
   assertSmokeNotification(fake.executions, "run-1");
 });
 
+test("startSmokeTestResult replays the existing row for a duplicate attempt", async () => {
+  const fake = createFakeDb([], { insertedResult: false, existingResultId: "result-existing" });
+
+  const replayed = await startSmokeTestResult(
+    {
+      runId: "run-1",
+      testId: "landing-check",
+      retryAttempt: 1,
+      testName: "loads the landing page",
+      testFile: "tests/smoke/landing.spec.ts",
+      startedAt: new Date("2026-07-22T08:00:01.000Z"),
+      logger,
+    },
+    fake.db as never,
+  );
+
+  assert.deepEqual(replayed, { resultId: "result-existing" });
+  assert.equal(fake.updates.length, 0);
+  assert.equal(fake.executions.length, 0);
+});
+
+test("startSmokeTestResult keeps separate rows for separate retries", async () => {
+  const fake = createFakeDb();
+  const baseInput = {
+    runId: "run-1",
+    testId: "landing-check",
+    testName: "loads the landing page",
+    testFile: "tests/smoke/landing.spec.ts",
+    startedAt: new Date("2026-07-22T08:00:01.000Z"),
+    logger,
+  };
+
+  await startSmokeTestResult({ ...baseInput, retryAttempt: 0 }, fake.db as never);
+  await startSmokeTestResult({ ...baseInput, retryAttempt: 1 }, fake.db as never);
+
+  assert.equal(fake.inserts.length, 2);
+  assert.equal((fake.inserts[0].values as Record<string, unknown>).retryAttempt, 0);
+  assert.equal((fake.inserts[1].values as Record<string, unknown>).retryAttempt, 1);
+});
+
 test("completeSmokeTestResult updates the observed row and matching aggregate", async () => {
   const fake = createFakeDb();
   const completedAt = new Date("2026-07-22T08:00:03.000Z");
 
-  await completeSmokeTestResult(
+  const completed = await completeSmokeTestResult(
     {
       resultId: "result-1",
       runId: "run-1",
@@ -181,6 +253,7 @@ test("completeSmokeTestResult updates the observed row and matching aggregate", 
     fake.db as never,
   );
 
+  assert.equal(completed, true);
   assert.deepEqual(fake.updates[0], {
     table: smokeRunsTestResults,
     values: {
@@ -197,11 +270,32 @@ test("completeSmokeTestResult updates the observed row and matching aggregate", 
   assertSmokeNotification(fake.executions, "run-1");
 });
 
+test("completeSmokeTestResult ignores a duplicate terminal write", async () => {
+  const fake = createFakeDb([], { completedResult: false });
+
+  const completed = await completeSmokeTestResult(
+    {
+      resultId: "result-1",
+      runId: "run-1",
+      status: "success",
+      durationMs: 100,
+      errorMessage: null,
+      completedAt: new Date("2026-07-22T08:00:03.000Z"),
+      logger,
+    },
+    fake.db as never,
+  );
+
+  assert.equal(completed, false);
+  assert.equal(fake.updates.length, 1);
+  assert.equal(fake.executions.length, 0);
+});
+
 test("finalizeSmokeRun preserves completed rows and normalizes interrupted rows", async () => {
   const fake = createFakeDb(["success", "running", "skipped"]);
   const completedAt = new Date("2026-07-22T08:01:00.000Z");
 
-  await finalizeSmokeRun(
+  const finalized = await finalizeSmokeRun(
     {
       runId: "run-1",
       status: "failure",
@@ -212,6 +306,7 @@ test("finalizeSmokeRun preserves completed rows and normalizes interrupted rows"
     fake.db as never,
   );
 
+  assert.equal(finalized, true);
   assert.deepEqual(fake.updates[0], {
     table: smokeRunsTestResults,
     values: {
@@ -233,4 +328,22 @@ test("finalizeSmokeRun preserves completed rows and normalizes interrupted rows"
     },
   });
   assertSmokeNotification(fake.executions, "run-1");
+});
+
+test("finalizeSmokeRun ignores a repeated finalization", async () => {
+  const fake = createFakeDb(["success"], { finalizedRun: false });
+
+  const finalized = await finalizeSmokeRun(
+    {
+      runId: "run-1",
+      status: "success",
+      durationSeconds: 1,
+      completedAt: new Date("2026-07-22T08:01:00.000Z"),
+      logger,
+    },
+    fake.db as never,
+  );
+
+  assert.equal(finalized, false);
+  assert.equal(fake.executions.length, 0);
 });

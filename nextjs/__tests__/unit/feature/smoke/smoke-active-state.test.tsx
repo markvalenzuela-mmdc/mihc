@@ -49,6 +49,11 @@ const runningResult: SmokeTestRunResults = {
   completedAt: null,
 };
 
+const queuedRun: SmokeTestRun = {
+  ...runningRun,
+  status: "queued",
+};
+
 describe("active Smoke state", () => {
   it("renders running details as in progress", () => {
     render(
@@ -75,6 +80,20 @@ describe("active Smoke state", () => {
     );
 
     expect(screen.getByText("Landing page")).toBeVisible();
+    expect(screen.queryByText("Waiting for test results…")).not.toBeInTheDocument();
+  });
+
+  it("renders queued details without pretending execution started", () => {
+    render(
+      <SmokeRunDetails
+        appName="Website"
+        details={queuedRun}
+        results={[]}
+      />,
+    );
+
+    expect(screen.getByText("Queued")).toBeVisible();
+    expect(screen.getByText("Waiting for an execution slot…")).toBeVisible();
     expect(screen.queryByText("Waiting for test results…")).not.toBeInTheDocument();
   });
 
@@ -110,5 +129,22 @@ describe("active Smoke state", () => {
     render(<SmokeTestingAppsCard apps={[app]} />);
 
     expect(screen.getByTitle("Run 7: running")).toHaveClass("bg-blue-400");
+  });
+
+  it("uses the queued color for a queued card history segment", () => {
+    const app: SmokeTestApp = {
+      id: "website",
+      name: "Website",
+      description: null,
+      createdAt: new Date("2026-07-22T08:00:00.000Z"),
+      updatedAt: new Date("2026-07-22T08:00:00.000Z"),
+      createdBy: null,
+      updatedBy: null,
+      smokeRuns: [queuedRun],
+    };
+
+    render(<SmokeTestingAppsCard apps={[app]} />);
+
+    expect(screen.getByTitle("Run 7: queued")).toHaveClass("bg-slate-400");
   });
 });

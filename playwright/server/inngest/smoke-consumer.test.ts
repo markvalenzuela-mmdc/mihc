@@ -4,7 +4,11 @@ import type { FinalizeSmokeRunInput } from "../db/persist-run";
 import type { Logger } from "../logger";
 import type { PlaywrightJsonReport } from "../runner/map-results";
 import { SMOKE_TARGETS } from "../runner/smoke-targets";
-import { executeSmokeRun, type SmokeRunDependencies } from "./smoke-consumer";
+import {
+  executeSmokeRun,
+  SMOKE_CONSUMER_CONFIG,
+  type SmokeRunDependencies,
+} from "./smoke-consumer";
 
 const logger: Logger = {
   info() {},
@@ -13,6 +17,7 @@ const logger: Logger = {
 };
 
 const data = {
+  runId: "11111111-1111-1111-1111-111111111111",
   appId: "website" as const,
   suite: "smoke",
   trigger: "manual" as const,
@@ -37,13 +42,13 @@ const passingReport: PlaywrightJsonReport = {
   stats: { duration: 1_000 },
 };
 
-test("executes create, run, and finalize in separate ordered steps", async () => {
+test("claims, runs, and finalizes in separate ordered steps", async () => {
   const steps: string[] = [];
   let runnerRunId: string | undefined;
   let finalized: FinalizeSmokeRunInput | undefined;
   const dependencies: SmokeRunDependencies = {
-    async create() {
-      return { runId: "run-1", runNumber: 4 };
+    async claim() {
+      return true;
     },
     async run(options) {
       runnerRunId = options.runId;
@@ -51,6 +56,7 @@ test("executes create, run, and finalize in separate ordered steps", async () =>
     },
     async finalize(input) {
       finalized = input;
+      return true;
     },
   };
 
@@ -63,24 +69,26 @@ test("executes create, run, and finalize in separate ordered steps", async () =>
     dependencies,
   );
 
-  assert.deepEqual(steps, ["create-smoke-run", "run-suite", "finalize-smoke-run"]);
-  assert.equal(runnerRunId, "run-1");
-  assert.equal(finalized?.runId, "run-1");
+  assert.deepEqual(steps, ["claim-smoke-run", "run-suite", "finalize-smoke-run"]);
+  assert.equal(runnerRunId, data.runId);
+  assert.equal(finalized?.runId, data.runId);
   assert.equal(finalized?.status, "success");
-  assert.deepEqual(result, { runId: "run-1", runNumber: 4, status: "success" });
+  assert.deepEqual(result, { runId: data.runId, status: "success" });
 });
 
-test("does not launch Playwright when run creation fails", async () => {
+test("does not launch Playwright when claiming fails", async () => {
   let runnerCalled = false;
   const dependencies: SmokeRunDependencies = {
-    async create() {
+    async claim() {
       throw new Error("database unavailable");
     },
     async run() {
       runnerCalled = true;
       return { report: passingReport, exitCode: 0 };
     },
-    async finalize() {},
+    async finalize() {
+      return true;
+    },
   };
 
   await assert.rejects(
@@ -97,14 +105,15 @@ test("does not launch Playwright when run creation fails", async () => {
 test("finalizes a missing report as failure", async () => {
   let finalStatus: string | undefined;
   const dependencies: SmokeRunDependencies = {
-    async create() {
-      return { runId: "run-1", runNumber: 4 };
+    async claim() {
+      return true;
     },
     async run() {
       return { report: null, exitCode: null };
     },
     async finalize(input) {
       finalStatus = input.status;
+      return true;
     },
   };
 
@@ -115,4 +124,39 @@ test("finalizes a missing report as failure", async () => {
   );
 
   assert.equal(finalStatus, "failure");
+});
+
+test("skips a duplicate event after the run was already claimed", async () => {
+  let runnerCalled = false;
+  let finalizeCalled = false;
+  const dependencies: SmokeRunDependencies = {
+    async claim() {
+      return false;
+    },
+    async run() {
+      runnerCalled = true;
+      return { report: passingReport, exitCode: 0 };
+    },
+    async finalize() {
+      finalizeCalled = true;
+      return true;
+    },
+  };
+
+  const result = await executeSmokeRun(
+    { data, target, logger },
+    async (name, callback) => {
+      assert.equal(name, "claim-smoke-run");
+      return callback();
+    },
+    dependencies,
+  );
+
+  assert.deepEqual(result, { skipped: "already_claimed", runId: data.runId });
+  assert.equal(runnerCalled, false);
+  assert.equal(finalizeCalled, false);
+});
+
+test("configures one globally concurrent smoke consumer", () => {
+  assert.equal(SMOKE_CONSUMER_CONFIG.concurrency, 1);
 });

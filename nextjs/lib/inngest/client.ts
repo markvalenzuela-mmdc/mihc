@@ -25,6 +25,7 @@ export type SmokeTestTrigger = "manual" | "scheduled";
 
 /** Payload v1 for `smoke-test/requested`. */
 export interface SmokeTestRequestedData {
+  runId: string;
   appId: SmokeTestRequestedAppId;
   suite: "smoke";
   trigger: SmokeTestTrigger;

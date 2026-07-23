@@ -12,6 +12,7 @@ import PlaywrightIncrementalSmokeReporter, {
 
 function testCase(overrides: Partial<TestCase> = {}): TestCase {
   return {
+    id: "smoke-landing",
     title: "loads the landing page",
     location: { file: "tests/smoke/landing.spec.ts", line: 1, column: 1 },
     annotations: [],
@@ -22,6 +23,7 @@ function testCase(overrides: Partial<TestCase> = {}): TestCase {
 function testResult(overrides: Partial<TestResult> = {}): TestResult {
   return {
     status: "passed",
+    retry: 0,
     duration: 250,
     startTime: new Date("2026-07-22T08:00:00.000Z"),
     errors: [],
@@ -43,6 +45,7 @@ test("Playwright reporter options are not treated as the persistence adapter", a
     },
     async complete() {
       calls.push("complete");
+      return true;
     },
   };
   const reporter = new PlaywrightIncrementalSmokeReporter(
@@ -70,6 +73,7 @@ test("queues a start before completing the same observed result", async () => {
     },
     async complete(input) {
       calls.push({ operation: "complete", input });
+      return true;
     },
   };
   const reporter = new IncrementalSmokeReporter(persistence, env);
@@ -92,6 +96,8 @@ test("queues a start before completing the same observed result", async () => {
   const started = calls[0].input as StartSmokeTestResultInput;
   const completed = calls[1].input as CompleteSmokeTestResultInput;
   assert.equal(started.runId, "run-1");
+  assert.equal(started.testId, "smoke-landing");
+  assert.equal(started.retryAttempt, 0);
   assert.equal(started.testName, "Landing page");
   assert.equal(started.testFile, "smoke/landing.spec.ts");
   assert.equal(completed.resultId, "result-1");
@@ -107,6 +113,7 @@ test("maps failed reporter results through the existing failure formatter", asyn
     },
     async complete(input) {
       completed = input;
+      return true;
     },
   };
   const reporter = new IncrementalSmokeReporter(persistence, env);
@@ -131,6 +138,29 @@ test("maps failed reporter results through the existing failure formatter", asyn
     completed?.errorMessage,
     "1 check failed on https://example.com:\n• Page did not return a successful response",
   );
+});
+
+test("persists the Playwright retry number as part of the attempt identity", async () => {
+  let started: StartSmokeTestResultInput | undefined;
+  const persistence: SmokeReporterPersistence = {
+    async start(input) {
+      started = input;
+      return { resultId: "result-retry-1" };
+    },
+    async complete() {
+      return true;
+    },
+  };
+  const reporter = new IncrementalSmokeReporter(persistence, env);
+  const currentTest = testCase();
+  const result = testResult({ retry: 1 });
+
+  reporter.onTestBegin(currentTest, result);
+  reporter.onTestEnd(currentTest, result);
+  await reporter.onEnd({} as FullResult);
+
+  assert.equal(started?.testId, "smoke-landing");
+  assert.equal(started?.retryAttempt, 1);
 });
 
 test("onEnd waits for pending writes and reports persistence failure", async () => {

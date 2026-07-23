@@ -19,7 +19,12 @@ import type { SmokeTarget } from "./smoke-targets";
 
 // server/runner/run-smoke.ts -> up two dirs is the playwright/ package root.
 const PACKAGE_ROOT = resolve(fileURLToPath(import.meta.url), "../../..");
-const PLAYWRIGHT_BIN = join(PACKAGE_ROOT, "node_modules", ".bin", `playwright${platform() === "win32" ? ".CMD" : ""}`);
+const PLAYWRIGHT_BIN = join(
+  PACKAGE_ROOT,
+  "node_modules",
+  ".bin",
+  `playwright${platform() === "win32" ? ".CMD" : ""}`,
+);
 
 export interface RunSmokeOptions {
   correlationId: string;
@@ -45,7 +50,11 @@ export async function runSmoke(opts: RunSmokeOptions): Promise<RunSmokeResult> {
     SMOKE_CORRELATION_ID: correlationId,
   };
 
-  logger.info("suite_spawn", { reportPath, appId: target.appId, testPath: target.testPath });
+  logger.info("suite_spawn", {
+    reportPath,
+    appId: target.appId,
+    testPath: target.testPath,
+  });
 
   const exitCode = await new Promise<number | null>((resolvePromise) => {
     const child = spawn(
@@ -54,14 +63,21 @@ export async function runSmoke(opts: RunSmokeOptions): Promise<RunSmokeResult> {
         "test",
         target.testPath,
         `--project=${target.project}`,
+        "--workers=1",
         "--reporter=./server/reporter/incremental-smoke-reporter.ts,json",
       ],
-      { cwd: PACKAGE_ROOT, env, shell: platform() === "win32" },
+      {
+        cwd: PACKAGE_ROOT,
+        env,
+        shell: platform() === "win32",
+      },
     );
 
     // Surface child output through the structured logger (browser noise stays
     // out of the JSON report file).
-    child.stderr.on("data", (buf: Buffer) => logger.warn("suite_stderr", { chunk: buf.toString().trim() }));
+    child.stderr.on("data", (buf: Buffer) =>
+      logger.warn("suite_stderr", { chunk: buf.toString().trim() }),
+    );
     child.on("error", (err) => {
       logger.error("suite_spawn_error", { message: err.message });
       resolvePromise(null);

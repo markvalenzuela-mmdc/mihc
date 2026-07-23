@@ -1,10 +1,20 @@
-export const SmokeTestRunStatus = ["running", "success", "degraded", "failure"] as const;
+export const SmokeTestRunStatus = [
+  "queued",
+  "running",
+  "success",
+  "degraded",
+  "failure",
+] as const;
 
 export type SmokeTestRunStatus = (typeof SmokeTestRunStatus)[number];
 
 export type SmokeTestRunTrigger = "manual" | "scheduled";
 
-export type SmokeTestRunResultsStatus = "running" | "success" | "failure" | "skipped";
+export type SmokeTestRunResultsStatus =
+  | "running"
+  | "success"
+  | "failure"
+  | "skipped";
 
 export type SmokeTestApp = {
   id: string;

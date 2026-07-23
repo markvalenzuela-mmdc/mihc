@@ -20,7 +20,7 @@ import {
 
 export interface SmokeReporterPersistence {
   start(input: StartSmokeTestResultInput): Promise<StartSmokeTestResultResult>;
-  complete(input: CompleteSmokeTestResultInput): Promise<void>;
+  complete(input: CompleteSmokeTestResultInput): Promise<boolean>;
 }
 
 const defaultPersistence: SmokeReporterPersistence = {
@@ -58,6 +58,8 @@ export class IncrementalSmokeReporter implements Reporter {
     const resultId = this.enqueue(async () => {
       const created = await this.persistence.start({
         runId: this.runId!,
+        testId: test.id,
+        retryAttempt: result.retry,
         testName: formatSmokeTestName(test.title),
         testFile: formatSmokeTestFile(test.location.file),
         startedAt: result.startTime,

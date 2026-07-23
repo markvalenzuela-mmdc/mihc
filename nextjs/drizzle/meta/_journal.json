@@ -43,6 +43,13 @@
       "when": 1784707973598,
       "tag": "0005_smoke_incremental_persistence",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784819061796,
+      "tag": "0006_smoke_queue_idempotency",
+      "breakpoints": true
     }
   ]
 }

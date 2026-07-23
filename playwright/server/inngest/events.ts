@@ -17,6 +17,7 @@ export const SMOKE_TEST_REQUESTED = "smoke-test/requested";
 export const SUPPORTED_SUITE = "smoke";
 
 export const smokeTestRequestedSchema = z.object({
+  runId: z.string().uuid(),
   appId: z.enum(SMOKE_TARGET_IDS),
   suite: z.string(),
   trigger: z.enum(["manual", "scheduled"]),

@@ -6,9 +6,9 @@
  * without replacing those incremental rows.
  */
 import {
-  createSmokeRun,
+  claimSmokeRun,
   finalizeSmokeRun,
-  type CreateSmokeRunInput,
+  type ClaimSmokeRunInput,
   type FinalizeSmokeRunInput,
 } from "../db/persist-run";
 import type { Logger } from "../logger";
@@ -25,7 +25,7 @@ import {
 } from "./events";
 
 export interface SmokeRunDependencies {
-  create(input: CreateSmokeRunInput): ReturnType<typeof createSmokeRun>;
+  claim(input: ClaimSmokeRunInput): ReturnType<typeof claimSmokeRun>;
   run(options: RunSmokeOptions): Promise<RunSmokeResult>;
   finalize(input: FinalizeSmokeRunInput): ReturnType<typeof finalizeSmokeRun>;
 }
@@ -39,9 +39,16 @@ interface ExecuteSmokeRunInput {
 export type RunStep = <T>(name: string, callback: () => Promise<T>) => Promise<T>;
 
 const defaultDependencies: SmokeRunDependencies = {
-  create: createSmokeRun,
+  claim: claimSmokeRun,
   run: runSmoke,
   finalize: finalizeSmokeRun,
+};
+
+export const SMOKE_CONSUMER_CONFIG = {
+  id: "website-smoke-consumer",
+  concurrency: 1,
+  idempotency: "event.data.correlationId",
+  triggers: [{ event: SMOKE_TEST_REQUESTED }],
 };
 
 export async function executeSmokeRun(
@@ -50,20 +57,23 @@ export async function executeSmokeRun(
   dependencies: SmokeRunDependencies = defaultDependencies,
 ) {
   const { data, target, logger } = input;
-  const created = await runStep("create-smoke-run", () =>
-    dependencies.create({
-      appId: data.appId,
-      trigger: data.trigger,
-      requestedBy: data.requestedBy ?? null,
-      checkedAt: new Date(),
+  const claimed = await runStep("claim-smoke-run", () =>
+    dependencies.claim({
+      runId: data.runId,
+      startedAt: new Date(),
       logger,
     }),
   );
 
+  if (!claimed) {
+    logger.info("smoke_run_already_claimed", { runId: data.runId });
+    return { skipped: "already_claimed" as const, runId: data.runId };
+  }
+
   const suite = await runStep("run-suite", async () => {
     const { report, exitCode } = await dependencies.run({
       correlationId: data.correlationId,
-      runId: created.runId,
+      runId: data.runId,
       target,
       logger,
     });
@@ -77,7 +87,7 @@ export async function executeSmokeRun(
 
   await runStep("finalize-smoke-run", () =>
     dependencies.finalize({
-      runId: created.runId,
+      runId: data.runId,
       status,
       durationSeconds: suite.mapped.durationSeconds,
       completedAt: new Date(),
@@ -85,15 +95,11 @@ export async function executeSmokeRun(
     }),
   );
 
-  return { runId: created.runId, runNumber: created.runNumber, status };
+  return { runId: data.runId, status };
 }
 
 export const smokeConsumer = inngest.createFunction(
-  {
-    id: "website-smoke-consumer",
-    idempotency: "event.data.correlationId",
-    triggers: [{ event: SMOKE_TEST_REQUESTED }],
-  },
+  SMOKE_CONSUMER_CONFIG,
   async ({ event, step }) => {
     const rawCorrelationId = (event.data as { correlationId?: unknown })?.correlationId;
     const parsed = smokeTestRequestedSchema.safeParse(event.data);

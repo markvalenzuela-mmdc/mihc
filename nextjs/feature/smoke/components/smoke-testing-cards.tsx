@@ -14,10 +14,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns/format";
 import { TestTube2Icon, ChevronRightIcon } from "lucide-react";
 import { useQueryStates } from "nuqs";
-import {
-  appParamKey,
-  appSearchParams,
-} from "./smoke-testing.query-state";
+import { appParamKey, appSearchParams } from "./smoke-testing.query-state";
 import { useTransition } from "react";
 
 export function SmokeTestingAppsCard({ apps }: { apps: SmokeTestApp[] }) {
@@ -26,7 +23,7 @@ export function SmokeTestingAppsCard({ apps }: { apps: SmokeTestApp[] }) {
     shallow: false,
     startTransition,
   });
-  
+
   const handleSelectApp = (appId: string) => {
     setSelectedApp({ [appParamKey]: appId });
   };
@@ -115,6 +112,7 @@ export function SmokeTestingAppsCard({ apps }: { apps: SmokeTestApp[] }) {
                         title={`Run ${run.runNumber}: ${run.status}`}
                         className={cn(
                           "h-1.5 flex-1 rounded-full",
+                          run.status === "queued" && "bg-slate-400",
                           run.status === "running" && "bg-blue-400",
                           run.status === "success" && "bg-emerald-400",
                           run.status === "degraded" && "bg-amber-400",

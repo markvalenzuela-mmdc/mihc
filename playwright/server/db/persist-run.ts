@@ -3,14 +3,12 @@
  * so an active run and every observed result remain visible while Playwright is
  * still executing.
  */
-import { and, eq, max, sql, type SQL } from "drizzle-orm";
+import { and, eq, sql, type SQL } from "drizzle-orm";
 import type { Logger } from "../logger";
 import type { RunStatus, TestResultStatus } from "../runner/map-results";
 import { db, type Db } from "./client";
 import { smokeRuns, smokeRunsTestResults } from "./schema";
 
-const MAX_ATTEMPTS = 3;
-const UNIQUE_VIOLATION = "23505";
 const INTERRUPTED_ERROR = "Test execution was interrupted before completion";
 const SMOKE_RUN_CHANGED_CHANNEL = "smoke_run_changed";
 
@@ -22,21 +20,16 @@ async function notifySmokeRunChanged(executor: SqlExecutor, runId: string): Prom
   await executor.execute(sql`select pg_notify(${SMOKE_RUN_CHANGED_CHANNEL}, ${runId})`);
 }
 
-export interface CreateSmokeRunInput {
-  appId: string;
-  trigger: "manual" | "scheduled";
-  requestedBy?: string | null;
-  checkedAt: Date;
-  logger: Logger;
-}
-
-export interface CreateSmokeRunResult {
+export interface ClaimSmokeRunInput {
   runId: string;
-  runNumber: number;
+  startedAt: Date;
+  logger: Logger;
 }
 
 export interface StartSmokeTestResultInput {
   runId: string;
+  testId: string;
+  retryAttempt: number;
   testName: string;
   testFile: string | null;
   startedAt: Date;
@@ -65,69 +58,40 @@ export interface FinalizeSmokeRunInput {
   logger: Logger;
 }
 
-function isUniqueViolation(err: unknown): boolean {
-  return typeof err === "object" && err !== null && "code" in err && (err as { code?: string }).code === UNIQUE_VIOLATION;
-}
-
-export async function createSmokeRun(
-  input: CreateSmokeRunInput,
+export async function claimSmokeRun(
+  input: ClaimSmokeRunInput,
   database: Db = db,
-): Promise<CreateSmokeRunResult> {
-  const { appId, trigger, requestedBy, checkedAt, logger } = input;
+): Promise<boolean> {
+  const { runId, startedAt, logger } = input;
 
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    try {
-      return await database.transaction(async (tx) => {
-        const [{ value: currentMax }] = await tx
-          .select({ value: max(smokeRuns.runNumber) })
-          .from(smokeRuns)
-          .where(eq(smokeRuns.appId, appId));
-        const runNumber = (currentMax ?? 0) + 1;
+  return database.transaction(async (tx) => {
+    const claimed = await tx
+      .update(smokeRuns)
+      .set({ status: "running", startedAt })
+      .where(and(eq(smokeRuns.id, runId), eq(smokeRuns.status, "queued")))
+      .returning({ id: smokeRuns.id });
 
-        const [inserted] = await tx
-          .insert(smokeRuns)
-          .values({
-            runNumber,
-            appId,
-            status: "running",
-            trigger,
-            total: 0,
-            passed: 0,
-            failed: 0,
-            durationSeconds: null,
-            startedBy: requestedBy ?? null,
-            checkedAt,
-            completedAt: null,
-          })
-          .returning({ id: smokeRuns.id });
+    if (claimed.length === 0) return false;
 
-        await notifySmokeRunChanged(tx, inserted.id);
-        logger.info("smoke_run_created", { runId: inserted.id, runNumber });
-        return { runId: inserted.id, runNumber };
-      });
-    } catch (err) {
-      if (isUniqueViolation(err) && attempt < MAX_ATTEMPTS) {
-        logger.warn("run_number_race_retry", { attempt, phase: "create" });
-        continue;
-      }
-      throw err;
-    }
-  }
-
-  throw new Error("createSmokeRun: exhausted retries");
+    await notifySmokeRunChanged(tx, runId);
+    logger.info("smoke_run_claimed", { runId });
+    return true;
+  });
 }
 
 export async function startSmokeTestResult(
   input: StartSmokeTestResultInput,
   database: Db = db,
 ): Promise<StartSmokeTestResultResult> {
-  const { runId, testName, testFile, startedAt, logger } = input;
+  const { runId, testId, retryAttempt, testName, testFile, startedAt, logger } = input;
 
   return database.transaction(async (tx) => {
-    const [inserted] = await tx
+    const inserted = await tx
       .insert(smokeRunsTestResults)
       .values({
         runId,
+        testId,
+        retryAttempt,
         testName,
         testFile,
         status: "running",
@@ -137,27 +101,57 @@ export async function startSmokeTestResult(
         startedAt,
         completedAt: null,
       })
+      .onConflictDoNothing({
+        target: [
+          smokeRunsTestResults.runId,
+          smokeRunsTestResults.testId,
+          smokeRunsTestResults.retryAttempt,
+        ],
+      })
       .returning({ id: smokeRunsTestResults.id });
+
+    const [existing] =
+      inserted.length > 0
+        ? inserted
+        : await tx
+            .select({ id: smokeRunsTestResults.id })
+            .from(smokeRunsTestResults)
+            .where(
+              and(
+                eq(smokeRunsTestResults.runId, runId),
+                eq(smokeRunsTestResults.testId, testId),
+                eq(smokeRunsTestResults.retryAttempt, retryAttempt),
+              ),
+            );
+
+    if (!existing) {
+      throw new Error(`Smoke result ${runId}/${testId}/${retryAttempt} was not found after insert conflict`);
+    }
+
+    if (inserted.length === 0) {
+      logger.info("smoke_test_start_duplicate", { runId, resultId: existing.id, testId, retryAttempt });
+      return { resultId: existing.id };
+    }
 
     await tx
       .update(smokeRuns)
       .set({ total: sql`${smokeRuns.total} + 1` })
-      .where(eq(smokeRuns.id, runId));
+      .where(and(eq(smokeRuns.id, runId), eq(smokeRuns.status, "running")));
 
     await notifySmokeRunChanged(tx, runId);
-    logger.info("smoke_test_started", { runId, resultId: inserted.id, testName });
-    return { resultId: inserted.id };
+    logger.info("smoke_test_started", { runId, resultId: existing.id, testName, testId, retryAttempt });
+    return { resultId: existing.id };
   });
 }
 
 export async function completeSmokeTestResult(
   input: CompleteSmokeTestResultInput,
   database: Db = db,
-): Promise<void> {
+): Promise<boolean> {
   const { resultId, runId, status, durationMs, errorMessage, completedAt, logger } = input;
 
-  await database.transaction(async (tx) => {
-    await tx
+  return database.transaction(async (tx) => {
+    const completed = await tx
       .update(smokeRunsTestResults)
       .set({
         status,
@@ -166,32 +160,42 @@ export async function completeSmokeTestResult(
         errorStack: null,
         completedAt,
       })
-      .where(eq(smokeRunsTestResults.id, resultId));
+      .where(
+        and(
+          eq(smokeRunsTestResults.id, resultId),
+          eq(smokeRunsTestResults.runId, runId),
+          eq(smokeRunsTestResults.status, "running"),
+        ),
+      )
+      .returning({ id: smokeRunsTestResults.id });
+
+    if (completed.length === 0) return false;
 
     if (status === "success") {
       await tx
         .update(smokeRuns)
         .set({ passed: sql`${smokeRuns.passed} + 1` })
-        .where(eq(smokeRuns.id, runId));
+        .where(and(eq(smokeRuns.id, runId), eq(smokeRuns.status, "running")));
     } else if (status === "failure") {
       await tx
         .update(smokeRuns)
         .set({ failed: sql`${smokeRuns.failed} + 1` })
-        .where(eq(smokeRuns.id, runId));
+        .where(and(eq(smokeRuns.id, runId), eq(smokeRuns.status, "running")));
     }
 
     await notifySmokeRunChanged(tx, runId);
     logger.info("smoke_test_completed", { runId, resultId, status });
+    return true;
   });
 }
 
 export async function finalizeSmokeRun(
   input: FinalizeSmokeRunInput,
   database: Db = db,
-): Promise<void> {
+): Promise<boolean> {
   const { runId, status, durationSeconds, completedAt, logger } = input;
 
-  await database.transaction(async (tx) => {
+  return database.transaction(async (tx) => {
     await tx
       .update(smokeRunsTestResults)
       .set({
@@ -214,7 +218,7 @@ export async function finalizeSmokeRun(
     const passed = results.filter((result) => result.status === "success").length;
     const failed = results.filter((result) => result.status === "failure").length;
 
-    await tx
+    const finalized = await tx
       .update(smokeRuns)
       .set({
         status,
@@ -224,9 +228,13 @@ export async function finalizeSmokeRun(
         durationSeconds,
         completedAt,
       })
-      .where(eq(smokeRuns.id, runId));
+      .where(and(eq(smokeRuns.id, runId), eq(smokeRuns.status, "running")))
+      .returning({ id: smokeRuns.id });
+
+    if (finalized.length === 0) return false;
 
     await notifySmokeRunChanged(tx, runId);
     logger.info("smoke_run_finalized", { runId, status, total: results.length, passed, failed });
+    return true;
   });
 }

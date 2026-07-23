@@ -8,6 +8,10 @@ import {
 import { getCurrentUser } from "@/feature/auth/actions/auth.action";
 import { err, ok } from "@/utils/server-action-return";
 import { getSmokeTestTarget } from "../config/smoke-test-targets.config";
+import {
+  createQueuedSmokeRun,
+  failQueuedSmokeRun,
+} from "../services/smoke-run-enqueue.service";
 
 export type RequestSmokeTestResult =
   | ReturnType<typeof ok<{ correlationId: string }>>
@@ -31,19 +35,48 @@ export async function requestSmokeTest(appId: string): Promise<RequestSmokeTestR
   }
 
   const correlationId = crypto.randomUUID();
-  const data: SmokeTestRequestedData = {
-    appId: target.appId,
-    suite: target.suite,
-    trigger: "manual",
-    correlationId,
-    requestedBy: user.id,
-    requestedAt: new Date().toISOString(),
-  };
+  const requestedAt = new Date().toISOString();
+  let queuedRun: Awaited<ReturnType<typeof createQueuedSmokeRun>> | undefined;
 
   try {
+    queuedRun = await createQueuedSmokeRun({
+      appId: target.appId,
+      trigger: "manual",
+      requestedBy: user.id,
+      correlationId,
+      checkedAt: new Date(requestedAt),
+    });
+
+    const data: SmokeTestRequestedData = {
+      runId: queuedRun.runId,
+      appId: target.appId,
+      suite: target.suite,
+      trigger: "manual",
+      correlationId,
+      requestedBy: user.id,
+      requestedAt,
+    };
+
     await inngest.send({ name: SMOKE_TEST_REQUESTED, data });
     return ok({ correlationId });
   } catch (error) {
+    if (queuedRun) {
+      try {
+        await failQueuedSmokeRun({
+          runId: queuedRun.runId,
+          completedAt: new Date(),
+        });
+      } catch (markError) {
+        console.error(
+          JSON.stringify({
+            event: "smoke_test_queue_failure_mark_failed",
+            correlationId,
+            message: markError instanceof Error ? markError.message : String(markError),
+          }),
+        );
+      }
+    }
+
     console.error(
       JSON.stringify({
         event: "smoke_test_enqueue_failed",

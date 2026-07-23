@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   getCurrentUser: vi.fn(),
   getSmokeTestTarget: vi.fn(),
+  createQueuedSmokeRun: vi.fn(),
+  failQueuedSmokeRun: vi.fn(),
   inngestSend: vi.fn(),
 }));
 
@@ -18,6 +20,10 @@ vi.mock("@/lib/inngest/client", () => ({
     send: mocks.inngestSend,
   },
 }));
+vi.mock("@/feature/smoke/services/enqueue-smoke-run.service", () => ({
+  createQueuedSmokeRun: mocks.createQueuedSmokeRun,
+  failQueuedSmokeRun: mocks.failQueuedSmokeRun,
+}));
 
 import { requestSmokeTest } from "@/feature/smoke/actions/request-smoke-test.action";
 
@@ -25,6 +31,8 @@ describe("requestSmokeTest", () => {
   beforeEach(() => {
     mocks.getCurrentUser.mockReset();
     mocks.getSmokeTestTarget.mockReset();
+    mocks.createQueuedSmokeRun.mockReset();
+    mocks.failQueuedSmokeRun.mockReset();
     mocks.inngestSend.mockReset();
   });
 
@@ -34,6 +42,7 @@ describe("requestSmokeTest", () => {
       appId: "website",
       suite: "smoke",
     });
+    mocks.createQueuedSmokeRun.mockResolvedValue({ runId: "run-1", runNumber: 7 });
     mocks.inngestSend.mockResolvedValue(undefined);
 
     await expect(requestSmokeTest("website")).resolves.toEqual({
@@ -44,6 +53,7 @@ describe("requestSmokeTest", () => {
     expect(mocks.inngestSend).toHaveBeenCalledWith({
       name: "smoke-test/requested",
       data: {
+        runId: "run-1",
         appId: "website",
         suite: "smoke",
         trigger: "manual",
@@ -51,6 +61,30 @@ describe("requestSmokeTest", () => {
         requestedBy: "user-1",
         requestedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
       },
+    });
+    expect(mocks.createQueuedSmokeRun.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.inngestSend.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("marks a queued run failed when event publication fails", async () => {
+    mocks.getCurrentUser.mockResolvedValue({ id: "user-1" });
+    mocks.getSmokeTestTarget.mockReturnValue({
+      appId: "website",
+      suite: "smoke",
+    });
+    mocks.createQueuedSmokeRun.mockResolvedValue({ runId: "run-1", runNumber: 7 });
+    mocks.inngestSend.mockRejectedValue(new Error("Inngest unavailable"));
+    mocks.failQueuedSmokeRun.mockResolvedValue(true);
+
+    await expect(requestSmokeTest("website")).resolves.toEqual({
+      ok: false,
+      error: "Failed to enqueue smoke test. Please try again.",
+    });
+
+    expect(mocks.failQueuedSmokeRun).toHaveBeenCalledWith({
+      runId: "run-1",
+      completedAt: expect.any(Date),
     });
   });
 
@@ -61,6 +95,7 @@ describe("requestSmokeTest", () => {
       ok: false,
       error: "forbidden",
     });
+    expect(mocks.createQueuedSmokeRun).not.toHaveBeenCalled();
     expect(mocks.inngestSend).not.toHaveBeenCalled();
   });
 });

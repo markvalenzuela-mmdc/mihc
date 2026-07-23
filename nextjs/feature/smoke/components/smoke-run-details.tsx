@@ -6,10 +6,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import {
-  formatDurationSeconds,
-  formatDurationMs,
-} from "@/lib/utils";
+import { formatDurationSeconds, formatDurationMs } from "@/lib/utils";
 import {
   SmokeTestRun,
   SmokeTestRunResults,
@@ -26,6 +23,17 @@ export default function SmokeRunDetails({
   details: SmokeTestRun;
   results: SmokeTestRunResults[];
 }) {
+  const duration = () => {
+    switch (details.status) {
+      case "queued":
+        return "Queued";
+      case "running":
+        return "In progress";
+      default:
+        return formatDurationSeconds(details.durationSeconds ?? 0);
+    }
+  };
+
   return (
     <>
       <SheetHeader className="border-b pb-4">
@@ -44,14 +52,7 @@ export default function SmokeRunDetails({
         <dl className="grid grid-cols-2 gap-3 rounded-lg border bg-muted/15 p-4 sm:grid-cols-4">
           <Metric label="Passed" value={`${details.passed}/${details.total}`} />
           <Metric label="Failed" value={String(details.failed)} />
-          <Metric
-            label="Duration"
-            value={
-              details.status === "running"
-                ? "In progress"
-                : formatDurationSeconds(details.durationSeconds ?? 0)
-            }
-          />
+          <Metric label="Duration" value={duration()} />
           <Metric
             label="Started by"
             value={details.startedBy ?? "System schedule"}
@@ -68,6 +69,11 @@ export default function SmokeRunDetails({
             </p>
           </div>
           <div className="space-y-2">
+            {details.status === "queued" && results.length === 0 ? (
+              <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                Waiting for an execution slot…
+              </div>
+            ) : null}
             {details.status === "running" && results.length === 0 ? (
               <div className="flex items-center gap-2 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
                 <Spinner />

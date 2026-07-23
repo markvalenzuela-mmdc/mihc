@@ -264,6 +264,82 @@ describe("API route and database integration", () => {
       }
     });
 
+    it("enforces one Smoke run per correlation ID", async () => {
+      const db = getDb();
+      const firstRunId = randomUUID();
+      const duplicateRunId = randomUUID();
+      const correlationId = randomUUID();
+
+      try {
+        await db.insert(smokeRuns).values({
+          id: firstRunId,
+          runNumber: 90_003,
+          appId: "website",
+          correlationId,
+          status: "queued",
+          trigger: "manual",
+          checkedAt: new Date("2026-07-23T08:00:00.000Z"),
+        });
+
+        await expect(
+          db.insert(smokeRuns).values({
+            id: duplicateRunId,
+            runNumber: 90_004,
+            appId: "website",
+            correlationId,
+            status: "queued",
+            trigger: "manual",
+            checkedAt: new Date("2026-07-23T08:00:01.000Z"),
+          }),
+        ).rejects.toThrow();
+      } finally {
+        await db.delete(smokeRuns).where(eq(smokeRuns.id, duplicateRunId));
+        await db.delete(smokeRuns).where(eq(smokeRuns.id, firstRunId));
+      }
+    });
+
+    it("enforces one Smoke result row per run test and retry", async () => {
+      const db = getDb();
+      const runId = randomUUID();
+      const firstResultId = randomUUID();
+      const duplicateResultId = randomUUID();
+
+      try {
+        await db.insert(smokeRuns).values({
+          id: runId,
+          runNumber: 90_005,
+          appId: "website",
+          status: "running",
+          trigger: "manual",
+          checkedAt: new Date("2026-07-23T08:01:00.000Z"),
+        });
+
+        const resultIdentity = {
+          runId,
+          testId: "smoke-landing",
+          retryAttempt: 0,
+          testName: "Landing page",
+          status: "running" as const,
+        };
+        await db.insert(smokeRunsTestResults).values({
+          id: firstResultId,
+          ...resultIdentity,
+        });
+
+        await expect(
+          db.insert(smokeRunsTestResults).values({
+            id: duplicateResultId,
+            ...resultIdentity,
+          }),
+        ).rejects.toThrow();
+      } finally {
+        await db
+          .delete(smokeRunsTestResults)
+          .where(eq(smokeRunsTestResults.runId, runId));
+        await db.delete(smokeRuns).where(eq(smokeRuns.id, runId));
+      }
+    });
+
     it("inserts and queries E2E runs and run steps", async () => {
       const db = getDb();
       const runId = randomUUID();
