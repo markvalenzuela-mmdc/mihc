@@ -19,5 +19,7 @@ export function formatDurationSeconds(value: number | null) {
 
 export function formatDurationMs(value: number | null) {
   if (value === null) return "Not available";
-  return value < 1000 ? `${value}ms` : `${(value / 1000).toFixed(1)}s`;
+  if (value < 1000) return `${value}ms`;
+  const seconds = Math.round(value / 100) / 10;
+  return `${seconds}s`;
 }

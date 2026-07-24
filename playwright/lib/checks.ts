@@ -26,6 +26,7 @@ export function assertCheck(
   name: string,
   condition: boolean,
   message?: string,
+  durationMs?: number,
 ): void {
   testInfo.annotations.push({
     type: 'check',
@@ -33,6 +34,7 @@ export function assertCheck(
       name,
       status: condition ? 'pass' : 'fail',
       ...(condition ? {} : { message }),
+      ...(durationMs !== undefined ? { durationMs } : {}),
     }),
   });
   expect.soft(condition, message ?? name).toBeTruthy();

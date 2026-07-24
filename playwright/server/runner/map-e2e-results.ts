@@ -80,6 +80,7 @@ interface CheckAnnotation {
   name: string;
   status: "pass" | "fail";
   message?: string;
+  durationMs?: number;
 }
 
 /** Safely parse a check annotation from the Playwright JSON report. */
@@ -172,7 +173,15 @@ export function mapE2eResults(
         flowType = extractFlowType(allFlowAnnotations);
       }
 
-      let testStepId: string | null = null;
+      const mappedStepIds = new Set<string>();
+      let testCheckCount = 0;
+      const testResults: {
+        stepId: string;
+        testName: string;
+        status: "success" | "failure" | "skipped";
+        errorMessage: string | null;
+        durationMs: number | undefined;
+      }[] = [];
 
       // Process check annotations
       for (const annotation of annotations) {
@@ -186,22 +195,39 @@ export function mapE2eResults(
           stepId = fallbackStepId;
         }
 
-        if (testStepId === null) testStepId = stepId;
-
+        mappedStepIds.add(stepId);
+        testCheckCount++;
         totalChecks++;
 
-        if (!stepTests.has(stepId)) stepTests.set(stepId, []);
-        stepTests.get(stepId)!.push({
+        testResults.push({
+          stepId,
           testName: check.name,
           status: check.status === "pass" ? "success" : "failure",
-          durationMs: last?.duration ?? null,
           errorMessage: check.status === "fail" ? formatE2eCheckError(check.name, check.message) : null,
+          durationMs: check.durationMs,
         });
       }
 
-      if (testStepId !== null && last?.duration != null) {
-        if (!stepPwDurations.has(testStepId)) stepPwDurations.set(testStepId, []);
-        stepPwDurations.get(testStepId)!.push(last.duration);
+      const proportionalDurationMs =
+        testCheckCount > 0 && last?.duration != null
+          ? Math.round(last.duration / testCheckCount)
+          : null;
+
+      for (const tr of testResults) {
+        if (!stepTests.has(tr.stepId)) stepTests.set(tr.stepId, []);
+        stepTests.get(tr.stepId)!.push({
+          testName: tr.testName,
+          status: tr.status,
+          durationMs: tr.durationMs ?? proportionalDurationMs,
+          errorMessage: tr.errorMessage,
+        });
+      }
+
+      if (last?.duration != null) {
+        for (const stepId of mappedStepIds) {
+          if (!stepPwDurations.has(stepId)) stepPwDurations.set(stepId, []);
+          stepPwDurations.get(stepId)!.push(last.duration);
+        }
       }
     }
   }

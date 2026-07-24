@@ -94,15 +94,19 @@ for (const flowType of activeFlowTypes) {
       for (const step of inputSteps) {
         const label = `step-${step.step} (${step.title})`;
 
+        const fillStart = Date.now();
         const filled = await fillStep(page, step, data);
-        assertCheck(testInfo, `${label}: filled`, filled.ok, filled.message);
+        const fillDuration = Date.now() - fillStart;
+        assertCheck(testInfo, `${label}: filled`, filled.ok, filled.message, fillDuration);
         if (!filled.ok) {
           completedAllSteps = false;
           break;
         }
 
+        const advanceStart = Date.now();
         const advanced = await advanceStep(page);
-        assertCheck(testInfo, `${label}: advanced`, advanced.ok, advanced.message);
+        const advanceDuration = Date.now() - advanceStart;
+        assertCheck(testInfo, `${label}: advanced`, advanced.ok, advanced.message, advanceDuration);
         if (!advanced.ok) {
           completedAllSteps = false;
           break;
@@ -111,16 +115,21 @@ for (const flowType of activeFlowTypes) {
 
       if (!completedAllSteps) return;
 
+      const submitStart = Date.now();
       const submitted = await submitForm(page);
-      assertCheck(testInfo, 'submit', submitted.ok, submitted.message);
+      const submitDuration = Date.now() - submitStart;
+      assertCheck(testInfo, 'submit', submitted.ok, submitted.message, submitDuration);
       if (!submitted.ok) return;
 
+      const confirmStart = Date.now();
       const confirmed = await confirmSubmission(page);
+      const confirmDuration = Date.now() - confirmStart;
       assertCheck(
         testInfo,
         'submission-confirmed',
         confirmed.ok,
         confirmed.message,
+        confirmDuration,
       );
     });
   });
