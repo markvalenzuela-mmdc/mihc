@@ -8,14 +8,33 @@
  * completeE2eRun — updates e2e_runs to final status + inserts run_steps and
  *                  run_tests; called after the suite finishes.
  */
-import { eq, max, sql } from "drizzle-orm";
+import { eq, max, sql, type SQL } from "drizzle-orm";
 import type { Logger } from "../logger";
 import type { MappedE2eStep } from "../runner/map-e2e-results";
-import { db } from "./client";
+import { db, type Db } from "./client";
 import { e2eRuns, e2eRunSteps, e2eRunTests } from "./schema";
 
 const MAX_ATTEMPTS = 3;
 const UNIQUE_VIOLATION = "23505";
+const E2E_RUN_CHANGED_CHANNEL = "e2e_run_changed";
+
+interface SqlExecutor {
+  execute(query: SQL): Promise<unknown>;
+}
+
+interface E2eRunChangedPayload {
+  profileId: string;
+  runId: string;
+}
+
+async function notifyE2eRunChanged(
+  executor: SqlExecutor,
+  payload: E2eRunChangedPayload,
+): Promise<void> {
+  await executor.execute(
+    sql`select pg_notify(${E2E_RUN_CHANGED_CHANNEL}, ${JSON.stringify(payload)})`,
+  );
+}
 
 export class ProfileBusyError extends Error {
   constructor(profileId: string) {
@@ -51,10 +70,11 @@ export async function createE2eRun(
   profileId: string,
   requestedBy: string,
   logger: Logger,
+  database: Db = db,
 ): Promise<CreateE2eRunResult> {
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      return await db.transaction(async (tx) => {
+      return await database.transaction(async (tx) => {
         // Fail-fast if a running row already exists for this profile.
         const existing = await tx.query.e2eRuns.findFirst({
           where: (t, { and, eq }) =>
@@ -81,6 +101,11 @@ export async function createE2eRun(
           })
           .returning({ id: e2eRuns.id, startedAt: e2eRuns.startedAt });
 
+        await notifyE2eRunChanged(tx, {
+          profileId,
+          runId: inserted.id,
+        });
+
         const startedAt = inserted.startedAt as unknown as Date;
         logger.info("e2e_run_created", { runId: inserted.id, runNumber });
         return { runId: inserted.id, runNumber, startedAt: startedAt.toISOString() };
@@ -106,15 +131,22 @@ export async function createE2eRun(
  * the same clock source. The `createdAt` on each step/test row is the DB
  * default.
  */
-export async function completeE2eRun(input: CompleteE2eRunInput): Promise<void> {
+export async function completeE2eRun(
+  input: CompleteE2eRunInput,
+  database: Db = db,
+): Promise<void> {
   const { runId, runStatus, steps, logger } = input;
 
-  await db.transaction(async (tx) => {
+  await database.transaction(async (tx) => {
     const [updated] = await tx
       .update(e2eRuns)
       .set({ status: runStatus, completedAt: sql`NOW()` })
       .where(eq(e2eRuns.id, runId))
-      .returning({ startedAt: e2eRuns.startedAt, completedAt: e2eRuns.completedAt });
+      .returning({
+        profileId: e2eRuns.profileId,
+        startedAt: e2eRuns.startedAt,
+        completedAt: e2eRuns.completedAt,
+      });
 
     if (updated) {
       const startedAt = updated.startedAt as unknown as Date;
@@ -169,6 +201,13 @@ export async function completeE2eRun(input: CompleteE2eRunInput): Promise<void> 
       if (allTests.length > 0) {
         await tx.insert(e2eRunTests).values(allTests);
       }
+    }
+
+    if (updated) {
+      await notifyE2eRunChanged(tx, {
+        profileId: updated.profileId,
+        runId,
+      });
     }
 
     logger.info("e2e_run_completed", { runId, status: runStatus, stepCount: steps.length });

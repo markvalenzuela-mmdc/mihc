@@ -6,6 +6,7 @@ import {
   loadPaginationSearchParams,
 } from "@/components/blocks/DataTable/data-table-query-state";
 import E2eProfileWorkspaceSheet from "@/feature/e2e/components/workspace/e2e-profile-workspace-sheet";
+import { E2eTestingLiveUpdates } from "@/feature/e2e/components/e2e-testing-live-updates";
 import { E2eTestingProfilesSkeleton } from "@/feature/e2e/components/profiles/e2e-testing-profiles-skeleton";
 import { E2eTestingProfilesTable } from "@/feature/e2e/components/profiles/e2e-testing-profiles-table";
 import { getPaginatedE2eProfiles } from "@/feature/e2e/services/e2e-profile.service";
@@ -43,6 +44,7 @@ export default async function E2eTestingPage({ searchParams }: PageProps) {
         title="End-to-End Testing"
         subtitle="Review enrollment-ready profiles, start complete test sessions, and trace results from run to assertion."
       >
+        <E2eTestingLiveUpdates />
         <Suspenser
           promise={dataPromise}
           fallback={<E2eTestingProfilesSkeleton />}
