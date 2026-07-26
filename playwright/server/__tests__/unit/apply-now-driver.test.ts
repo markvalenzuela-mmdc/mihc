@@ -3,7 +3,11 @@ import type { Page } from "@playwright/test";
 import { test } from "node:test";
 
 import { getEnrollmateFlowDefinition } from "@mihc/enrollmate-contract";
-import { fillStep } from "../../../lib/enrollmate/apply-now-driver";
+import {
+  confirmSubmission,
+  fillStep,
+  submitForm,
+} from "../../../lib/enrollmate/apply-now-driver";
 
 test("skips hidden Philippine address controls and fills a foreign textarea", async () => {
   const sourceStep = getEnrollmateFlowDefinition("microcredentials").steps[0]!;
@@ -58,4 +62,77 @@ test("skips hidden Philippine address controls and fills a foreign textarea", as
     curraddrCountry: "Angola",
     curraddrForeign: "123 Avenida Principal, Luanda",
   });
+});
+
+test("accepts mandatory consent after clicking submit", async () => {
+  const clicks: string[] = [];
+  const page = {
+    getByRole(role: string, options: { name: RegExp }) {
+      assert.equal(role, "button");
+      const label = options.name.test("AGREE & PROCEED")
+        ? "AGREE & PROCEED"
+        : "SUBMIT";
+
+      return {
+        first() {
+          return this;
+        },
+        waitFor: async () => undefined,
+        click: async () => {
+          clicks.push(label);
+        },
+      };
+    },
+    waitForLoadState: async () => undefined,
+  } as unknown as Page;
+
+  const outcome = await submitForm(page);
+
+  assert.deepEqual(outcome, { ok: true });
+  assert.deepEqual(clicks, ["SUBMIT", "AGREE & PROCEED"]);
+});
+
+test("fails submission when mandatory consent is unavailable", async () => {
+  const page = {
+    getByRole(_role: string, options: { name: RegExp }) {
+      const isConsent = options.name.test("AGREE & PROCEED");
+
+      return {
+        first() {
+          return this;
+        },
+        click: async () => undefined,
+        waitFor: async () => {
+          if (isConsent) throw new Error("consent unavailable");
+        },
+      };
+    },
+    waitForLoadState: async () => undefined,
+  } as unknown as Page;
+
+  const outcome = await submitForm(page);
+
+  assert.equal(outcome.ok, false);
+  assert.match(outcome.message ?? "", /consent unavailable/);
+});
+
+test("does not treat the wizard Confirmation label as submitted", async () => {
+  let successPattern: RegExp | undefined;
+  const page = {
+    getByText(pattern: RegExp) {
+      successPattern = pattern;
+      return {
+        first() {
+          return this;
+        },
+        waitFor: async () => undefined,
+      };
+    },
+  } as unknown as Page;
+
+  const outcome = await confirmSubmission(page);
+
+  assert.deepEqual(outcome, { ok: true });
+  assert.equal(successPattern?.test("Confirmation"), false);
+  assert.equal(successPattern?.test("Thank you"), true);
 });

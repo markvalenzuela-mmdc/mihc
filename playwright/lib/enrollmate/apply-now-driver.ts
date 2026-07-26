@@ -332,13 +332,20 @@ export async function advanceStep(page: Page): Promise<StepOutcome> {
   });
 }
 
-/** Submit the completed application from the confirmation step. */
+/** Submit the completed application and accept the required consent dialog. */
 export async function submitForm(page: Page): Promise<StepOutcome> {
   return run(async () => {
     await page
-      .getByRole('button', { name: /submit|finish|apply/i })
+      .getByRole('button', { name: /^submit$/i })
       .first()
       .click();
+
+    const consentButton = page
+      .getByRole('button', { name: /^agree\s*&\s*proceed$/i })
+      .first();
+    await consentButton.waitFor({ state: 'visible', timeout: 30_000 });
+    await consentButton.click();
+
     await page.waitForLoadState('networkidle').catch(() => {});
   });
 }
@@ -347,7 +354,7 @@ export async function submitForm(page: Page): Promise<StepOutcome> {
 export async function confirmSubmission(page: Page): Promise<StepOutcome> {
   return run(async () => {
     await page
-      .getByText(/thank you|submitted|received|success|confirmation/i)
+      .getByText(/thank you|submitted|received|success/i)
       .first()
       .waitFor({ state: 'visible', timeout: 30_000 });
   });
