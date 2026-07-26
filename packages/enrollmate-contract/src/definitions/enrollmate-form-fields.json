@@ -3,14 +3,14 @@
   "schemaVersion": 1,
   "metadata": {
     "application": "MMDC EnrollMate",
-    "version": "1.9.0",
-    "referenceDate": "2026-07-14",
-    "source": "Live UAT form extraction at https://uat.enrollmate.mmdc.mcl.edu.ph/apply-now",
+    "version": "1.10.0",
+    "referenceDate": "2026-07-26",
+    "source": "Live UAT form extraction at https://uat.enrollmate.mmdc.mcl.edu.ph/apply-now; foreign address textarea names and labels verified on https://uat.enrollmate.mmdc.mcl.edu.ph/apply-now/bachelors-degree",
     "sourceNotes": [
       "All native select controls use identical label and submitted value (placeholder 'Please Select' submits empty string)",
       "City/Municipality and Barangay are dependency-driven cascading selects sourced from the MMDC EnrollMate location catalog",
       "Specialization values change dynamically based on Major selection",
-      "Address sub-fields (Addrline1, Addrline2, Province, Citymun, Barangay, Zipcode) are conditional on Country = Philippines",
+      "Address sub-fields (Addrline1, Addrline2, Province, Citymun, Barangay, Zipcode) are conditional on Country = Philippines; Foreign Address is required when Country is not Philippines",
       "Parent personal-info fields (names, dates, contact) are conditional on Living Status = Living",
       "Guardian personal-info fields are conditional on guardian = Others",
       "Fields with required_when_condition_met=true are enforced by Zod superRefine when their conditional_on parent matches",
@@ -49258,17 +49258,32 @@
                   }
                 },
                 {
+                  "id": "curraddrForeign",
+                  "name": "curraddrForeign",
+                  "label": "Current Foreign Address",
+                  "type": "textarea",
+                  "required": true,
+                  "visibleWhen": {
+                    "field": "curraddrCountry",
+                    "notEqualsAny": [
+                      "Philippines"
+                    ]
+                  }
+                },
+                {
                   "id": "curraddrAddrline1",
                   "name": "curraddrAddrline1",
                   "label": "Current Floor no., Bldg. no., House no.",
                   "type": "text",
                   "required": true,
-                  "visibleWhen": {
-                    "field": "curraddrCountry",
-                    "equalsAny": [
-                      "Philippines"
-                    ]
-                  }
+                  "visibleWhen": [
+                    {
+                      "field": "curraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
                 },
                 {
                   "id": "curraddrAddrline2",
@@ -49276,12 +49291,14 @@
                   "label": "Current Street, Bldg, Subdivision, Village",
                   "type": "text",
                   "required": true,
-                  "visibleWhen": {
-                    "field": "curraddrCountry",
-                    "equalsAny": [
-                      "Philippines"
-                    ]
-                  }
+                  "visibleWhen": [
+                    {
+                      "field": "curraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
                 },
                 {
                   "id": "curraddrProvince",
@@ -49290,12 +49307,14 @@
                   "type": "select",
                   "required": true,
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "curraddrCountry",
-                    "equalsAny": [
-                      "Philippines"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "curraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "cascade": {
                     "triggers": [
                       "curraddrCitymun"
@@ -49314,12 +49333,14 @@
                   "required": true,
                   "description": "Options depend on selected Province. Options are sourced from the MMDC EnrollMate location catalog.",
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "curraddrCountry",
-                    "equalsAny": [
-                      "Philippines"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "curraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "cascade": {
                     "dependsOn": "curraddrProvince",
                     "triggers": [
@@ -49360,12 +49381,14 @@
                   "required": true,
                   "description": "Options depend on selected City/Municipality.",
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "curraddrCountry",
-                    "equalsAny": [
-                      "Philippines"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "curraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "cascade": {
                     "dependsOn": "curraddrCitymun"
                   },
@@ -49403,12 +49426,14 @@
                   "label": "Current Zipcode",
                   "type": "text",
                   "required": true,
-                  "visibleWhen": {
-                    "field": "curraddrCountry",
-                    "equalsAny": [
-                      "Philippines"
-                    ]
-                  }
+                  "visibleWhen": [
+                    {
+                      "field": "curraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
                 }
               ],
               "prefix": "curraddr"
@@ -49429,17 +49454,32 @@
                   }
                 },
                 {
+                  "id": "permaddrForeign",
+                  "name": "permaddrForeign",
+                  "label": "Permanent Foreign Address",
+                  "type": "textarea",
+                  "required": true,
+                  "visibleWhen": {
+                    "field": "permaddrCountry",
+                    "notEqualsAny": [
+                      "Philippines"
+                    ]
+                  }
+                },
+                {
                   "id": "permaddrAddrline1",
                   "name": "permaddrAddrline1",
                   "label": "Permanent Floor no., Bldg. no., House no.",
                   "type": "text",
                   "required": true,
-                  "visibleWhen": {
-                    "field": "permaddrCountry",
-                    "equalsAny": [
-                      "Philippines"
-                    ]
-                  }
+                  "visibleWhen": [
+                    {
+                      "field": "permaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
                 },
                 {
                   "id": "permaddrAddrline2",
@@ -49447,12 +49487,14 @@
                   "label": "Permanent Street, Bldg, Subdivision, Village",
                   "type": "text",
                   "required": true,
-                  "visibleWhen": {
-                    "field": "permaddrCountry",
-                    "equalsAny": [
-                      "Philippines"
-                    ]
-                  }
+                  "visibleWhen": [
+                    {
+                      "field": "permaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
                 },
                 {
                   "id": "permaddrProvince",
@@ -49461,12 +49503,14 @@
                   "type": "select",
                   "required": true,
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "permaddrCountry",
-                    "equalsAny": [
-                      "Philippines"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "permaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "optionSource": {
                     "kind": "reusable",
                     "optionSet": "philippineProvinces"
@@ -49480,12 +49524,14 @@
                   "required": true,
                   "description": "Options depend on selected Province.",
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "permaddrCountry",
-                    "equalsAny": [
-                      "Philippines"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "permaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "optionSource": {
                     "kind": "dependentReusable",
                     "field": "permaddrProvince",
@@ -49500,12 +49546,14 @@
                   "required": true,
                   "description": "Options depend on selected City/Municipality.",
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "permaddrCountry",
-                    "equalsAny": [
-                      "Philippines"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "permaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "optionSource": {
                     "kind": "dependentReusable",
                     "field": "permaddrCitymun",
@@ -49518,12 +49566,14 @@
                   "label": "Permanent Zipcode",
                   "type": "text",
                   "required": true,
-                  "visibleWhen": {
-                    "field": "permaddrCountry",
-                    "equalsAny": [
-                      "Philippines"
-                    ]
-                  }
+                  "visibleWhen": [
+                    {
+                      "field": "permaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
                 }
               ],
               "prefix": "permaddr"
@@ -49916,6 +49966,27 @@
                   }
                 },
                 {
+                  "id": "fthrCurraddrForeign",
+                  "name": "fthrCurraddrForeign",
+                  "label": "Father Current Foreign Address",
+                  "type": "textarea",
+                  "required": true,
+                  "visibleWhen": [
+                    {
+                      "field": "fthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "fthrCurraddrCountry",
+                      "notEqualsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
+                },
+                {
                   "id": "copyfatherAddressCheckbox",
                   "name": "copyfatherAddressCheckbox",
                   "label": "Same with applicant current address?",
@@ -49934,12 +50005,20 @@
                   "label": "Father Current Floor no., Bldg. no., House no.",
                   "type": "text",
                   "required": true,
-                  "visibleWhen": {
-                    "field": "fthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  }
+                  "visibleWhen": [
+                    {
+                      "field": "fthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "fthrCurraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
                 },
                 {
                   "id": "fthrCurraddrAddrline2",
@@ -49947,12 +50026,20 @@
                   "label": "Father Current Street, Bldg, Subdivision, Village",
                   "type": "text",
                   "required": true,
-                  "visibleWhen": {
-                    "field": "fthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  }
+                  "visibleWhen": [
+                    {
+                      "field": "fthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "fthrCurraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
                 },
                 {
                   "id": "fthrCurraddrProvince",
@@ -49961,12 +50048,20 @@
                   "type": "select",
                   "required": true,
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "fthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "fthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "fthrCurraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "optionSource": {
                     "kind": "reusable",
                     "optionSet": "philippineProvinces"
@@ -49979,12 +50074,20 @@
                   "type": "select",
                   "required": true,
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "fthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "fthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "fthrCurraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "optionSource": {
                     "kind": "dependentReusable",
                     "field": "fthrCurraddrProvince",
@@ -49998,12 +50101,20 @@
                   "type": "select",
                   "required": true,
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "fthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "fthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "fthrCurraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "optionSource": {
                     "kind": "dependentReusable",
                     "field": "fthrCurraddrCitymun",
@@ -50016,12 +50127,20 @@
                   "label": "Father Current Zipcode",
                   "type": "text",
                   "required": true,
-                  "visibleWhen": {
-                    "field": "fthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  }
+                  "visibleWhen": [
+                    {
+                      "field": "fthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "fthrCurraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
                 },
                 {
                   "id": "fthrPermaddrCountry",
@@ -50042,6 +50161,27 @@
                   }
                 },
                 {
+                  "id": "fthrPermaddrForeign",
+                  "name": "fthrPermaddrForeign",
+                  "label": "Father Permanent Foreign Address",
+                  "type": "textarea",
+                  "required": true,
+                  "visibleWhen": [
+                    {
+                      "field": "fthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "fthrPermaddrCountry",
+                      "notEqualsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
+                },
+                {
                   "id": "copyPermafatherAddressCheckbox",
                   "name": "copyPermafatherAddressCheckbox",
                   "label": "Same with applicant permanent address?",
@@ -50060,12 +50200,20 @@
                   "label": "Father Permanent Floor no., Bldg. no., House no.",
                   "type": "text",
                   "required": true,
-                  "visibleWhen": {
-                    "field": "fthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  }
+                  "visibleWhen": [
+                    {
+                      "field": "fthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "fthrPermaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
                 },
                 {
                   "id": "fthrPermaddrAddrline2",
@@ -50073,12 +50221,20 @@
                   "label": "Father Permanent Street, Bldg, Subdivision, Village",
                   "type": "text",
                   "required": true,
-                  "visibleWhen": {
-                    "field": "fthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  }
+                  "visibleWhen": [
+                    {
+                      "field": "fthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "fthrPermaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
                 },
                 {
                   "id": "fthrPermaddrProvince",
@@ -50087,12 +50243,20 @@
                   "type": "select",
                   "required": true,
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "fthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "fthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "fthrPermaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "optionSource": {
                     "kind": "reusable",
                     "optionSet": "philippineProvinces"
@@ -50105,12 +50269,20 @@
                   "type": "select",
                   "required": true,
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "fthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "fthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "fthrPermaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "optionSource": {
                     "kind": "dependentReusable",
                     "field": "fthrPermaddrProvince",
@@ -50124,12 +50296,20 @@
                   "type": "select",
                   "required": true,
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "fthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "fthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "fthrPermaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "optionSource": {
                     "kind": "dependentReusable",
                     "field": "fthrPermaddrCitymun",
@@ -50142,12 +50322,20 @@
                   "label": "Father Permanent Zipcode",
                   "type": "text",
                   "required": true,
-                  "visibleWhen": {
-                    "field": "fthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  }
+                  "visibleWhen": [
+                    {
+                      "field": "fthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "fthrPermaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
                 }
               ],
               "prefix": "fthr"
@@ -50303,6 +50491,27 @@
                   }
                 },
                 {
+                  "id": "mthrCurraddrForeign",
+                  "name": "mthrCurraddrForeign",
+                  "label": "Mother Current Foreign Address",
+                  "type": "textarea",
+                  "required": true,
+                  "visibleWhen": [
+                    {
+                      "field": "mthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "mthrCurraddrCountry",
+                      "notEqualsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
+                },
+                {
                   "id": "copyMotherAddressCheckbox",
                   "name": "copyMotherAddressCheckbox",
                   "label": "Same with applicant current address?",
@@ -50321,12 +50530,20 @@
                   "label": "Mother Current Floor no., Bldg. no., House no.",
                   "type": "text",
                   "required": true,
-                  "visibleWhen": {
-                    "field": "mthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  }
+                  "visibleWhen": [
+                    {
+                      "field": "mthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "mthrCurraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
                 },
                 {
                   "id": "mthrCurraddrAddrline2",
@@ -50334,12 +50551,20 @@
                   "label": "Mother Current Street, Bldg, Subdivision, Village",
                   "type": "text",
                   "required": true,
-                  "visibleWhen": {
-                    "field": "mthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  }
+                  "visibleWhen": [
+                    {
+                      "field": "mthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "mthrCurraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
                 },
                 {
                   "id": "mthrCurraddrProvince",
@@ -50348,12 +50573,20 @@
                   "type": "select",
                   "required": true,
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "mthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "mthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "mthrCurraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "optionSource": {
                     "kind": "reusable",
                     "optionSet": "philippineProvinces"
@@ -50366,12 +50599,20 @@
                   "type": "select",
                   "required": true,
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "mthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "mthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "mthrCurraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "optionSource": {
                     "kind": "dependentReusable",
                     "field": "mthrCurraddrProvince",
@@ -50385,12 +50626,20 @@
                   "type": "select",
                   "required": true,
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "mthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "mthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "mthrCurraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "optionSource": {
                     "kind": "dependentReusable",
                     "field": "mthrCurraddrCitymun",
@@ -50403,12 +50652,20 @@
                   "label": "Mother Current Zipcode",
                   "type": "text",
                   "required": true,
-                  "visibleWhen": {
-                    "field": "mthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  }
+                  "visibleWhen": [
+                    {
+                      "field": "mthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "mthrCurraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
                 },
                 {
                   "id": "mthrPermaddrCountry",
@@ -50429,6 +50686,27 @@
                   }
                 },
                 {
+                  "id": "mthrPermaddrForeign",
+                  "name": "mthrPermaddrForeign",
+                  "label": "Mother Permanent Foreign Address",
+                  "type": "textarea",
+                  "required": true,
+                  "visibleWhen": [
+                    {
+                      "field": "mthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "mthrPermaddrCountry",
+                      "notEqualsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
+                },
+                {
                   "id": "copyPermaMotherAddressCheckbox",
                   "name": "copyPermaMotherAddressCheckbox",
                   "label": "Same with applicant permanent address?",
@@ -50447,12 +50725,20 @@
                   "label": "Mother Permanent Floor no., Bldg. no., House no.",
                   "type": "text",
                   "required": true,
-                  "visibleWhen": {
-                    "field": "mthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  }
+                  "visibleWhen": [
+                    {
+                      "field": "mthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "mthrPermaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
                 },
                 {
                   "id": "mthrPermaddrAddrline2",
@@ -50460,12 +50746,20 @@
                   "label": "Mother Permanent Street, Bldg, Subdivision, Village",
                   "type": "text",
                   "required": true,
-                  "visibleWhen": {
-                    "field": "mthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  }
+                  "visibleWhen": [
+                    {
+                      "field": "mthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "mthrPermaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
                 },
                 {
                   "id": "mthrPermaddrProvince",
@@ -50474,12 +50768,20 @@
                   "type": "select",
                   "required": true,
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "mthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "mthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "mthrPermaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "optionSource": {
                     "kind": "reusable",
                     "optionSet": "philippineProvinces"
@@ -50492,12 +50794,20 @@
                   "type": "select",
                   "required": true,
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "mthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "mthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "mthrPermaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "optionSource": {
                     "kind": "dependentReusable",
                     "field": "mthrPermaddrProvince",
@@ -50511,12 +50821,20 @@
                   "type": "select",
                   "required": true,
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "mthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "mthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "mthrPermaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "optionSource": {
                     "kind": "dependentReusable",
                     "field": "mthrPermaddrCitymun",
@@ -50529,12 +50847,20 @@
                   "label": "Mother Permanent Zipcode",
                   "type": "text",
                   "required": true,
-                  "visibleWhen": {
-                    "field": "mthrDeceased",
-                    "equalsAny": [
-                      "Living"
-                    ]
-                  }
+                  "visibleWhen": [
+                    {
+                      "field": "mthrDeceased",
+                      "equalsAny": [
+                        "Living"
+                      ]
+                    },
+                    {
+                      "field": "mthrPermaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
                 }
               ],
               "notes": "Mother has no Suffix field (confirmed live).",
@@ -50783,6 +51109,28 @@
                   }
                 },
                 {
+                  "id": "grdnCurraddrForeign",
+                  "name": "grdnCurraddrForeign",
+                  "label": "Guardian Current Foreign Address",
+                  "type": "textarea",
+                  "required": false,
+                  "visibleWhen": [
+                    {
+                      "field": "guardian",
+                      "equalsAny": [
+                        "Others"
+                      ]
+                    },
+                    {
+                      "field": "grdnCurraddrCountry",
+                      "notEqualsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
+                  "requiredWhenVisible": true
+                },
+                {
                   "id": "copyGuardianAddressCheckbox",
                   "name": "copyGuardianAddressCheckbox",
                   "label": "Same with applicant current address?",
@@ -50801,12 +51149,20 @@
                   "label": "Guardian Current Floor no., Bldg. no., House no.",
                   "type": "text",
                   "required": false,
-                  "visibleWhen": {
-                    "field": "guardian",
-                    "equalsAny": [
-                      "Others"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "guardian",
+                      "equalsAny": [
+                        "Others"
+                      ]
+                    },
+                    {
+                      "field": "grdnCurraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "requiredWhenVisible": true
                 },
                 {
@@ -50815,12 +51171,20 @@
                   "label": "Guardian Current Street, Bldg, Subdivision, Village",
                   "type": "text",
                   "required": false,
-                  "visibleWhen": {
-                    "field": "guardian",
-                    "equalsAny": [
-                      "Others"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "guardian",
+                      "equalsAny": [
+                        "Others"
+                      ]
+                    },
+                    {
+                      "field": "grdnCurraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "requiredWhenVisible": true
                 },
                 {
@@ -50830,12 +51194,20 @@
                   "type": "select",
                   "required": false,
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "guardian",
-                    "equalsAny": [
-                      "Others"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "guardian",
+                      "equalsAny": [
+                        "Others"
+                      ]
+                    },
+                    {
+                      "field": "grdnCurraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "requiredWhenVisible": true,
                   "optionSource": {
                     "kind": "reusable",
@@ -50849,12 +51221,20 @@
                   "type": "select",
                   "required": false,
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "guardian",
-                    "equalsAny": [
-                      "Others"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "guardian",
+                      "equalsAny": [
+                        "Others"
+                      ]
+                    },
+                    {
+                      "field": "grdnCurraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "requiredWhenVisible": true,
                   "optionSource": {
                     "kind": "dependentReusable",
@@ -50869,12 +51249,20 @@
                   "type": "select",
                   "required": false,
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "guardian",
-                    "equalsAny": [
-                      "Others"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "guardian",
+                      "equalsAny": [
+                        "Others"
+                      ]
+                    },
+                    {
+                      "field": "grdnCurraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "requiredWhenVisible": true,
                   "optionSource": {
                     "kind": "dependentReusable",
@@ -50888,12 +51276,20 @@
                   "label": "Guardian Current Zipcode",
                   "type": "text",
                   "required": false,
-                  "visibleWhen": {
-                    "field": "guardian",
-                    "equalsAny": [
-                      "Others"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "guardian",
+                      "equalsAny": [
+                        "Others"
+                      ]
+                    },
+                    {
+                      "field": "grdnCurraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "requiredWhenVisible": true
                 },
                 {
@@ -50916,6 +51312,28 @@
                   }
                 },
                 {
+                  "id": "grdnPermaddrForeign",
+                  "name": "grdnPermaddrForeign",
+                  "label": "Guardian Permanent Foreign Address",
+                  "type": "textarea",
+                  "required": false,
+                  "visibleWhen": [
+                    {
+                      "field": "guardian",
+                      "equalsAny": [
+                        "Others"
+                      ]
+                    },
+                    {
+                      "field": "grdnPermaddrCountry",
+                      "notEqualsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
+                  "requiredWhenVisible": true
+                },
+                {
                   "id": "copyPermaGuardianAddressCheckbox",
                   "name": "copyPermaGuardianAddressCheckbox",
                   "label": "Same with applicant permanent address?",
@@ -50934,12 +51352,20 @@
                   "label": "Guardian Permanent Floor no., Bldg. no., House no.",
                   "type": "text",
                   "required": false,
-                  "visibleWhen": {
-                    "field": "guardian",
-                    "equalsAny": [
-                      "Others"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "guardian",
+                      "equalsAny": [
+                        "Others"
+                      ]
+                    },
+                    {
+                      "field": "grdnPermaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "requiredWhenVisible": true
                 },
                 {
@@ -50948,12 +51374,20 @@
                   "label": "Guardian Permanent Street, Bldg, Subdivision, Village",
                   "type": "text",
                   "required": false,
-                  "visibleWhen": {
-                    "field": "guardian",
-                    "equalsAny": [
-                      "Others"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "guardian",
+                      "equalsAny": [
+                        "Others"
+                      ]
+                    },
+                    {
+                      "field": "grdnPermaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "requiredWhenVisible": true
                 },
                 {
@@ -50963,12 +51397,20 @@
                   "type": "select",
                   "required": false,
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "guardian",
-                    "equalsAny": [
-                      "Others"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "guardian",
+                      "equalsAny": [
+                        "Others"
+                      ]
+                    },
+                    {
+                      "field": "grdnPermaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "requiredWhenVisible": true,
                   "optionSource": {
                     "kind": "reusable",
@@ -50982,12 +51424,20 @@
                   "type": "select",
                   "required": false,
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "guardian",
-                    "equalsAny": [
-                      "Others"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "guardian",
+                      "equalsAny": [
+                        "Others"
+                      ]
+                    },
+                    {
+                      "field": "grdnPermaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "requiredWhenVisible": true,
                   "optionSource": {
                     "kind": "dependentReusable",
@@ -51002,12 +51452,20 @@
                   "type": "select",
                   "required": false,
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "guardian",
-                    "equalsAny": [
-                      "Others"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "guardian",
+                      "equalsAny": [
+                        "Others"
+                      ]
+                    },
+                    {
+                      "field": "grdnPermaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "requiredWhenVisible": true,
                   "optionSource": {
                     "kind": "dependentReusable",
@@ -51021,12 +51479,20 @@
                   "label": "Guardian Permanent Zipcode",
                   "type": "text",
                   "required": false,
-                  "visibleWhen": {
-                    "field": "guardian",
-                    "equalsAny": [
-                      "Others"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "guardian",
+                      "equalsAny": [
+                        "Others"
+                      ]
+                    },
+                    {
+                      "field": "grdnPermaddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "requiredWhenVisible": true
                 }
               ],
@@ -51634,17 +52100,32 @@
                   }
                 },
                 {
+                  "id": "curraddrForeign",
+                  "name": "curraddrForeign",
+                  "label": "Current Foreign Address",
+                  "type": "textarea",
+                  "required": true,
+                  "visibleWhen": {
+                    "field": "curraddrCountry",
+                    "notEqualsAny": [
+                      "Philippines"
+                    ]
+                  }
+                },
+                {
                   "id": "curraddrAddrline1",
                   "name": "curraddrAddrline1",
                   "label": "Current Floor no., Bldg. no., House no.",
                   "type": "text",
                   "required": true,
-                  "visibleWhen": {
-                    "field": "curraddrCountry",
-                    "equalsAny": [
-                      "Philippines"
-                    ]
-                  }
+                  "visibleWhen": [
+                    {
+                      "field": "curraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
                 },
                 {
                   "id": "curraddrAddrline2",
@@ -51652,12 +52133,14 @@
                   "label": "Current Street, Bldg, Subdivision, Village",
                   "type": "text",
                   "required": true,
-                  "visibleWhen": {
-                    "field": "curraddrCountry",
-                    "equalsAny": [
-                      "Philippines"
-                    ]
-                  }
+                  "visibleWhen": [
+                    {
+                      "field": "curraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
                 },
                 {
                   "id": "curraddrProvince",
@@ -51666,12 +52149,14 @@
                   "type": "select",
                   "required": true,
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "curraddrCountry",
-                    "equalsAny": [
-                      "Philippines"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "curraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "cascade": {
                     "triggers": [
                       "curraddrCitymun"
@@ -51690,12 +52175,14 @@
                   "required": true,
                   "description": "Options depend on selected Province.",
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "curraddrCountry",
-                    "equalsAny": [
-                      "Philippines"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "curraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "cascade": {
                     "dependsOn": "curraddrProvince",
                     "triggers": [
@@ -51716,12 +52203,14 @@
                   "required": true,
                   "description": "Options depend on selected City/Municipality.",
                   "placeholderValue": "",
-                  "visibleWhen": {
-                    "field": "curraddrCountry",
-                    "equalsAny": [
-                      "Philippines"
-                    ]
-                  },
+                  "visibleWhen": [
+                    {
+                      "field": "curraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ],
                   "cascade": {
                     "dependsOn": "curraddrCitymun"
                   },
@@ -51763,12 +52252,14 @@
                   "label": "Current Zipcode",
                   "type": "text",
                   "required": true,
-                  "visibleWhen": {
-                    "field": "curraddrCountry",
-                    "equalsAny": [
-                      "Philippines"
-                    ]
-                  }
+                  "visibleWhen": [
+                    {
+                      "field": "curraddrCountry",
+                      "equalsAny": [
+                        "Philippines"
+                      ]
+                    }
+                  ]
                 }
               ],
               "notes": "Microcredentials has only Current Address (no Permanent Address, unlike bachelors).",
@@ -52127,6 +52618,12 @@
           "type": "select",
           "required": true,
           "defaultValue": "Philippines"
+        },
+        {
+          "name": "{prefix}Foreign",
+          "type": "textarea",
+          "required": true,
+          "label": "Foreign Address"
         },
         {
           "name": "{prefix}Addrline1",

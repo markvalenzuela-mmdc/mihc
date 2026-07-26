@@ -34,6 +34,16 @@ function createValidBachelorData() {
   });
 }
 
+function getBachelorField(name: string) {
+  const field = getEnrollmateFlowDefinition("bachelors").steps
+    .flatMap((step) => step.sections)
+    .flatMap((section) => section.fields)
+    .find((candidate) => candidate.name === name);
+
+  if (!field) throw new Error(`Missing bachelors field: ${name}`);
+  return field;
+}
+
 describe("EnrollMate contract", () => {
   it("evaluates normalized AND and negative visibility conditions", () => {
     const condition: EnrollmateCondition = [
@@ -88,6 +98,54 @@ describe("EnrollMate contract", () => {
       getEnrollmateFlowDefinition("microcredentials").steps,
     ).not.toHaveLength(0);
     expect(getEnrollmateDefinitionHash()).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it("supports Philippine and foreign current addresses", () => {
+    const validator = getEnrollmateValidator("bachelors");
+    const philippines = createEnrollmateFixture("bachelors", {
+      overrides: {
+        curraddrCountry: "Philippines",
+        curraddrForeign: undefined,
+      },
+      resolveField: resolveContractFixtureField,
+    });
+    const angola = createEnrollmateFixture("bachelors", {
+      overrides: {
+        curraddrCountry: "Angola",
+        curraddrForeign: "123 Avenida Principal, Luanda",
+      },
+      resolveField: resolveContractFixtureField,
+    });
+
+    expect(validator.safeParse(philippines).success).toBe(true);
+    expect(validator.safeParse(angola).success).toBe(true);
+    expect(
+      validator.safeParse({
+        ...angola,
+        curraddrForeign: undefined,
+      }).error?.issues,
+    ).toContainEqual(expect.objectContaining({ path: ["curraddrForeign"] }));
+    expect(
+      validator.safeParse({
+        ...angola,
+        curraddrAddrline1: "stale Philippine address",
+      }).error?.issues,
+    ).toContainEqual(expect.objectContaining({ path: ["curraddrAddrline1"] }));
+    expect(
+      validator.safeParse({
+        ...philippines,
+        curraddrForeign: "stale foreign address",
+      }).error?.issues,
+    ).toContainEqual(expect.objectContaining({ path: ["curraddrForeign"] }));
+
+    expect(getBachelorField("curraddrForeign")).toMatchObject({
+      type: "textarea",
+      required: true,
+      conditionalOn: [{
+        field: "curraddrCountry",
+        notEqualsAny: ["Philippines"],
+      }],
+    });
   });
 
   it("exposes all reusable option sets without sharing mutable source objects", () => {

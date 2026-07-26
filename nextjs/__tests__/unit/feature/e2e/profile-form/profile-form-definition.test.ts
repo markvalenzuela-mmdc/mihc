@@ -143,6 +143,46 @@ describe("E2E profile form definition adapters", () => {
     );
   });
 
+  it("switches Philippine address controls to foreign textareas", () => {
+    const philippine = clearUnavailableE2eProfileFormValues(bachelors, {
+      curraddrCountry: "Philippines",
+      curraddrAddrline1: "1 Manila Street",
+      curraddrForeign: "stale foreign address",
+    });
+    const foreign = clearUnavailableE2eProfileFormValues(bachelors, {
+      curraddrCountry: "Angola",
+      curraddrAddrline1: "stale Philippine address",
+      curraddrForeign: "123 Avenida Principal, Luanda",
+    });
+    const parentForeign = clearUnavailableE2eProfileFormValues(bachelors, {
+      fthrDeceased: "Living",
+      fthrCurraddrCountry: "Angola",
+      fthrCurraddrAddrline1: "stale Philippine address",
+      fthrCurraddrForeign: "Father's Luanda address",
+      guardian: "Others",
+      grdnCurraddrCountry: "Angola",
+      grdnCurraddrAddrline1: "stale Philippine address",
+      grdnCurraddrForeign: "Guardian's Luanda address",
+    });
+
+    expect(philippine).toEqual(expect.objectContaining({
+      curraddrCountry: "Philippines",
+      curraddrAddrline1: "1 Manila Street",
+    }));
+    expect(philippine).not.toHaveProperty("curraddrForeign");
+    expect(foreign).toEqual(expect.objectContaining({
+      curraddrCountry: "Angola",
+      curraddrForeign: "123 Avenida Principal, Luanda",
+    }));
+    expect(foreign).not.toHaveProperty("curraddrAddrline1");
+    expect(parentForeign).toEqual(expect.objectContaining({
+      fthrCurraddrForeign: "Father's Luanda address",
+      grdnCurraddrForeign: "Guardian's Luanda address",
+      fthrCurraddrAddrline1: "",
+    }));
+    expect(parentForeign).not.toHaveProperty("grdnCurraddrAddrline1");
+  });
+
   it("filters Guardian Assignment options by living parent status", () => {
     const guardian = getBachelorsField("guardian");
 
@@ -521,6 +561,13 @@ describe("E2E profile form definition adapters", () => {
         if (
           field.optionSource?.kind === "cascade" ||
           field.optionSource?.kind === "external"
+        ) {
+          continue;
+        }
+
+        if (
+          !isEnrollmateFieldRendered(field, values) ||
+          isEnrollmateFieldDisabled(field, values)
         ) {
           continue;
         }

@@ -146,6 +146,21 @@ describe("EnrollmateFieldRenderer", () => {
     );
   });
 
+  it("renders the foreign address textarea for non-Philippine countries", () => {
+    const definition = getField("curraddrForeign");
+    render(
+      <RendererHarness
+        definition={definition}
+        values={{ curraddrCountry: "Angola" }}
+      />,
+    );
+
+    expect(screen.getByRole("textbox", { name: definition.label })).toHaveAttribute(
+      "aria-required",
+      "true",
+    );
+  });
+
   it("renders date fields with the Shadcn date picker", async () => {
     const definition = getField("birthdate");
     render(
