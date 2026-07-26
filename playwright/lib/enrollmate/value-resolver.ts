@@ -47,7 +47,8 @@ export function createEnrollmateValueResolver(email: string) {
 
     // Address + name real values (cascade/combobox fields have no inline options,
     // so these must come from the resolver).
-    if (name.includes('country')) return 'Philippines';
+    if (name.includes('country')) return 'Angola';
+    if (name.endsWith('foreign')) return '123 Avenida Principal, Luanda';
     if (name.includes('province')) return 'Rizal';
     if (name.includes('citymun')) return 'Tanay';
     if (name.includes('barangay')) return 'Sampaloc';

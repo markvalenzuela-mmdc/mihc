@@ -9,6 +9,7 @@ import {
   getEnrollmateValidator,
 } from "@mihc/enrollmate-contract";
 import { createEnrollmateFixture } from "@mihc/enrollmate-contract/testing";
+import { createEnrollmateValueResolver } from "../../../lib/enrollmate/value-resolver";
 
 const guardianAssignmentCases = [
   ["Living", "Living", ["Father", "Mother", "Others"]],
@@ -131,6 +132,39 @@ test("Playwright can consume the shared EnrollMate fixture builder", () => {
   });
 
   assert.equal(data.email, "applicant@example.edu");
+});
+
+test("generates foreign address values for every address group", () => {
+  const data = createEnrollmateFixture("bachelors", {
+    overrides: {
+      fthrDeceased: "Living",
+      mthrDeceased: "Living",
+      guardian: "Others",
+    },
+    resolveField: createEnrollmateValueResolver("applicant@example.edu"),
+  });
+
+  for (const prefix of [
+    "curraddr",
+    "permaddr",
+    "fthrCurraddr",
+    "fthrPermaddr",
+    "mthrCurraddr",
+    "mthrPermaddr",
+    "grdnCurraddr",
+    "grdnPermaddr",
+  ]) {
+    assert.equal(data[`${prefix}Country`], "Angola");
+    assert.equal(data[`${prefix}Foreign`], "123 Avenida Principal, Luanda");
+    assert.equal(data[`${prefix}Addrline1`], undefined);
+  }
+
+  const microcredentials = createEnrollmateFixture("microcredentials", {
+    resolveField: createEnrollmateValueResolver("applicant@example.edu"),
+  });
+  assert.equal(microcredentials.curraddrCountry, "Angola");
+  assert.equal(microcredentials.curraddrForeign, "123 Avenida Principal, Luanda");
+  assert.equal(microcredentials.curraddrAddrline1, undefined);
 });
 
 test("filters Guardian Assignment options by living parent status", () => {

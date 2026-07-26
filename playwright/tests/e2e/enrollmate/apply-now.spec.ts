@@ -73,7 +73,14 @@ for (const flowType of activeFlowTypes) {
 
         const overrides: Record<string, unknown> =
           flowType === 'bachelors'
-            ? { email, schoolNotFound: true, lastSchoolAttended: 'Rizal National High School' }
+            ? {
+                email,
+                schoolNotFound: true,
+                lastSchoolAttended: 'Rizal National High School',
+                fthrDeceased: 'Living',
+                mthrDeceased: 'Living',
+                guardian: 'Others',
+              }
             : { email };
 
         data = createEnrollmateFixture(flowType, {
