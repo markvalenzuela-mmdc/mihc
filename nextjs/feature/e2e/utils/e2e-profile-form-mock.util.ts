@@ -102,7 +102,14 @@ function getMockTextValue(
   if (field.type === "email") {
     return field.name === "email" ? identity.email : getMockEmail(identity, faker);
   }
-  if (field.type === "date") return identity.birthdate;
+  if (field.type === "date") {
+    if (/^(fthr|mthr)/.test(field.name)) {
+      return formatMockDate(
+        faker.date.birthdate({ min: 30, max: 65, mode: "age" }),
+      );
+    }
+    return identity.birthdate;
+  }
   if (field.type === "tel") return identity.mobile;
   if (name.includes("givenname")) {
     return field.name === "givenName"

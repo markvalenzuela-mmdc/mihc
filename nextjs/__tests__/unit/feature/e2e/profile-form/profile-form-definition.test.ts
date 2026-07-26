@@ -3,6 +3,7 @@ import {
   getEnrollmateStepValidator,
 } from "@mihc/enrollmate-contract";
 import { faker } from "@faker-js/faker";
+import { differenceInYears, parseISO } from "date-fns";
 import type {
   EnrollmateField,
   EnrollmateFlowDefinition,
@@ -398,6 +399,30 @@ describe("E2E profile form definition adapters", () => {
         getEnrollmateStepValidator("bachelors", 2).safeParse(values).success,
         `${fatherStatus}/${motherStatus} mock validity`,
       ).toBe(true);
+    }
+  });
+
+  it("generates UAT-valid birthdates for living parents", () => {
+    faker.seed(42);
+    const current = getEmptyFormValues("bachelors");
+    current.enrollmate.fthrDeceased = "Living";
+    current.enrollmate.mthrDeceased = "Living";
+    current.enrollmate.guardian = "Others";
+
+    const generated = getE2eProfileStepMockValues(
+      bachelors,
+      2,
+      current,
+      "partial",
+      { fixtures: [], faker },
+    );
+
+    for (const fieldName of ["fthrBirthdate", "mthrBirthdate"] as const) {
+      const birthdate = generated.enrollmate[fieldName];
+      expect(typeof birthdate).toBe("string");
+      expect(
+        differenceInYears(new Date(), parseISO(String(birthdate))),
+      ).toBeGreaterThanOrEqual(30);
     }
   });
 
