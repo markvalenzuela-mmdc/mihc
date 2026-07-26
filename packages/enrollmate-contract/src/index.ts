@@ -18,12 +18,10 @@ export type {
   EnrollmateDefinition,
   EnrollmateCondition,
   EnrollmateConditionalRule,
-  EnrollmateEqualsCondition,
   EnrollmateField,
   EnrollmateFieldType,
   EnrollmateFlowDefinition,
   EnrollmateFlowType,
-  EnrollmateNotEqualsCondition,
   EnrollmateReusableOptionSets,
   ProfileOperationalData,
 } from "./types";

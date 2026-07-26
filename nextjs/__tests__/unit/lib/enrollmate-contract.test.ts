@@ -34,16 +34,6 @@ function createValidBachelorData() {
   });
 }
 
-function getBachelorField(name: string) {
-  const field = getEnrollmateFlowDefinition("bachelors").steps
-    .flatMap((step) => step.sections)
-    .flatMap((section) => section.fields)
-    .find((candidate) => candidate.name === name);
-
-  if (!field) throw new Error(`Missing bachelors field: ${name}`);
-  return field;
-}
-
 describe("EnrollMate contract", () => {
   it("evaluates normalized AND and negative visibility conditions", () => {
     const condition: EnrollmateCondition = [
@@ -138,7 +128,12 @@ describe("EnrollMate contract", () => {
       }).error?.issues,
     ).toContainEqual(expect.objectContaining({ path: ["curraddrForeign"] }));
 
-    expect(getBachelorField("curraddrForeign")).toMatchObject({
+    expect(
+      getEnrollmateFlowDefinition("bachelors").steps
+        .flatMap((step) => step.sections)
+        .flatMap((section) => section.fields)
+        .find((field) => field.name === "curraddrForeign"),
+    ).toMatchObject({
       type: "textarea",
       required: true,
       conditionalOn: [{

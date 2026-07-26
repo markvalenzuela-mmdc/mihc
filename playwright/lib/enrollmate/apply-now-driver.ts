@@ -340,11 +340,10 @@ export async function submitForm(page: Page): Promise<StepOutcome> {
       .first()
       .click();
 
-    const consentButton = page
+    await page
       .getByRole('button', { name: /^agree\s*&\s*proceed$/i })
-      .first();
-    await consentButton.waitFor({ state: 'visible', timeout: 30_000 });
-    await consentButton.click();
+      .first()
+      .click({ timeout: 30_000 });
 
     await page.waitForLoadState('networkidle').catch(() => {});
   });

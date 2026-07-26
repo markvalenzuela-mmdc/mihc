@@ -22,21 +22,17 @@ export type EnrollmateReusableOptionSets = Readonly<
 
 export type EnrollmateConditionValue = string | boolean;
 
-export type EnrollmateEqualsCondition = {
-  field: string;
-  equalsAny: EnrollmateConditionValue[];
-  notEqualsAny?: never;
-};
-
-export type EnrollmateNotEqualsCondition = {
-  field: string;
-  equalsAny?: never;
-  notEqualsAny: EnrollmateConditionValue[];
-};
-
 export type EnrollmateConditionalRule =
-  | EnrollmateEqualsCondition
-  | EnrollmateNotEqualsCondition;
+  | {
+      field: string;
+      equalsAny: EnrollmateConditionValue[];
+      notEqualsAny?: never;
+    }
+  | {
+      field: string;
+      equalsAny?: never;
+      notEqualsAny: EnrollmateConditionValue[];
+    };
 
 export type EnrollmateCondition = EnrollmateConditionalRule[];
 

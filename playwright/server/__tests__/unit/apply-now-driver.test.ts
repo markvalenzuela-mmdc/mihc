@@ -77,7 +77,6 @@ test("accepts mandatory consent after clicking submit", async () => {
         first() {
           return this;
         },
-        waitFor: async () => undefined,
         click: async () => {
           clicks.push(label);
         },
@@ -101,8 +100,7 @@ test("fails submission when mandatory consent is unavailable", async () => {
         first() {
           return this;
         },
-        click: async () => undefined,
-        waitFor: async () => {
+        click: async () => {
           if (isConsent) throw new Error("consent unavailable");
         },
       };
