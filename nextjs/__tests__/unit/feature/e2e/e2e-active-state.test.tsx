@@ -29,11 +29,51 @@ const runningRun: E2eSelectedRun = {
 };
 
 describe("active E2E run state", () => {
-  it("shows a loader until the first check is persisted", () => {
+  it("shows a loader before the first check is persisted", () => {
     render(<E2eRunDetails run={runningRun} onBack={vi.fn()} />);
 
     expect(screen.getByText("Waiting for test results…")).toBeVisible();
     expect(screen.getByRole("status", { name: "Loading" })).toBeVisible();
+  });
+
+  it("keeps the loader visible while more checks are expected", () => {
+    render(
+      <E2eRunDetails
+        run={{
+          ...runningRun,
+          steps: [
+            {
+              id: "run-step-1",
+              stepId: "new",
+              status: "success",
+              durationSeconds: 2.4,
+              note: null,
+              e2eStep: {
+                id: "new",
+                label: "New",
+                description: null,
+                sortOrder: 1,
+                createdAt: new Date("2026-07-25T08:00:00.000Z"),
+              },
+              tests: [
+                {
+                  id: "test-1",
+                  testName: "page-loads",
+                  status: "success",
+                  durationMs: 2400,
+                  errorMessage: null,
+                },
+              ],
+            },
+          ],
+        }}
+        onBack={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Waiting for more test results…")).toBeVisible();
+    expect(screen.getByRole("status", { name: "Loading" })).toBeVisible();
+    expect(screen.getByText("page-loads")).toBeVisible();
   });
 
   it("does not show the loader for a terminal empty run", () => {

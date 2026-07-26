@@ -82,10 +82,14 @@ export default function E2eRunDetails({
             </p>
           </div>
           <div className="space-y-3">
-            {run.status === "running" && run.steps.length === 0 ? (
+            {run.status === "running" ? (
               <div className="flex items-center gap-2 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
                 <Spinner />
-                <p>Waiting for test results…</p>
+                <p>
+                  {run.steps.length === 0
+                    ? "Waiting for test results…"
+                    : "Waiting for more test results…"}
+                </p>
               </div>
             ) : null}
             {run.steps.map((step) => (
