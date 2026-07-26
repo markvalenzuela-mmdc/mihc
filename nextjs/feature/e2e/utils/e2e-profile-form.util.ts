@@ -2,7 +2,10 @@ import type {
   EnrollmateField,
   EnrollmateFlowDefinition,
 } from "@mihc/enrollmate-contract";
-import { getAvailableEnrollmateGuardianAssignments } from "@mihc/enrollmate-contract";
+import {
+  getAvailableEnrollmateGuardianAssignments,
+  isEnrollmateConditionMet,
+} from "@mihc/enrollmate-contract";
 import { parseISO, isValid } from "date-fns";
 
 const PH_MOBILE_MAX_LENGTH = 12;
@@ -116,10 +119,7 @@ export function isEnrollmateFieldVisible(
   field: EnrollmateField,
   values: Record<string, unknown>,
 ): boolean {
-  const condition = field.conditionalOn;
-  if (!condition) return true;
-
-  return condition.equalsAny.some((value) => value === values[condition.field]);
+  return isEnrollmateConditionMet(field.conditionalOn, values);
 }
 
 export function isEnrollmateFieldRendered(
@@ -130,8 +130,14 @@ export function isEnrollmateFieldRendered(
     return values.guardian === "Others";
   }
 
+  if (
+    isEnrollmateParentField(field) &&
+    isEnrollmateParentFieldDisabled(field, values)
+  ) {
+    return true;
+  }
+
   return (
-    isEnrollmateParentField(field) ||
     isEnrollmateLastSchoolAttendedField(field) ||
     isEnrollmateFieldVisible(field, values)
   );

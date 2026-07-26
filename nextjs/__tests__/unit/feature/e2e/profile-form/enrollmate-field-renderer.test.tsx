@@ -73,9 +73,14 @@ function getExternalField(): EnrollmateField {
 }
 
 function getVisibilityValues(field: EnrollmateField) {
-  return field.conditionalOn
-    ? { [field.conditionalOn.field]: field.conditionalOn.equalsAny[0] }
-    : {};
+  return Object.fromEntries(
+    (field.conditionalOn ?? []).map((condition) => [
+      condition.field,
+      condition.equalsAny !== undefined
+        ? condition.equalsAny[0]
+        : "__not_excluded__",
+    ]),
+  );
 }
 
 type RendererHarnessProps = {
@@ -509,9 +514,7 @@ describe("EnrollmateFieldRenderer", () => {
     "file",
   ] satisfies EnrollmateFieldType[])("renders the %s contract field type", (type) => {
     const definition = getFieldByType(type);
-    const values = definition.conditionalOn
-      ? { [definition.conditionalOn.field]: definition.conditionalOn.equalsAny[0] }
-      : {};
+    const values = getVisibilityValues(definition);
 
     const { container } = render(
       <RendererHarness
@@ -581,11 +584,19 @@ describe("EnrollmateSection", () => {
       throw new Error("Expected a conditional field");
     }
 
+    const hiddenValues = getVisibilityValues(hiddenField);
+    const firstCondition = hiddenField.conditionalOn[0];
+    if (!firstCondition) throw new Error("Expected a conditional field");
+    hiddenValues[firstCondition.field] =
+      firstCondition.equalsAny !== undefined
+        ? "__not_in_equals_any__"
+        : firstCondition.notEqualsAny[0];
+
     const { container } = render(
       <EnrollmateSection
         section={section}
         fixtures={fixtures}
-        values={{ [hiddenField.conditionalOn.field]: "unmatched" }}
+        values={hiddenValues}
         renderField={({ definition }) =>
           definition.id === hiddenField.id ? null : (
             <span data-field-name={definition.name}>{definition.label}</span>

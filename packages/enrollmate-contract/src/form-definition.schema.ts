@@ -17,10 +17,25 @@ const optionSchema = z.object({
   value: z.string(),
 }).strict();
 
-const visibleWhenSchema = z.object({
+const equalsConditionSchema = z.object({
   field: z.string().min(1),
   equalsAny: z.array(conditionValueSchema).min(1),
 }).strict();
+
+const notEqualsConditionSchema = z.object({
+  field: z.string().min(1),
+  notEqualsAny: z.array(conditionValueSchema).min(1),
+}).strict();
+
+const conditionalRuleSchema = z.union([
+  equalsConditionSchema,
+  notEqualsConditionSchema,
+]);
+
+const visibleWhenSchema = z.union([
+  conditionalRuleSchema,
+  z.array(conditionalRuleSchema).min(1),
+]);
 
 const cascadeSchema = z.object({
   dependsOn: z.string().min(1).optional(),
@@ -150,7 +165,7 @@ const flowSchema = z.object({
 
 const addressFieldTemplateSchema = z.object({
   name: z.string().min(1),
-  type: z.enum(["text", "select"]),
+  type: z.enum(["text", "textarea", "select"]),
   required: z.boolean(),
   label: z.string().min(1).optional(),
   defaultValue: z.string().optional(),
@@ -275,7 +290,11 @@ function normalizeField(
     placeholderValue: field.placeholderValue,
     defaultValue: field.defaultValue,
     ...optionDetails,
-    conditionalOn: field.visibleWhen ?? null,
+    conditionalOn: field.visibleWhen
+      ? Array.isArray(field.visibleWhen)
+        ? field.visibleWhen
+        : [field.visibleWhen]
+      : null,
     requiredWhenConditionMet: field.requiredWhenVisible ?? false,
     cascade: field.cascade,
     automation: field.automation,
@@ -301,7 +320,7 @@ function normalizeSection(
 
 function getFieldReferences(field: EnrollmateField) {
   return [
-    field.conditionalOn?.field,
+    ...(field.conditionalOn ?? []).map((condition) => condition.field),
     field.cascade?.dependsOn,
     ...(field.cascade?.triggers ?? []),
     field.optionSource?.kind === "dependent" ? field.optionSource.field : undefined,

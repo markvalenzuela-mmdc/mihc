@@ -2,9 +2,11 @@ import {
   getEnrollmateFlowDefinition,
   getEnrollmateReusableOptionSets,
   getEnrollmateValidator,
+  isEnrollmateConditionMet,
   parseEnrollmateDefinition,
   parseEnrollmateDefinitionSource,
   profileOperationalDataSchema,
+  type EnrollmateCondition,
   type EnrollmateField,
 } from "@mihc/enrollmate-contract";
 import { getEnrollmateDefinitionHash } from "@mihc/enrollmate-contract/server";
@@ -33,6 +35,53 @@ function createValidBachelorData() {
 }
 
 describe("EnrollMate contract", () => {
+  it("evaluates normalized AND and negative visibility conditions", () => {
+    const condition: EnrollmateCondition = [
+      { field: "fthrDeceased", equalsAny: ["Living"] },
+      { field: "fthrCurraddrCountry", notEqualsAny: ["Philippines"] },
+    ];
+
+    expect(
+      isEnrollmateConditionMet(condition, {
+        fthrDeceased: "Living",
+        fthrCurraddrCountry: "Angola",
+      }),
+    ).toBe(true);
+    expect(
+      isEnrollmateConditionMet(condition, {
+        fthrDeceased: "Living",
+        fthrCurraddrCountry: "Philippines",
+      }),
+    ).toBe(false);
+    expect(
+      isEnrollmateConditionMet(condition, {
+        fthrDeceased: "Deceased",
+        fthrCurraddrCountry: "Angola",
+      }),
+    ).toBe(false);
+  });
+
+  it("rejects malformed visibility operators", () => {
+    const both = JSON.parse(JSON.stringify(source));
+    both.flows.bachelors.steps[0].sections
+      .flatMap((section: { fields: Array<{ name: string }> }) => section.fields)
+      .find((field: { name: string }) => field.name === "curraddrAddrline1")
+      .visibleWhen = {
+      field: "curraddrCountry",
+      equalsAny: ["Philippines"],
+      notEqualsAny: ["Philippines"],
+    };
+
+    const neither = JSON.parse(JSON.stringify(source));
+    neither.flows.bachelors.steps[0].sections
+      .flatMap((section: { fields: Array<{ name: string }> }) => section.fields)
+      .find((field: { name: string }) => field.name === "curraddrAddrline1")
+      .visibleWhen = { field: "curraddrCountry" };
+
+    expect(() => parseEnrollmateDefinitionSource(both)).toThrow();
+    expect(() => parseEnrollmateDefinitionSource(neither)).toThrow();
+  });
+
   it("loads both scraped flows and exposes a stable hash", () => {
     expect(getEnrollmateFlowDefinition("bachelors").steps).not.toHaveLength(0);
     expect(
@@ -81,13 +130,13 @@ describe("EnrollMate contract", () => {
     expect(fields.find((field) => field.name === "lastSchoolAttended")).toMatchObject({
       options: parsedSource.reusableOptionSets.lastSchoolAttendedOptions,
       optionSource: { kind: "reusable", optionSet: "lastSchoolAttendedOptions" },
-      conditionalOn: { field: "schoolNotFound", equalsAny: [false] },
+      conditionalOn: [{ field: "schoolNotFound", equalsAny: [false] }],
       required: false,
       requiredWhenConditionMet: true,
     });
     expect(fields).toContainEqual(expect.objectContaining({
       name: "lastschOther",
-      conditionalOn: { field: "schoolNotFound", equalsAny: [true] },
+      conditionalOn: [{ field: "schoolNotFound", equalsAny: [true] }],
     }));
     expect(fields.find((field) => field.name === "curraddrCitymun")?.automation)
       .toMatchObject({ exampleOptionsByParent: { Rizal: expect.arrayContaining(["Antipolo City"]) } });
@@ -151,10 +200,21 @@ describe("EnrollMate contract", () => {
 
   it("rejects unknown conditional, cascade, and dependent references", () => {
     const unknownCondition = JSON.parse(JSON.stringify(source));
-    unknownCondition.flows.bachelors.steps[0].sections
-      .flatMap((section: { fields: Array<{ name: string; visibleWhen?: { field: string } }> }) => section.fields)
-      .find((field: { name: string }) => field.name === "lastschOther")
-      .visibleWhen.field = "missingField";
+    const unknownConditionField = unknownCondition.flows.bachelors.steps[0].sections
+      .flatMap((section: {
+        fields: Array<{
+          name: string;
+          visibleWhen?: { field: string } | Array<{ field: string }>;
+        }>;
+      }) => section.fields)
+      .find((field: { name: string }) => field.name === "lastschOther");
+    if (!unknownConditionField?.visibleWhen) {
+      throw new Error("Expected lastschOther to have a visibility condition");
+    }
+    const unknownConditionRules = Array.isArray(unknownConditionField.visibleWhen)
+      ? unknownConditionField.visibleWhen
+      : [unknownConditionField.visibleWhen];
+    unknownConditionRules[0]!.field = "missingField";
     expect(() => parseEnrollmateDefinition(unknownCondition)).toThrow();
 
     const unknownCascade = JSON.parse(JSON.stringify(source));

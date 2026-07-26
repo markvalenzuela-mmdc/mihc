@@ -234,10 +234,10 @@ describe("E2E profile form definition adapters", () => {
                   },
                 }),
                 createField("conditionalParent", {
-                  conditionalOn: {
+                  conditionalOn: [{
                     field: "showParent",
                     equalsAny: [true],
-                  },
+                  }],
                 }),
                 createField("showParent", { type: "checkbox" }),
               ],

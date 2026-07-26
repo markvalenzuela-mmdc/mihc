@@ -63,26 +63,65 @@
         "boolean"
       ]
     },
-    "visibleWhen": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "field",
-        "equalsAny"
-      ],
-      "properties": {
-        "field": {
-          "type": "string",
-          "minLength": 1
+    "conditionalRule": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "field",
+            "equalsAny"
+          ],
+          "properties": {
+            "field": {
+              "type": "string",
+              "minLength": 1
+            },
+            "equalsAny": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/conditionValue"
+              }
+            }
+          }
         },
-        "equalsAny": {
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "field",
+            "notEqualsAny"
+          ],
+          "properties": {
+            "field": {
+              "type": "string",
+              "minLength": 1
+            },
+            "notEqualsAny": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/conditionValue"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visibleWhen": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/conditionalRule"
+        },
+        {
           "type": "array",
           "minItems": 1,
           "items": {
-            "$ref": "#/$defs/conditionValue"
+            "$ref": "#/$defs/conditionalRule"
           }
         }
-      }
+      ]
     },
     "cascade": {
       "type": "object",
@@ -647,6 +686,7 @@
         "type": {
           "enum": [
             "text",
+            "textarea",
             "select"
           ]
         },

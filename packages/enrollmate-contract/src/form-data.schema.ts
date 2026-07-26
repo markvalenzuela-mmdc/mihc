@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 import { getAvailableEnrollmateGuardianAssignments } from "./guardian-assignment";
+import { isEnrollmateConditionMet } from "./condition";
 import type {
-  EnrollmateConditionalRule,
   EnrollmateField,
   EnrollmateFlowDefinition,
   EnrollmateStep,
@@ -30,13 +30,6 @@ function optionalStringWhen(
   return z.preprocess(
     (value) => typeof value === "string" && value.trim() === "" ? undefined : value,
     schema.optional(),
-  );
-}
-
-function conditionMatches(value: unknown, rule: EnrollmateConditionalRule) {
-  return (
-    (typeof value === "string" || typeof value === "boolean") &&
-    rule.equalsAny.includes(value)
   );
 }
 
@@ -122,14 +115,13 @@ function validateConditionalField(
 ) {
   if (!field.conditionalOn) return;
 
-  const parentValue = data[field.conditionalOn.field];
-  const isVisible = conditionMatches(parentValue, field.conditionalOn);
+  const isVisible = isEnrollmateConditionMet(field.conditionalOn, data);
   if (isVisible) {
     if (!(field.required || field.requiredWhenConditionMet) || !isEmptyValue(field, data[field.name])) return;
     context.addIssue({
       code: "custom",
       path: [field.name],
-      message: `${field.label} is required when ${field.conditionalOn.field} is set to "${parentValue}".`,
+      message: `${field.label} is required for the selected values.`,
     });
     return;
   }
@@ -138,7 +130,7 @@ function validateConditionalField(
   context.addIssue({
     code: "custom",
     path: [field.name],
-    message: `${field.label} is not available for the selected ${field.conditionalOn.field}.`,
+    message: `${field.label} is not available for the selected values.`,
   });
 }
 

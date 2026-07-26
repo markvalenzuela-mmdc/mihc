@@ -22,10 +22,23 @@ export type EnrollmateReusableOptionSets = Readonly<
 
 export type EnrollmateConditionValue = string | boolean;
 
-export type EnrollmateConditionalRule = {
+export type EnrollmateEqualsCondition = {
   field: string;
   equalsAny: EnrollmateConditionValue[];
+  notEqualsAny?: never;
 };
+
+export type EnrollmateNotEqualsCondition = {
+  field: string;
+  equalsAny?: never;
+  notEqualsAny: EnrollmateConditionValue[];
+};
+
+export type EnrollmateConditionalRule =
+  | EnrollmateEqualsCondition
+  | EnrollmateNotEqualsCondition;
+
+export type EnrollmateCondition = EnrollmateConditionalRule[];
 
 export type EnrollmateOptionSource =
   | { kind: "inline" }
@@ -59,7 +72,7 @@ export type EnrollmateField = {
   options: EnrollmateOption[];
   optionsByDependency: Record<string, EnrollmateOption[]>;
   optionSource?: EnrollmateOptionSource;
-  conditionalOn: EnrollmateConditionalRule | null;
+  conditionalOn: EnrollmateCondition | null;
   requiredWhenConditionMet: boolean;
   cascade?: EnrollmateCascade;
   automation?: EnrollmateAutomation;

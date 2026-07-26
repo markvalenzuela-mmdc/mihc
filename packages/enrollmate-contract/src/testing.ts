@@ -2,25 +2,13 @@ import {
   getEnrollmateFlowDefinition,
   getEnrollmateValidator,
 } from "./registry";
+import { isEnrollmateConditionMet } from "./condition";
 import type { EnrollmateField, EnrollmateFlowType } from "./types";
 
 export type EnrollmateFixtureOptions = {
   overrides?: Record<string, unknown>;
   resolveField?: (field: EnrollmateField) => unknown;
 };
-
-function conditionMatches(
-  field: EnrollmateField,
-  data: Record<string, unknown>,
-) {
-  if (!field.conditionalOn) return true;
-
-  const value = data[field.conditionalOn.field];
-  return (
-    (typeof value === "string" || typeof value === "boolean") &&
-    field.conditionalOn.equalsAny.includes(value)
-  );
-}
 
 function getMechanicalValue(
   field: EnrollmateField,
@@ -77,7 +65,7 @@ export function createEnrollmateFixture(
       if (
         field.conditionalOn &&
         (field.required || field.requiredWhenConditionMet) &&
-        conditionMatches(field, data)
+        isEnrollmateConditionMet(field.conditionalOn, data)
       ) {
         changed = setField(field) || changed;
       }

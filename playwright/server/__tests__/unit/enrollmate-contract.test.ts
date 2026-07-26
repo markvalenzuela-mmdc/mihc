@@ -56,14 +56,20 @@ function getConditionalFieldCase() {
 
     for (const field of fields) {
       const condition = field.conditionalOn;
-      if (!condition || !field.requiredWhenConditionMet) continue;
+      const conditionRule = condition?.length === 1 ? condition[0] : undefined;
+      if (
+        conditionRule?.equalsAny === undefined ||
+        !field.requiredWhenConditionMet
+      ) {
+        continue;
+      }
 
       const controller = fields.find(
-        (candidate) => candidate.name === condition.field,
+        (candidate) => candidate.name === conditionRule.field,
       );
-      const visibleValue = condition.equalsAny[0];
+      const visibleValue = conditionRule.equalsAny[0];
       const hiddenValue = controller?.options.find(
-        (option) => !condition.equalsAny.includes(option.value),
+        (option) => !conditionRule.equalsAny.includes(option.value),
       )?.value;
       const populatedValue = field.options[0]?.value;
 

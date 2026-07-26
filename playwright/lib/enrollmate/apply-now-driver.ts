@@ -17,6 +17,7 @@ import type {
   EnrollmateField,
   EnrollmateFlowDefinition,
 } from '@mihc/enrollmate-contract';
+import { isEnrollmateConditionMet } from '@mihc/enrollmate-contract';
 
 type FlowStep = EnrollmateFlowDefinition['steps'][number];
 
@@ -179,18 +180,7 @@ export async function fillStep(
       const value = data[field.name];
       if (value === undefined) continue;
 
-      if (field.conditionalOn) {
-        const conditionValue = data[field.conditionalOn.field];
-        if (
-          typeof conditionValue !== 'string' &&
-          typeof conditionValue !== 'boolean'
-        ) {
-          continue;
-        }
-        if (!field.conditionalOn.equalsAny.includes(conditionValue)) {
-          continue;
-        }
-      }
+      if (!isEnrollmateConditionMet(field.conditionalOn, data)) continue;
 
       try {
         await setField(page, field, value);
