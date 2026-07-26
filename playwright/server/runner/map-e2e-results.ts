@@ -10,7 +10,7 @@ import { formatE2eCheckError } from "./format-failure";
 
 /**
  * Maps a check-name substring to the lifecycle step ID it belongs to.
- * Checks that don't match any pattern fall to FALLBACK_STEP_ID.
+ * Checks that don't match the selected set fall to its last selected step.
  */
 const STEP_BUCKET_MAP: Record<string, string> = {
   "page-loads": "new",
@@ -107,13 +107,17 @@ function extractFlowType(annotations: PwAnnotation[] | undefined): string | null
 
 /**
  * Resolve which lifecycle step a check belongs to.
- * Tries the pattern map first; falls back to FALLBACK_STEP_ID.
+ * Tries the pattern map first; falls back to the last selected step.
  */
-function resolveStepId(checkName: string): string {
+export function resolveE2eStepId(checkName: string, selectedStepIds: string[]): string {
   for (const [pattern, stepId] of Object.entries(STEP_BUCKET_MAP)) {
-    if (checkName.includes(pattern)) return stepId;
+    if (checkName.includes(pattern)) {
+      return selectedStepIds.includes(stepId)
+        ? stepId
+        : selectedStepIds.at(-1) ?? FALLBACK_STEP_ID;
+    }
   }
-  return FALLBACK_STEP_ID;
+  return selectedStepIds.at(-1) ?? FALLBACK_STEP_ID;
 }
 
 function collectSpecs(suites: PwSuite[] | undefined, out: PwSpec[]): void {
@@ -148,8 +152,6 @@ export function mapE2eResults(
   const stepPwDurations = new Map<string, number[]>();
   let flowType: string | null = null;
   let totalChecks = 0;
-
-  const fallbackStepId = selectedStepIds[selectedStepIds.length - 1];
 
   for (const spec of specs) {
     for (const test of spec.tests ?? []) {
@@ -188,12 +190,7 @@ export function mapE2eResults(
         const check = parseCheckAnnotation(annotation);
         if (!check) continue;
 
-        let stepId = resolveStepId(check.name);
-        // If the resolved step is not in the selected set, fall through to
-        // the last selected step so no assertion is silently dropped.
-        if (!selectedStepIds.includes(stepId)) {
-          stepId = fallbackStepId;
-        }
+        const stepId = resolveE2eStepId(check.name, selectedStepIds);
 
         mappedStepIds.add(stepId);
         testCheckCount++;

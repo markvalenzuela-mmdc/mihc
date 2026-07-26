@@ -5,12 +5,11 @@
  *
  * createE2eRun   — inserts e2e_runs with status="running"; called before
  *                  spawning Playwright.
- * completeE2eRun — updates e2e_runs to final status + inserts run_steps and
- *                  run_tests; called after the suite finishes.
+ * recordE2eCheck — persists one completed check and updates its step aggregate.
+ * completeE2eRun — updates e2e_runs to final status after the suite finishes.
  */
-import { eq, max, sql, type SQL } from "drizzle-orm";
+import { and, eq, max, sql, type SQL } from "drizzle-orm";
 import type { Logger } from "../logger";
-import type { MappedE2eStep } from "../runner/map-e2e-results";
 import { db, type Db } from "./client";
 import { e2eRuns, e2eRunSteps, e2eRunTests } from "./schema";
 
@@ -53,7 +52,17 @@ export interface CreateE2eRunResult {
 export interface CompleteE2eRunInput {
   runId: string;
   runStatus: "completed" | "aborted";
-  steps: MappedE2eStep[];
+  logger: Logger;
+}
+
+export interface RecordE2eCheckInput {
+  runId: string;
+  profileId: string;
+  stepId: string;
+  testName: string;
+  status: "success" | "failure" | "skipped";
+  durationMs: number | null;
+  errorMessage: string | null;
   logger: Logger;
 }
 
@@ -122,20 +131,97 @@ export async function createE2eRun(
   throw new Error("createE2eRun: exhausted retries");
 }
 
+/** Persist one completed check and publish the resulting run change. */
+export async function recordE2eCheck(
+  input: RecordE2eCheckInput,
+  database: Db = db,
+): Promise<void> {
+  const {
+    runId,
+    profileId,
+    stepId,
+    testName,
+    status,
+    durationMs,
+    errorMessage,
+    logger,
+  } = input;
+
+  await database.transaction(async (tx) => {
+    const [existingStep] = await tx
+      .select({ id: e2eRunSteps.id })
+      .from(e2eRunSteps)
+      .where(and(eq(e2eRunSteps.runId, runId), eq(e2eRunSteps.stepId, stepId)));
+
+    const runStepId = existingStep?.id ?? (
+      await tx
+        .insert(e2eRunSteps)
+        .values({
+          runId,
+          stepId,
+          status: "untested",
+          durationSeconds: null,
+          note: null,
+        })
+        .returning({ id: e2eRunSteps.id })
+    )[0]?.id;
+
+    if (!runStepId) {
+      throw new Error(`E2E step ${runId}/${stepId} was not created`);
+    }
+
+    const [existingTest] = await tx
+      .select({ id: e2eRunTests.id })
+      .from(e2eRunTests)
+      .where(and(eq(e2eRunTests.runStepId, runStepId), eq(e2eRunTests.testName, testName)));
+
+    const values = { status, durationMs, errorMessage };
+
+    if (existingTest) {
+      await tx
+        .update(e2eRunTests)
+        .set(values)
+        .where(eq(e2eRunTests.id, existingTest.id))
+        .returning({ id: e2eRunTests.id });
+    } else {
+      await tx
+        .insert(e2eRunTests)
+        .values({ runStepId, testName, ...values })
+        .returning({ id: e2eRunTests.id });
+    }
+
+    const tests = await tx
+      .select({ status: e2eRunTests.status, durationMs: e2eRunTests.durationMs })
+      .from(e2eRunTests)
+      .where(eq(e2eRunTests.runStepId, runStepId));
+    const durations = tests
+      .map((test) => test.durationMs)
+      .filter((duration): duration is number => duration !== null);
+    const totalDurationMs = durations.reduce((sum, duration) => sum + duration, 0);
+
+    await tx
+      .update(e2eRunSteps)
+      .set({
+        status: tests.some((test) => test.status === "failure") ? "failure" : "success",
+        durationSeconds: durations.length > 0 ? Math.round(totalDurationMs / 1000) : null,
+      })
+      .where(eq(e2eRunSteps.id, runStepId))
+      .returning({ id: e2eRunSteps.id });
+
+    await notifyE2eRunChanged(tx, { profileId, runId });
+    logger.info("e2e_check_persisted", { runId, stepId, testName, status });
+  });
+}
+
 /**
- * Phase 2: Finalise the run — set its status/completedAt and insert
- * e2e_run_steps + e2e_run_tests in a single transaction.
- *
- * Called only after the Playwright suite has finished, so all results are
- * available. completedAt is set via DB NOW() so both timestamps come from
- * the same clock source. The `createdAt` on each step/test row is the DB
- * default.
+ * Phase 2: Finalise the run — set its status/completedAt after the reporter
+ * has persisted each completed check.
  */
 export async function completeE2eRun(
   input: CompleteE2eRunInput,
   database: Db = db,
 ): Promise<void> {
-  const { runId, runStatus, steps, logger } = input;
+  const { runId, runStatus, logger } = input;
 
   await database.transaction(async (tx) => {
     const [updated] = await tx
@@ -153,53 +239,7 @@ export async function completeE2eRun(
       const completedAt = updated.completedAt as unknown as Date;
       if (completedAt) {
         const durationS = Math.max(0, Math.round((completedAt.getTime() - startedAt.getTime()) / 1000));
-        logger.info("e2e_run_finalised", { runId, status: runStatus, durationS, stepCount: steps.length });
-      }
-    }
-
-    if (steps.length > 0) {
-      const insertedSteps = await tx
-        .insert(e2eRunSteps)
-        .values(
-          steps.map((step) => ({
-            runId,
-            stepId: step.stepId,
-            status: step.status,
-            durationSeconds: step.durationSeconds,
-            note: step.note ?? null,
-          })),
-        )
-        .returning({ id: e2eRunSteps.id, stepId: e2eRunSteps.stepId });
-
-      const stepIdMap = new Map<string, string>();
-      for (const s of insertedSteps) {
-        stepIdMap.set(s.stepId, s.id);
-      }
-
-      const allTests: {
-        runStepId: string;
-        testName: string;
-        status: "success" | "failure" | "skipped";
-        durationMs: number | null;
-        errorMessage: string | null;
-      }[] = [];
-
-      for (const step of steps) {
-        const runStepId = stepIdMap.get(step.stepId);
-        if (!runStepId) continue;
-        for (const test of step.tests) {
-          allTests.push({
-            runStepId,
-            testName: test.testName,
-            status: test.status,
-            durationMs: test.durationMs,
-            errorMessage: test.errorMessage,
-          });
-        }
-      }
-
-      if (allTests.length > 0) {
-        await tx.insert(e2eRunTests).values(allTests);
+        logger.info("e2e_run_finalised", { runId, status: runStatus, durationS });
       }
     }
 
@@ -210,6 +250,6 @@ export async function completeE2eRun(
       });
     }
 
-    logger.info("e2e_run_completed", { runId, status: runStatus, stepCount: steps.length });
+    logger.info("e2e_run_completed", { runId, status: runStatus });
   });
 }

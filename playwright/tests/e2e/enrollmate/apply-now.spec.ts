@@ -14,11 +14,12 @@
  * NOTE: a full run submits a real application to the UAT backend.
  */
 import { readFile } from 'node:fs/promises';
-import { test } from '@playwright/test';
+import { test, type Page } from '@playwright/test';
 import {
   enrollmateFlowTypes,
   getEnrollmateFlowDefinition,
 } from '@mihc/enrollmate-contract';
+import type { EnrollmateFlowDefinition } from '@mihc/enrollmate-contract';
 import { createEnrollmateFixture } from '@mihc/enrollmate-contract/testing';
 import { assertCheck, initSmoke } from '../../../lib/checks';
 import { createEnrollmateValueResolver } from '../../../lib/enrollmate/value-resolver';
@@ -40,18 +41,19 @@ const activeFlowTypes = explicitFlowType
   : enrollmateFlowTypes;
 
 for (const flowType of activeFlowTypes) {
-  test.describe(`EnrollMate Apply Now — ${flowType}`, () => {
-    test(`completes the ${flowType} enrollment flow`, async ({ page }, testInfo) => {
-      const flow = getEnrollmateFlowDefinition(flowType);
-      initSmoke(testInfo, {
-        testId: `enrollmate-apply-now-${flowType}`,
-        url: flow.endpoint,
-        type: 'e2e',
-      });
+  const flowDefinition = getEnrollmateFlowDefinition(flowType);
+
+  test.describe.serial(`EnrollMate Apply Now — ${flowType}`, () => {
+    let page!: Page;
+    let flow!: EnrollmateFlowDefinition;
+    let data!: Record<string, unknown>;
+
+    test.beforeAll(async ({ browser }) => {
+      page = await browser.newPage();
+      flow = flowDefinition;
 
       // Resolve form data: from profile data file (automated) or generate
       // fixture data (manual run).
-      let data: Record<string, unknown>;
       let email: string;
 
       if (profileDataFile) {
@@ -73,12 +75,24 @@ for (const flowType of activeFlowTypes) {
           flowType === 'bachelors'
             ? { email, schoolNotFound: true, lastSchoolAttended: 'Rizal National High School' }
             : { email };
-            
+
         data = createEnrollmateFixture(flowType, {
           overrides,
           resolveField: createEnrollmateValueResolver(email),
         });
       }
+    });
+
+    test.afterAll(async () => {
+      await page?.close();
+    });
+
+    test('page-loads', async ({}, testInfo) => {
+      initSmoke(testInfo, {
+        testId: `enrollmate-apply-now-${flowType}`,
+        url: flow.endpoint,
+        type: 'e2e',
+      });
 
       const response = await page.goto(flow.endpoint);
       assertCheck(
@@ -87,50 +101,54 @@ for (const flowType of activeFlowTypes) {
         Boolean(response && response.ok()),
         `expected ok 2xx, got status=${response?.status()}`,
       );
+    });
 
-      const inputSteps = flow.steps.filter(hasFields);
-      let completedAllSteps = true;
+    for (const step of flowDefinition.steps.filter(hasFields)) {
+      const label = `step-${step.step} (${step.title})`;
 
-      for (const step of inputSteps) {
-        const label = `step-${step.step} (${step.title})`;
+      test(`${label}: filled`, async ({}, testInfo) => {
+        initSmoke(testInfo, {
+          testId: `enrollmate-apply-now-${flowType}`,
+          url: flow.endpoint,
+          type: 'e2e',
+        });
+        const started = Date.now();
+        const outcome = await fillStep(page, step, data);
+        assertCheck(testInfo, `${label}: filled`, outcome.ok, outcome.message, Date.now() - started);
+      });
 
-        const fillStart = Date.now();
-        const filled = await fillStep(page, step, data);
-        const fillDuration = Date.now() - fillStart;
-        assertCheck(testInfo, `${label}: filled`, filled.ok, filled.message, fillDuration);
-        if (!filled.ok) {
-          completedAllSteps = false;
-          break;
-        }
+      test(`${label}: advanced`, async ({}, testInfo) => {
+        initSmoke(testInfo, {
+          testId: `enrollmate-apply-now-${flowType}`,
+          url: flow.endpoint,
+          type: 'e2e',
+        });
+        const started = Date.now();
+        const outcome = await advanceStep(page);
+        assertCheck(testInfo, `${label}: advanced`, outcome.ok, outcome.message, Date.now() - started);
+      });
+    }
 
-        const advanceStart = Date.now();
-        const advanced = await advanceStep(page);
-        const advanceDuration = Date.now() - advanceStart;
-        assertCheck(testInfo, `${label}: advanced`, advanced.ok, advanced.message, advanceDuration);
-        if (!advanced.ok) {
-          completedAllSteps = false;
-          break;
-        }
-      }
+    test('submit', async ({}, testInfo) => {
+      initSmoke(testInfo, {
+        testId: `enrollmate-apply-now-${flowType}`,
+        url: flow.endpoint,
+        type: 'e2e',
+      });
+      const started = Date.now();
+      const outcome = await submitForm(page);
+      assertCheck(testInfo, 'submit', outcome.ok, outcome.message, Date.now() - started);
+    });
 
-      if (!completedAllSteps) return;
-
-      const submitStart = Date.now();
-      const submitted = await submitForm(page);
-      const submitDuration = Date.now() - submitStart;
-      assertCheck(testInfo, 'submit', submitted.ok, submitted.message, submitDuration);
-      if (!submitted.ok) return;
-
-      const confirmStart = Date.now();
-      const confirmed = await confirmSubmission(page);
-      const confirmDuration = Date.now() - confirmStart;
-      assertCheck(
-        testInfo,
-        'submission-confirmed',
-        confirmed.ok,
-        confirmed.message,
-        confirmDuration,
-      );
+    test('submission-confirmed', async ({}, testInfo) => {
+      initSmoke(testInfo, {
+        testId: `enrollmate-apply-now-${flowType}`,
+        url: flow.endpoint,
+        type: 'e2e',
+      });
+      const started = Date.now();
+      const outcome = await confirmSubmission(page);
+      assertCheck(testInfo, 'submission-confirmed', outcome.ok, outcome.message, Date.now() - started);
     });
   });
 }

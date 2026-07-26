@@ -3,8 +3,7 @@
  *
  * Flow: validate payload (zod) → step "fetch-profile" (DB read) → step
  * "create-run" (insert running row to lock profile) → step "run-suite"
- * (spawn Playwright, map report) → step "complete-run" (update status,
- * insert step/test results).
+ * (spawn Playwright, map report) → step "complete-run" (update status).
  *
  * The running row is created *before* the suite starts so the frontend
  * sees an active run and prevents concurrent submissions. startedAt is
@@ -110,6 +109,9 @@ export const e2eConsumer = inngest.createFunction(
     const mapped = await step.run("run-suite", async () => {
       const { report, exitCode } = await runE2e({
         correlationId,
+        runId,
+        profileId,
+        stepIds,
         flowType: profileData.flowType,
         profileFormData: profileData.formData,
         logger,
@@ -125,13 +127,12 @@ export const e2eConsumer = inngest.createFunction(
       perStep: mapped.steps.map((s) => ({ stepId: s.stepId, tests: s.tests.length, status: s.status })),
     });
 
-    // Step 4: Complete the run — update status, stamp completedAt via DB
-    // NOW(), insert step and test results.
+    // Step 4: Complete the run — update status and stamp completedAt via DB
+    // NOW(). The incremental reporter already persisted each check.
     await step.run("complete-run", async () =>
       completeE2eRun({
         runId,
         runStatus: mapped.status,
-        steps: mapped.steps,
         logger,
       }),
     );

@@ -19,6 +19,9 @@ const PLAYWRIGHT_BIN = join(PACKAGE_ROOT, "node_modules", ".bin", `playwright${p
 
 export interface RunE2eOptions {
   correlationId: string;
+  runId: string;
+  profileId: string;
+  stepIds: string[];
   flowType: "bachelors" | "microcredentials";
   profileFormData: Record<string, unknown>;
   logger: Logger;
@@ -29,8 +32,18 @@ export interface RunE2eResult {
   exitCode: number | null;
 }
 
+export function buildE2eArgs(): string[] {
+  return [
+    "test",
+    "tests/e2e/enrollmate/apply-now.spec.ts",
+    "--project=enrollmate",
+    "--workers=1",
+    "--reporter=./server/reporter/incremental-e2e-reporter.ts,json",
+  ];
+}
+
 export async function runE2e(opts: RunE2eOptions): Promise<RunE2eResult> {
-  const { correlationId, flowType, profileFormData, logger } = opts;
+  const { correlationId, runId, profileId, stepIds, flowType, profileFormData, logger } = opts;
 
   const reportPath = join(tmpdir(), `e2e-report-${correlationId}.json`);
   const dataPath = join(tmpdir(), `e2e-data-${correlationId}.json`);
@@ -43,6 +56,10 @@ export async function runE2e(opts: RunE2eOptions): Promise<RunE2eResult> {
     E2E_PROFILE_DATA_FILE: dataPath,
     FLOW_TYPE: flowType,
     PLAYWRIGHT_JSON_OUTPUT_FILE: reportPath,
+    E2E_RUN_ID: runId,
+    E2E_PROFILE_ID: profileId,
+    E2E_SELECTED_STEP_IDS: JSON.stringify(stepIds),
+    E2E_CORRELATION_ID: correlationId,
   };
 
   const testPath = "tests/e2e/enrollmate/apply-now.spec.ts";
@@ -51,7 +68,7 @@ export async function runE2e(opts: RunE2eOptions): Promise<RunE2eResult> {
   const exitCode = await new Promise<number | null>((resolvePromise) => {
     const child = spawn(
       PLAYWRIGHT_BIN,
-      ["test", testPath, "--project=enrollmate", "--reporter=json"],
+      buildE2eArgs(),
       { cwd: PACKAGE_ROOT, env, shell: platform() === "win32" },
     );
 

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { mapE2eResults } from "./map-e2e-results";
+import { mapE2eResults, resolveE2eStepId } from "./map-e2e-results";
 import type { PlaywrightJsonReport } from "./map-results";
 
 interface TestResult {
@@ -61,6 +61,18 @@ function reportFromSpecs(specs: SpecConfig[]): PlaywrightJsonReport {
     }],
   };
 }
+
+test("routes known checks and falls back to the last selected step", () => {
+  assert.equal(resolveE2eStepId("page-loads", ["new", "validated"]), "new");
+  assert.equal(
+    resolveE2eStepId("step-1 (Student Info): filled", ["new", "validated"]),
+    "validated",
+  );
+  assert.equal(
+    resolveE2eStepId("page-loads", ["validated", "verification"]),
+    "verification",
+  );
+});
 
 test("aborted run captures the final attempt's singular error", () => {
   const report = reportWith({
