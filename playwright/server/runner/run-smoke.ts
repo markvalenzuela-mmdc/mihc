@@ -38,6 +38,16 @@ export interface RunSmokeResult {
   exitCode: number | null;
 }
 
+export function buildSmokeArgs(target: SmokeTarget): string[] {
+  return [
+    "test",
+    target.testPath,
+    `--project=${target.project}`,
+    "--workers=1",
+    "--reporter=./server/reporter/incremental-smoke-reporter.ts,json",
+  ];
+}
+
 export async function runSmoke(opts: RunSmokeOptions): Promise<RunSmokeResult> {
   const { correlationId, runId, target, logger } = opts;
   const reportPath = join(tmpdir(), `smoke-report-${correlationId}.json`);
@@ -59,13 +69,7 @@ export async function runSmoke(opts: RunSmokeOptions): Promise<RunSmokeResult> {
   const exitCode = await new Promise<number | null>((resolvePromise) => {
     const child = spawn(
       PLAYWRIGHT_BIN,
-      [
-        "test",
-        target.testPath,
-        `--project=${target.project}`,
-        "--workers=1",
-        "--reporter=./server/reporter/incremental-smoke-reporter.ts,json",
-      ],
+      buildSmokeArgs(target),
       {
         cwd: PACKAGE_ROOT,
         env,
