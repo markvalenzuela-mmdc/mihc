@@ -383,6 +383,22 @@ describe("e2e profile service", () => {
         profileForm: true,
       },
     });
+    expect(e2eRunsFindFirst).toHaveBeenNthCalledWith(1, {
+      where: expect.any(Function),
+      orderBy: expect.any(Function),
+      with: {
+        startedByUser: true,
+        runSteps: {
+          with: {
+            e2eStep: true,
+            tests: {
+              orderBy: expect.any(Function),
+            },
+          },
+          orderBy: expect.any(Function),
+        },
+      },
+    });
     expect(enrollmateOptionsFindMany).not.toHaveBeenCalled();
   });
 
@@ -475,6 +491,22 @@ describe("e2e profile service", () => {
         passedSteps: 1,
         failedSteps: 1,
         durationSeconds: 190,
+      },
+    });
+
+    expect(e2eRunsFindFirst).toHaveBeenCalledWith({
+      where: expect.any(Function),
+      with: {
+        startedByUser: true,
+        runSteps: {
+          with: {
+            e2eStep: true,
+            tests: {
+              orderBy: expect.any(Function),
+            },
+          },
+          orderBy: expect.any(Function),
+        },
       },
     });
   });

@@ -94,7 +94,11 @@ export async function getE2eProfileById(
         runSteps: {
           with: {
             e2eStep: true,
-            tests: true,
+            tests: {
+              orderBy: (e2eRunTests, { asc }) => [
+                asc(e2eRunTests.createdAt),
+              ],
+            },
           },
           orderBy: (e2eRunSteps, { asc }) => [asc(e2eRunSteps.createdAt)],
         },
@@ -200,7 +204,11 @@ export async function getE2eRunById(
         runSteps: {
           with: {
             e2eStep: true,
-            tests: true,
+            tests: {
+              orderBy: (e2eRunTests, { asc }) => [
+                asc(e2eRunTests.createdAt),
+              ],
+            },
           },
           orderBy: (e2eRunSteps, { asc }) => [asc(e2eRunSteps.createdAt)],
         },
