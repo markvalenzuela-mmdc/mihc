@@ -7,10 +7,10 @@
 ## Quick Start
 
 ```bash
-just docker-local up  # start local PostgreSQL/PgDog, Inngest, Redis, and pgAdmin
-just setup            # install dependencies
-just db-migrate       # apply database migrations
-just db-seed          # seed the local database
+just docker local up  # start local PostgreSQL/PgDog, Inngest, Redis, and pgAdmin
+just app setup        # install dependencies
+just db migrate       # apply database migrations
+just db seed          # seed the local database
 just dev              # start Next.js dev server
 ```
 
@@ -19,7 +19,7 @@ Local database connections go through PgDog on `localhost:6432`. pgAdmin is avai
 Stop local infrastructure with:
 
 ```bash
-just docker-local down
+just docker local down
 ```
 
 See [`docs/containerized-infrastructure.md`](docs/containerized-infrastructure.md) for pgAdmin registration steps and service-specific environment files.
@@ -33,6 +33,7 @@ See [`docs/containerized-infrastructure.md`](docs/containerized-infrastructure.m
 | `playwright/`  | Browser smoke suite plus server consumer/unit tests    |
 | `docker/`      | Docker Compose files for containers                    |
 | `docs/`        | Documentation, design docs, and project references     |
+| `commands/`    | Namespaced Just recipes                                |
 
 See [`docs/docker-commands.md`](docs/docker-commands.md) for details on each Docker workflow and the difference between `nextjs/.env` and `docker/.env.build`.
 See [`docs/README.md`](docs/README.md) for the source-of-truth map, AI-agent
@@ -40,45 +41,47 @@ workflow, and current versus historical design documents.
 
 ## Commands
 
-Run `just` to see all available commands grouped by project:
+The executable inventory is the root `justfile` and `commands/*.just`. Run
+`just` to list every namespace, or `just app`, `just check`, `just db`,
+`just docker`, or `just playwright` to list one namespace. Bare `just dev`
+starts the normal development server; `just dev test` and `just dev fresh`
+select its other workflows.
 
-```text
-  nextjs
-    dev         Start dev server
-    dev-fresh   Start Docker services, reset database, and run dev server
-    build       Build for production
-    lint        Lint check
-    typecheck   TypeScript check
-    setup       Install dependencies
-    db-migrate  Apply database migrations
-    db-seed     Seed the database
-    db-reset    DANGER: Drop, recreate, migrate, and seed the database
+| Namespace | Command | Purpose |
+|---|---|---|
+| app | `just app build` | Build the production application |
+| app | `just app setup` | Install Next.js dependencies |
+| check | `just check lint` | Run the Next.js linter |
+| check | `just check typecheck` | Run the Next.js TypeScript check |
+| check | `just check lint-all` | Run all linters |
+| check | `just check test-all` | Run every Next.js and Playwright test suite |
+| db | `just db generate` | Generate database migrations |
+| db | `just db migrate` | Apply database migrations |
+| db | `just db seed` | Seed the database |
+| db | `just db reset` | Destructively reset, migrate, and seed the database |
+| dev | `just dev` | Start the normal Next.js development server |
+| dev | `just dev test` | Run Next.js unit and integration tests |
+| dev | `just dev fresh` | Start Docker, reset the database, and start development |
+| docker | `just docker local [up\|down]` | Start or stop local Compose services; defaults to `up` |
+| docker | `just docker build [force]` | Build and start Docker images; `force` disables cache |
+| docker | `just docker down` | Stop all project Docker services |
+| docker | `just docker deploy [up\|down]` | Start or stop deploy Compose services; defaults to `up` |
+| playwright | `just playwright smoke` | Run browser smoke tests against live MMDC |
+| playwright | `just playwright e2e` | Run E2E tests against EnrollMate UAT |
+| playwright | `just playwright unit` | Run server-only consumer unit tests |
+| playwright | `just playwright serve` | Start the Inngest consumer server |
 
-  docker
-    docker-local up|down  Start or stop local Docker Compose services
-    docker-build [force]  Build and run Docker images (add force to rebuild without cache)
-    docker-deploy up|down Start or stop deploy Docker Compose services
-    docker-down           Stop and remove all project Docker services
-
-  playwright
-    test-playwright       Run smoke tests (live MMDC website)
-    test-playwright-unit  Run server-only Node unit tests (no browser)
-    serve-playwright      Start the Inngest consumer server
-
-  all
-    lint-all    Run all linters
-    test-all    Run all tests
-```
+`just db reset` permanently resets the configured database after confirmation.
 
 ## Development Flow
 
 ### First-time setup
 
 ```bash
-just docker-local up
-just setup
-just db-migrate
-just db-seed
+just docker local up
+just app setup
+just db migrate
+just db seed
 ```
 
 ### Local development (two tabs)
@@ -88,7 +91,7 @@ The app and the Inngest consumer server run as separate processes. Open two term
 **Tab 1 — Next.js app** (Docker, database reset, dev server):
 
 ```bash
-just dev-fresh
+just dev fresh
 ```
 
 This starts Docker services, resets the database, and runs the Next.js dev server on `http://localhost:3000`.
@@ -96,7 +99,7 @@ This starts Docker services, resets the database, and runs the Next.js dev serve
 **Tab 2 — Playwright consumer server** (Inngest event handling):
 
 ```bash
-just serve-playwright
+just playwright serve
 ```
 
 This starts the Hono server on `http://localhost:3939` that handles Inngest events.
@@ -107,11 +110,12 @@ This starts the Hono server on `http://localhost:3939` that handles Inngest even
 git status --short --branch
 git diff
 
-just lint        # check for lint errors
-just typecheck   # verify types
+just check lint        # check for lint errors
+just check typecheck   # verify types
 
 # Build and test
-just build
+just dev test
+just app build
 ```
 
 ## Environment Variables

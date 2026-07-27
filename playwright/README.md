@@ -67,7 +67,7 @@ The Inngest consumer server listens for events and spawns browser test runs.
 Start it in a separate terminal:
 
 ```bash
-just serve-playwright   # from repo root
+just playwright serve   # from repo root
 ```
 
 Or directly:

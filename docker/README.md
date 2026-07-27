@@ -13,3 +13,9 @@ This directory contains Docker Compose files and configurations for containerizi
 Each service folder owns its own `compose.yml` (local), a `compose.deploy.yml` deploy variant (in `pgdog-postgres/`, `inngest/`, `pgadmin/`), `.env.example`, and local `.env` file.
 
 See [Containerized Infrastructure](../docs/containerized-infrastructure.md) for full documentation.
+
+From the repository root, use `just docker local up` and
+`just docker local down` for the normal local lifecycle. The complete
+namespaced Docker command surface is documented in [`../README.md`](../README.md);
+direct Compose commands remain available for lower-level inspection and
+maintenance.

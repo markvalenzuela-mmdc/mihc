@@ -56,16 +56,16 @@ docker compose -f docker/compose.local.yml config
 Start local infrastructure:
 
 ```bash
-just docker-local up
+just docker local up
 ```
 
 Stop local infrastructure:
 
 ```bash
-just docker-local down
+just docker local down
 ```
 
-`just docker-local` defaults to `up`.
+`just docker local` defaults to `up`.
 
 Destroy volumes (resets all data):
 
@@ -193,12 +193,12 @@ longer than the heartbeat interval.
 From the repository root:
 
 ```bash
-just docker-deploy up     # start deploy services (detached)
-just docker-deploy down   # stop deploy services
-just docker-deploy config # validate and print merged config
+just docker deploy up     # start deploy services (detached)
+just docker deploy down   # stop deploy services
+just docker deploy config # validate and print merged config
 ```
 
-`just docker-deploy` defaults to `up`.
+`just docker deploy` defaults to `up`.
 
 ## Coolify Deployment
 

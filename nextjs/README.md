@@ -7,6 +7,11 @@ validators, and reusable option sets.
 
 ## Development
 
+Repository-level workflows use the namespaced Just commands documented in
+[`../README.md`](../README.md), including `just dev`, `just dev test`,
+`just app build`, and `just db seed`. The package scripts below remain valid
+when working directly inside `nextjs/`.
+
 From `nextjs/`:
 
 ```powershell

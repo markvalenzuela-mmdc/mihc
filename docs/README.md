@@ -8,6 +8,7 @@ surfaces; read the relevant project instructions before editing.
 
 | Area | Authoritative location | Consumer guidance |
 |---|---|---|
+| Repository commands | `../justfile` and `../commands/*.just` | `../README.md`; run `just` for the executable inventory |
 | Shared EnrollMate definition | `packages/enrollmate-contract/src/definitions/enrollmate-form-fields.json` | `packages/enrollmate-contract/README.md` |
 | EnrollMate runtime contract | `packages/enrollmate-contract/src/form-definition.schema.ts`, `form-data.schema.ts`, and `registry.ts` | `packages/enrollmate-contract/README.md` |
 | Next.js application | `nextjs/` | `nextjs/AGENTS.md` and `nextjs/README.md` |
@@ -74,3 +75,5 @@ Before making changes:
 
 When a document is marked superseded or historical, use it to understand prior
 decisions but follow the current source-of-truth map and implementation docs.
+Command examples in brainstorms and plans are immutable historical records;
+they never override the live `README.md`, `justfile`, or `commands/*.just`.

@@ -6,7 +6,7 @@ The project has four Docker workflows, each with a distinct purpose. They share 
 
 ## Commands
 
-### `just docker-local up|down`
+### `just docker local [up|down]`
 
 Starts or stops **infrastructure only** ΓÇö the shared services that both the Next.js app and the Playwright consumer depend on. Does not run the application or test servers.
 
@@ -20,21 +20,21 @@ Starts or stops **infrastructure only** ΓÇö the shared services that both the
 **Use when:** You want to run the app locally via `pnpm dev` or run Playwright tests against a local database.
 
 ```bash
-just docker-local up      # start infrastructure
-just docker-local down    # stop infrastructure
+just docker local up      # start infrastructure
+just docker local down    # stop infrastructure
 ```
 
 Uses `docker/compose.local.yml`.
 
 ---
 
-### `just dev-fresh`
+### `just dev fresh`
 
 Full local development setup: starts infrastructure, resets the database, then runs the Next.js dev server. Equivalent to:
 
 ```bash
-just docker-local up
-just db-reset
+just docker local up
+just db reset
 just dev
 ```
 
@@ -42,13 +42,13 @@ just dev
 
 ---
 
-### `just docker-build [force]`
+### `just docker build [force]`
 
 Builds Docker images and starts the containerized Next.js application. Unlike the commands above, the Next.js app runs **inside a Docker container** rather than directly on your machine.
 
 ```bash
-just docker-build       # build with cache
-just docker-build force # force rebuild without cache
+just docker build       # build with cache
+just docker build force # force rebuild without cache
 ```
 
 This builds images for both `nextjs/` and `playwright/` using their Dockerfiles, then starts containers alongside the shared infrastructure. Pass `force` to add `--no-cache` to the build step.
@@ -61,13 +61,13 @@ Uses `docker/compose.build.yml`.
 
 ---
 
-### `just docker-deploy up|down`
+### `just docker deploy [up|down]`
 
 Starts or stops the **deployment-oriented stack** ΓÇö services configured for a Coolify or production-like environment. Uses shared Postgres + PgBouncer (instead of PgDog) and a shared Redis for Inngest.
 
 ```bash
-just docker-deploy up      # start deploy stack
-just docker-deploy down    # stop deploy stack
+just docker deploy up      # start deploy stack
+just docker deploy down    # stop deploy stack
 ```
 
 Uses `docker/compose.deploy.yml`.
@@ -84,12 +84,12 @@ Uses `docker/compose.deploy.yml`.
 
 ---
 
-### `just docker-down`
+### `just docker down`
 
 Stops and removes all project Docker services, regardless of which compose file started them.
 
 ```bash
-just docker-down
+just docker down
 ```
 
 This runs `docker compose -p docker down`, targeting the `docker` project name shared by `compose.local.yml`, `compose.build.yml`, and `compose.deploy.yml`.
@@ -102,7 +102,7 @@ This runs `docker compose -p docker down`, targeting the `docker` project name s
 
 ### `nextjs/.env` ΓÇö Local development
 
-Used by `just dev` and `just dev-fresh`. All service hostnames use `localhost` since you're running outside Docker:
+Used by `just dev` and `just dev fresh`. All service hostnames use `localhost` since you're running outside Docker:
 
 | Var | Host |
 |---|---|
@@ -111,7 +111,7 @@ Used by `just dev` and `just dev-fresh`. All service hostnames use `localhost` s
 
 ### `docker/.env.build` ΓÇö Docker build
 
-Used by `just docker-build`. All service hostnames use Docker service names since the app runs **inside** the container and reaches services via the internal Docker network:
+Used by `just docker build`. All service hostnames use Docker service names since the app runs **inside** the container and reaches services via the internal Docker network:
 
 | Var | Host |
 |---|---|

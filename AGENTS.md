@@ -22,7 +22,8 @@ runs report automated vs. manual mode.
 
 ## Cross-cutting
 
-- Root commands are managed via `justfile`. Run `just` to see available commands.
+- `README.md` is the primary repository command guide. The executable inventory
+  is `justfile` plus `commands/*.just`; run `just` to list every namespace.
 - For justfile conventions, read `docs/justfile-conventions.md`.
 - Read `docs/README.md` before making cross-project changes. It maps current
   source-of-truth files, test boundaries, package usage, and historical docs.
