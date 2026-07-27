@@ -1,123 +1,21 @@
-project_root := "."
+# Application commands
+mod app 'commands/app.just'
 
-_default:
-    @echo ""
-    @echo "  nextjs"
-    @echo "    dev         Start dev server"
-    @echo "    dev-fresh   Start Docker services, reset database, and run dev server"
-    @echo "    build       Build for production"
-    @echo "    lint        Lint check"
-    @echo "    dev-test    Run Next.js unit and integration tests"
-    @echo "    typecheck   TypeScript check"
-    @echo "    setup       Install dependencies"
-    @echo "    db-generate Generate database migrations"
-    @echo "    db-migrate  Apply database migrations"
-    @echo "    db-seed     Seed the database"
-    @echo "    db-reset    DANGER: Drop, recreate, migrate, and seed the database"
-    @echo ""
-    @echo "  docker"
-    @echo "    docker-local up|down  Start or stop local Docker Compose services"
-    @echo "    docker-build [force]  Build Docker images (add force to rebuild without cache)"
-    @echo "    docker-down           Stop and remove all project Docker services"
-    @echo "    docker-deploy up|down Start or stop deploy Compose services"
-    @echo ""
-    @echo "  playwright"
-    @echo "    test-playwright       Run smoke tests (live MMDC website)"
-    @echo "    test-playwright-e2e  Run e2e tests (live EnrollMate UAT)"
-    @echo "    test-playwright-unit  Run consumer unit tests"
-    @echo "    serve-playwright      Start the Inngest consumer server"
-    @echo ""
-    @echo "  all"
-    @echo "    lint-all    Run all linters"
-    @echo "    test-all    Run all tests"
-    @echo ""
+# Verification commands
+mod check 'commands/check.just'
 
-# ─────────────── nextjs ───────────────
+# Database commands
+mod db 'commands/db.just'
 
-# Start dev server
-dev:
-    cd {{project_root}}/nextjs && pnpm run dev
+# Development commands
+mod dev 'commands/dev.just'
 
-# Start local Docker services, reset the database, and run the Next.js dev server
-dev-fresh: (docker-local "up") db-reset dev
+# Docker commands
+mod docker 'commands/docker.just'
 
-# Build for production
-build:
-    cd {{project_root}}/nextjs && pnpm run build
+# Playwright and consumer commands
+mod playwright 'commands/playwright.just'
 
-# Lint
-lint:
-    cd {{project_root}}/nextjs && pnpm run lint
-
-# Run Next.js unit and integration tests
-dev-test:
-    cd {{project_root}}/nextjs && pnpm run test
-
-# TypeScript check
-typecheck:
-    cd {{project_root}}/nextjs && npx tsc --noEmit
-
-# Install dependencies
-setup:
-    cd {{project_root}}/nextjs && pnpm install
-
-# Generate database migrations
-db-generate:
-    cd {{project_root}}/nextjs && pnpm run db:generate
-
-# Apply database migrations
-db-migrate:
-    cd {{project_root}}/nextjs && pnpm run db:migrate
-
-# Seed the database
-db-seed:
-    cd {{project_root}}/nextjs && pnpm run db:seed
-
-# DANGER: Permanently drop, recreate, migrate, and seed the configured database
-[confirm("DANGER: This permanently drops and recreates the configured database. Continue? [Y/n]")]
-db-reset:
-    cd {{project_root}}/nextjs && pnpm run db:reset
-
-# ─────────────── docker ───────────────
-
-# Start or stop local Docker Compose services
-docker-local action="up":
-    @docker compose -f "{{project_root}}/docker/compose.local.yml" {{action}} {{if action == "up" { "-d" } else { "" }}}
-
-# Build Docker images
-docker-build rebuild="":
-    @docker compose -f "{{project_root}}/docker/compose.build.yml" build {{if rebuild == "force" { "--no-cache" } else { "" }}} && docker compose -f "{{project_root}}/docker/compose.build.yml" up -d
-
-# Stop and remove the project's Docker services (started by any compose file)
-docker-down:
-    @docker compose -p docker down
-
-# Start or stop deploy Docker Compose services
-docker-deploy action="up":
-    @docker compose -f "{{project_root}}/docker/compose.deploy.yml" {{action}} {{if action == "up" { "-d" } else { "" }}}
-
-# ─────────────── playwright ───────────────
-
-# Run the smoke suite against the live MMDC website (chromium)
-test-playwright:
-    cd {{project_root}}/playwright && pnpm run test:smoke
-
-# Run the e2e suite against the live EnrollMate UAT (enrollmate project)
-test-playwright-e2e:
-    cd {{project_root}}/playwright && pnpm run test:e2e
-
-# Run the consumer unit tests (pure result mapping)
-test-playwright-unit:
-    cd {{project_root}}/playwright && pnpm run test:unit
-
-# Start the Inngest consumer server (Hono; spawns the suite on request)
-serve-playwright:
-    cd {{project_root}}/playwright && pnpm run serve
-
-# ─────────────── all ───────────────
-
-# Run all linters
-lint-all: lint
-
-# Run all tests
-test-all: test-playwright-unit test-playwright test-playwright-e2e
+[private]
+default:
+    @just --list --list-submodules --unsorted
