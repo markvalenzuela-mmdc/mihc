@@ -1,19 +1,40 @@
 include:
   - path: services/pgdog-postgres/compose.yml
-    env_file: services/pgdog-postgres/.env
   - path: services/inngest/compose.yml
-    env_file: services/inngest/.env
   - path: services/pgadmin/compose.yml
-    env_file: services/pgadmin/.env
 
 services:
+  db-release:
+    image: ghcr.io/markvalenzuela-mmdc/mihc-nextjs-db-release:latest
+    restart: "no"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET is required}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:?BETTER_AUTH_URL is required}
+      PROD_MAINTAINER_NAME: ${PROD_MAINTAINER_NAME:?PROD_MAINTAINER_NAME is required}
+      PROD_MAINTAINER_EMAIL: ${PROD_MAINTAINER_EMAIL:?PROD_MAINTAINER_EMAIL is required}
+      PROD_MAINTAINER_PASSWORD: ${PROD_MAINTAINER_PASSWORD:?PROD_MAINTAINER_PASSWORD is required}
+    depends_on:
+      app-pgdog:
+        condition: service_started
+
   nextjs:
     image: ghcr.io/markvalenzuela-mmdc/mihc-nextjs:latest
     restart: unless-stopped
-    env_file: .env.build
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:?NEXT_PUBLIC_APP_URL is required}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET is required}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:?BETTER_AUTH_URL is required}
+      INNGEST_EVENT_KEY: ${INNGEST_EVENT_KEY:?INNGEST_EVENT_KEY is required}
+      INNGEST_BASE_URL: ${INNGEST_BASE_URL:?INNGEST_BASE_URL is required}
+      INNGEST_SIGNING_KEY: ${INNGEST_SIGNING_KEY:?INNGEST_SIGNING_KEY is required}
     ports:
       - "3000:3000"
     depends_on:
+      db-release:
+        condition: service_completed_successfully
       app-pgdog:
         condition: service_started
       inngest:
@@ -24,12 +45,18 @@ services:
     build:
       context: ../playwright
       dockerfile: Dockerfile
-    env_file: .env.build
     environment:
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      INNGEST_BASE_URL: ${INNGEST_BASE_URL:?INNGEST_BASE_URL is required}
+      INNGEST_EVENT_KEY: ${INNGEST_EVENT_KEY:?INNGEST_EVENT_KEY is required}
+      INNGEST_SIGNING_KEY: ${INNGEST_SIGNING_KEY:?INNGEST_SIGNING_KEY is required}
       INNGEST_DEV: "0"
+      PORT: "3939"
     expose:
       - "3939"
     depends_on:
+      db-release:
+        condition: service_completed_successfully
       app-postgres:
         condition: service_healthy
       app-pgdog:

@@ -7,6 +7,20 @@ include:
     env_file: services/pgadmin/.env
 
 services:
+  db-release:
+    image: mihc-nextjs-db-release:build
+    build:
+      context: ..
+      dockerfile: nextjs/Dockerfile
+      target: database-release
+    restart: "no"
+    env_file: .env.build
+    environment:
+      NODE_ENV: production
+    depends_on:
+      app-pgdog:
+        condition: service_started
+
   nextjs:
     image: mihc-nextjs:build
     build:
@@ -16,6 +30,8 @@ services:
     ports:
       - "3000:3000"
     depends_on:
+      db-release:
+        condition: service_completed_successfully
       app-pgdog:
         condition: service_started
       inngest:
@@ -32,6 +48,8 @@ services:
     expose:
       - "3939"
     depends_on:
+      db-release:
+        condition: service_completed_successfully
       app-postgres:
         condition: service_healthy
       app-pgdog:

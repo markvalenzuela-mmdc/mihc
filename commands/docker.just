@@ -16,4 +16,4 @@ down:
 
 # Start or stop deploy Docker Compose services
 deploy action="up":
-    @docker compose -f "{{ justfile_directory() }}/docker/compose.deploy.yml" {{action}} {{if action == "up" { "-d" } else { "" }}}
+    @docker compose --env-file "{{ justfile_directory() }}/docker/.env.deploy" -f "{{ justfile_directory() }}/docker/compose.deploy.yml" {{action}} {{if action == "up" { "-d" } else { "" }}}
