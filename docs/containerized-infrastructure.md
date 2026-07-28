@@ -201,7 +201,9 @@ From the repository root:
    `change-me`. Set `MIHC_IMAGE_TAG` to the immutable image tag emitted by the
    successful Next.js image workflow: `sha-` followed by the full 40-character
    Git commit SHA. The workflow builds both image targets before it publishes
-   either immutable tag, and it does not publish mutable `latest` tags.
+   either immutable tag, publishes the database-release image first and the
+   app image last as the usable-pair completion marker, and does not publish
+   mutable `latest` tags.
 3. Back up the production database.
 4. Validate the Compose configuration:
 

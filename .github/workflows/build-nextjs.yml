@@ -83,6 +83,17 @@ jobs:
           cache-from: type=gha,scope=nextjs-db-release
           cache-to: type=gha,mode=max,scope=nextjs-db-release
 
+      - name: Publish database-release immutable image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./nextjs/Dockerfile
+          target: database-release
+          push: true
+          tags: ${{ steps.release-meta.outputs.tags }}
+          labels: ${{ steps.release-meta.outputs.labels }}
+          cache-from: type=gha,scope=nextjs-db-release
+
       - name: Publish Next.js immutable image
         uses: docker/build-push-action@v6
         with:
@@ -94,14 +105,3 @@ jobs:
           build-args: |
             NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}
           cache-from: type=gha,scope=nextjs-app
-
-      - name: Publish database-release immutable image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./nextjs/Dockerfile
-          target: database-release
-          push: true
-          tags: ${{ steps.release-meta.outputs.tags }}
-          labels: ${{ steps.release-meta.outputs.labels }}
-          cache-from: type=gha,scope=nextjs-db-release
