@@ -110,7 +110,13 @@ async function runMigrations(testDatabaseUrl: string) {
   }
 }
 
-export async function setupTestDatabase() {
+interface SetupTestDatabaseOptions {
+  seed?: boolean;
+}
+
+export async function setupTestDatabase(
+  { seed = true }: SetupTestDatabaseOptions = {},
+) {
   const testDatabaseUrl = getRequiredEnv("TEST_DATABASE_URL");
 
   assertSafeTestDatabaseUrl(testDatabaseUrl);
@@ -118,16 +124,18 @@ export async function setupTestDatabase() {
   await resetSchema(testDatabaseUrl);
   await runMigrations(testDatabaseUrl);
 
-  const originalDatabaseUrl = process.env.DATABASE_URL;
-  process.env.DATABASE_URL = testDatabaseUrl;
+  if (seed) {
+    const originalDatabaseUrl = process.env.DATABASE_URL;
+    process.env.DATABASE_URL = testDatabaseUrl;
 
-  try {
-    await seedDatabase();
-  } finally {
-    if (originalDatabaseUrl) {
-      process.env.DATABASE_URL = originalDatabaseUrl;
-    } else {
-      delete process.env.DATABASE_URL;
+    try {
+      await seedDatabase();
+    } finally {
+      if (originalDatabaseUrl) {
+        process.env.DATABASE_URL = originalDatabaseUrl;
+      } else {
+        delete process.env.DATABASE_URL;
+      }
     }
   }
 
