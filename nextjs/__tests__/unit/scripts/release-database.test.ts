@@ -53,6 +53,19 @@ describe("releaseDatabase", () => {
     expect(createClient).not.toHaveBeenCalled();
   });
 
+  it("rejects a missing database URL before opening a database", async () => {
+    const createClient = vi.fn();
+
+    await expect(
+      releaseDatabase({
+        environment: { ...environment, DATABASE_URL: undefined },
+        createClient,
+      }),
+    ).rejects.toThrow("DATABASE_URL is required");
+
+    expect(createClient).not.toHaveBeenCalled();
+  });
+
   it("rejects missing configuration before opening a database", async () => {
     const createClient = vi.fn();
 
