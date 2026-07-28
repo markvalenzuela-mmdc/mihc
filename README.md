@@ -72,9 +72,10 @@ select its other workflows.
 | playwright | `just playwright unit` | Run server-only consumer unit tests |
 | playwright | `just playwright serve` | Start the Inngest consumer server |
 
-`just db reset` permanently resets the configured database after confirmation.
-Never run it against production. Normal deployments instead run `just db
-release` through the one-shot `db-release` Compose service.
+`just db migrate` applies migrations manually in development. `just db seed`
+loads complete development fixtures, and `just db release` manually runs the
+same production migrate/bootstrap sequence. `just db reset` permanently resets
+the configured database after confirmation. Never run it against production.
 
 ## Development Flow
 
@@ -149,19 +150,25 @@ See `playwright/.env.example` for defaults.
 
 Additional test-run env vars are documented in `playwright/AGENTS.md`.
 
-### Production database release (`docker/.env.deploy`)
+### Production bootstrap (`docker/.env.deploy`)
 
 | Var | Description |
 |---|---|
-| `MIHC_IMAGE_TAG` | Shared immutable app/release image tag (`sha-` plus the full 40-character Git commit SHA) |
 | `PROD_MAINTAINER_NAME` | Name for the production maintainer account |
 | `PROD_MAINTAINER_EMAIL` | Email address for the production maintainer account |
 | `PROD_MAINTAINER_PASSWORD` | Initial password when the production maintainer account is created |
 
 See `docker/.env.deploy.example` for the complete deployment environment
 template. `docker/.env.deploy` is ignored and must contain deployment secrets.
-Normal deployment and rollback always set one `MIHC_IMAGE_TAG` for both the
-Next.js and database-release images; mutable `latest` tags are not published.
+
+The production Next.js container applies committed Drizzle migrations and runs
+the idempotent production bootstrap before starting the Next.js server. If
+migration or bootstrap fails, the server does not start and Docker retries the
+container according to its restart policy.
+
+Production bootstrap creates or validates the configured maintainer, upserts
+the four Smoke Testing apps, never resets an existing password, and never loads
+development fixtures.
 
 ## Extending the Justfile
 

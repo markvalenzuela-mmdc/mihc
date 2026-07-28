@@ -7,10 +7,16 @@ This setup provides local development and Coolify-ready infrastructure for:
 - App PostgreSQL with a PgDog proxy
 - Inngest with its own PostgreSQL database and Redis
 - pgAdmin
-- Next.js and Playwright application services gated on a database release
+- Next.js and Playwright application services
 
-Application images are referenced by the deploy Compose stack; the `db-release`
-image applies the committed migration journal before application services start.
+The production Next.js container applies committed Drizzle migrations and runs
+the idempotent production bootstrap before starting the Next.js server. If
+migration or bootstrap fails, the server does not start and Docker retries the
+container according to its restart policy.
+
+Production bootstrap creates or validates the configured maintainer, upserts
+the four Smoke Testing apps, never resets an existing password, and never loads
+development fixtures.
 
 ## Compose files
 
@@ -18,7 +24,7 @@ image applies the committed migration journal before application services start.
 - `docker/services/pgdog-postgres/compose.yml` ΓÇö app PostgreSQL and PgDog
 - `docker/services/inngest/compose.yml` ΓÇö Inngest, Inngest PostgreSQL, and Inngest Redis
 - `docker/services/pgadmin/compose.yml` ΓÇö pgAdmin
-- `docker/compose.deploy.yml` ΓÇö deploy entrypoint that includes service Compose files plus `db-release`, Next.js, and Playwright
+- `docker/compose.deploy.yml` ΓÇö deploy entrypoint that includes service Compose files plus Next.js and Playwright
 
 Each service folder owns its own `.env.example` and local `.env` file. Local `.env` files are ignored by git.
 
@@ -175,7 +181,7 @@ Use `inngest-postgres`, not `localhost`, because pgAdmin runs inside Docker. Ins
 | Inngest databases | Dedicated inngest-postgres + inngest-redis | Shared postgres + redis services |
 | pgAdmin mode | Desktop mode | Desktop mode; master-password requirement disabled |
 | Port exposure | PgDog and pgAdmin have fixed local ports; Inngest dependencies use dynamic host ports | Deployment-specific |
-| Service layout | Included service-owned Compose files | Included service-owned Compose files plus `db-release`, Next.js, and Playwright |
+| Service layout | Included service-owned Compose files | Included service-owned Compose files plus Next.js and Playwright |
 
 The deploy stack also runs pgAdmin in desktop mode with its master-password
 requirement disabled. Do not expose pgAdmin publicly; restrict port 5050 to a
@@ -198,15 +204,7 @@ From the repository root:
 1. Copy `docker/.env.deploy.example` to the ignored `docker/.env.deploy`.
 2. Replace every example credential with a deployment secret. In particular,
    use the `APP_POSTGRES_PASSWORD` value in `DATABASE_URL` instead of
-   `change-me`. Set `MIHC_IMAGE_TAG` to the immutable image tag emitted by the
-   successful Next.js image workflow: `sha-` followed by the full 40-character
-   Git commit SHA. The workflow builds both image targets before it publishes
-   either immutable tag, publishes the database-release image first and the
-   app image last as the usable-pair completion marker, and does not publish
-   mutable `latest` tags. Same-commit workflow runs are serialized. A rerun
-   skips an intact image pair without overwriting it; if only one image exists,
-   the workflow fails before any push and directs the operator to remove the
-   orphan tag or restore its same-commit counterpart.
+   `change-me`.
 3. Back up the production database.
 4. Validate the Compose configuration:
 
@@ -223,70 +221,18 @@ From the repository root:
    `just docker deploy up` is the equivalent normal deployment shortcut and
    loads `docker/.env.deploy` automatically.
 
-6. Inspect the database release logs:
+6. Inspect the Next.js startup logs:
 
    ```bash
-   docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml logs db-release
+   docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml logs nextjs
    ```
 
-The `db-release` service applies committed Drizzle migrations, then bootstraps
-the configured maintainer and Smoke Testing app catalog. The maintainer
-password initializes a missing account; it does not rotate an existing
-account's password. Production bootstrap never loads synthetic histories or
-profiles.
-
-At cold start, `db-release` makes up to 12 database connection attempts, with a
-5-second connection timeout and 5 seconds between attempts. Migrations do not
-begin until a connection through the configured `DATABASE_URL` succeeds and a
-`SELECT 1` probe confirms that PostgreSQL can execute a query. A failed
-connection or probe closes that client before retrying. A terminal readiness
-failure reports the attempt count and the PgDog/PostgreSQL settings to inspect
-without printing the URL or credentials.
-
-After readiness succeeds, one dedicated PostgreSQL client holds a session
-advisory lock across the complete migration and bootstrap sequence. PgDog's
-query parser is enabled so its transaction pool pins the server connection that
-owns the lock. Concurrent release containers wait for the current release to
-unlock or disconnect, including releases started by another Compose project or
-host using the same database. Lock acquisition has a 5-minute timeout. The
-release unlocks explicitly, and PostgreSQL also releases the lock automatically
-if the dedicated connection is lost.
-
-An existing maintainer is accepted only when it has exactly one canonical
-Better Auth credential account with a stored password hash. If the user row is
-credentialless, malformed, or has duplicate credential accounts, release stops
-before updating the user or app catalog. Recover the account through the
-application's supported Better Auth password or account recovery flow, then
-retry `db-release`. Do not try to repair it by changing
-`PROD_MAINTAINER_PASSWORD`; deployment never creates or resets a password for
-an existing user.
-
-If configuration or a database dependency fails, correct it, then retry only
-the release service before starting the rest of the stack:
-
-```bash
-docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml run --rm db-release
-docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml up -d
-```
-
-For an exact application rollback, choose the full Git commit SHA from the
-previous successful image workflow and set the single deployment value:
-
-```dotenv
-MIHC_IMAGE_TAG=sha-0123456789abcdef0123456789abcdef01234567
-```
-
-Verify that both `mihc-nextjs` and `mihc-nextjs-db-release` have that exact tag,
-then validate and redeploy:
-
-```bash
-docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml config --quiet
-docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml up -d
-```
-
-Never mix tags or roll only one of the two images. Image rollback does not undo
-database migrations. Correct schema problems with a new forward Drizzle
-migration, and never run `just db reset` against production.
+For manual development workflows, use `just db migrate` to apply migrations,
+`just db seed` to load complete development fixtures, and `just db release` to
+run the same production migrate/bootstrap sequence. `just db reset` permanently
+resets its configured database; never run it against production. Image rollback
+does not undo database migrations. Correct schema problems with a new forward
+Drizzle migration.
 
 ## Coolify Deployment
 

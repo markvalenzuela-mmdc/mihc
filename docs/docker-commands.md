@@ -54,8 +54,7 @@ just docker build force # force rebuild without cache
 This builds images for both `nextjs/` and `playwright/` using their Dockerfiles, then starts containers alongside the shared infrastructure. Pass `force` to add `--no-cache` to the build step.
 
 `just docker build` uses the non-production values in `docker/.env.build` to
-exercise the production-image path, including the one-shot `db-release`
-service.
+exercise the production-image startup path.
 
 The app is available at `http://localhost:3000`.
 
@@ -67,7 +66,7 @@ Uses `docker/compose.build.yml`.
 
 ### `just docker deploy [up|down]`
 
-Starts or stops the **deployment-oriented stack** ΓÇö services configured for a Coolify or production-like environment. It uses the ignored `docker/.env.deploy` deployment environment, shared PostgreSQL + PgDog, and shared Redis for Inngest. `MIHC_IMAGE_TAG` is required and selects both the Next.js and database-release images using one immutable `sha-<full-commit>` tag.
+Starts or stops the **deployment-oriented stack** ΓÇö services configured for a Coolify or production-like environment. It uses the ignored `docker/.env.deploy` deployment environment, shared PostgreSQL + PgDog, and shared Redis for Inngest.
 
 ```bash
 just docker deploy up      # start deploy stack
@@ -90,38 +89,23 @@ docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml down
 - Redis (`redis`)
 - Inngest server (`inngest`, port `8288`)
 - pgAdmin (`pgadmin`, port `5050`)
-- Database release (`db-release`) ΓÇö applies migrations and bootstraps production data
 - Next.js app (`nextjs`, port `3000`) ΓÇö pulled from `ghcr.io/markvalenzuela-mmdc/mihc-nextjs`
 - Playwright consumer (`playwright`)
 
 **Use when:** You want to run the full stack using the published Docker image against shared infrastructure, matching the Coolify deployment topology.
 
-`nextjs` and `playwright` depend on `db-release` with
-`service_completed_successfully`. Compose starts them only after the release
-container exits with status 0. The release retries database readiness 12 times,
-then holds a PostgreSQL session advisory lock on one dedicated connection
-before migrations so concurrent hosts cannot interleave migrate/bootstrap work.
-PgDog is configured to pin advisory-lock sessions safely while using
-transaction pooling. If the release fails, correct the failure and retry it
-with the same immutable image tag before starting the application services:
+The production Next.js container applies committed Drizzle migrations and runs
+the idempotent production bootstrap before starting the Next.js server. If
+migration or bootstrap fails, the server does not start and Docker retries the
+container according to its restart policy.
 
-```bash
-docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml logs db-release
-docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml run --rm db-release
-docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml up -d
-```
-
-If release reports an existing credentialless or malformed maintainer, restore
-the credential through a supported Better Auth password/account recovery flow.
-Changing `PROD_MAINTAINER_PASSWORD` does not repair or reset an existing
-account.
-
-To roll back, set `MIHC_IMAGE_TAG` in `docker/.env.deploy` to the previous
-successful exact tag (for example
-`sha-0123456789abcdef0123456789abcdef01234567`), verify that exact tag exists
-for both published images, then run the `config --quiet` and `up -d` commands
-above. Never mix app and release tags; image rollback does not reverse database
-migrations.
+Production bootstrap creates or validates the configured maintainer, upserts
+the four Smoke Testing apps, never resets an existing password, and never loads
+development fixtures. For manual development workflows, use `just db migrate`
+to apply migrations, `just db seed` to load complete development fixtures, and
+`just db release` to run the same production migrate/bootstrap sequence. Never
+run `just db reset` against production. Image rollback does not undo database
+migrations; correct schema problems with a new forward Drizzle migration.
 
 ---
 

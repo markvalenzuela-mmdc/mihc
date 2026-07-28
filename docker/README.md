@@ -8,25 +8,26 @@ This directory contains Docker Compose files and configurations for containerizi
 - `services/pgdog-postgres/` ΓÇö App PostgreSQL and PgDog proxy
 - `services/inngest/` ΓÇö Inngest, its PostgreSQL database, and Redis
 - `services/pgadmin/` ΓÇö pgAdmin
-- `compose.deploy.yml` ΓÇö Deploy entrypoint that includes shared service Compose files plus the deploy-only `db-release`, Next.js, and Playwright services
+- `compose.deploy.yml` ΓÇö Deploy entrypoint that includes shared service Compose files plus Next.js and Playwright services
 
 Each service folder owns its shared `compose.yml`, `.env.example`, and local
-`.env` file. `compose.deploy.yml` defines the deploy-only release and
-application services.
+`.env` file. `compose.deploy.yml` defines the deploy-only application services.
 
 See [Containerized Infrastructure](../docs/containerized-infrastructure.md) for full documentation.
 
-## Database release
+## Next.js startup database release
 
-Deploy and production-image Compose stacks run `db-release` once before
-Next.js and Playwright. The service validates production configuration, applies
-committed Drizzle migrations, and idempotently bootstraps the configured
-maintainer plus the Smoke Testing app catalog. Application services start only
-after the release container exits successfully. The deploy stack requires one
-immutable `MIHC_IMAGE_TAG` (`sha-` plus a full Git commit SHA) for both the
-Next.js and database-release images, so the two targets cannot drift between
-releases. PgDog enables lock-aware query parsing so the release container can
-hold one session advisory lock safely across migrations and bootstrap.
+The production Next.js container applies committed Drizzle migrations and runs
+the idempotent production bootstrap before starting the Next.js server. If
+migration or bootstrap fails, the server does not start and Docker retries the
+container according to its restart policy.
+
+Production bootstrap creates or validates the configured maintainer, upserts
+the four Smoke Testing apps, never resets an existing password, and never loads
+development fixtures. For manual development workflows, use `just db migrate`
+to apply migrations, `just db seed` to load complete development fixtures, and
+`just db release` to run the same production migrate/bootstrap sequence. Never
+run `just db reset` against production.
 
 From the repository root, use `just docker local up` and
 `just docker local down` for the normal local lifecycle. The complete
