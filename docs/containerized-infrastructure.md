@@ -198,7 +198,10 @@ From the repository root:
 1. Copy `docker/.env.deploy.example` to the ignored `docker/.env.deploy`.
 2. Replace every example credential with a deployment secret. In particular,
    use the `APP_POSTGRES_PASSWORD` value in `DATABASE_URL` instead of
-   `change-me`.
+   `change-me`. Set `MIHC_IMAGE_TAG` to the immutable image tag emitted by the
+   successful Next.js image workflow: `sha-` followed by the full 40-character
+   Git commit SHA. The workflow builds both image targets before it publishes
+   either immutable tag, and it does not publish mutable `latest` tags.
 3. Back up the production database.
 4. Validate the Compose configuration:
 
@@ -227,6 +230,30 @@ password initializes a missing account; it does not rotate an existing
 account's password. Production bootstrap never loads synthetic histories or
 profiles.
 
+At cold start, `db-release` makes up to 12 database connection attempts, with a
+5-second connection timeout and 5 seconds between attempts. Migrations do not
+begin until a connection through the configured `DATABASE_URL` succeeds. A
+failed readiness check reports the attempt count and the PgDog/PostgreSQL
+settings to inspect without printing the URL or credentials.
+
+After readiness succeeds, one dedicated PostgreSQL client holds a session
+advisory lock across the complete migration and bootstrap sequence. PgDog's
+query parser is enabled so its transaction pool pins the server connection that
+owns the lock. Concurrent release containers wait for the current release to
+unlock or disconnect, including releases started by another Compose project or
+host using the same database. Lock acquisition has a 5-minute timeout. The
+release unlocks explicitly, and PostgreSQL also releases the lock automatically
+if the dedicated connection is lost.
+
+An existing maintainer is accepted only when it has exactly one canonical
+Better Auth credential account with a stored password hash. If the user row is
+credentialless, malformed, or has duplicate credential accounts, release stops
+before updating the user or app catalog. Recover the account through the
+application's supported Better Auth password or account recovery flow, then
+retry `db-release`. Do not try to repair it by changing
+`PROD_MAINTAINER_PASSWORD`; deployment never creates or resets a password for
+an existing user.
+
 If configuration or a database dependency fails, correct it, then retry only
 the release service before starting the rest of the stack:
 
@@ -235,9 +262,24 @@ docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml run --
 docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml up -d
 ```
 
-To roll back, roll back the application image independently. Correct schema
-problems with a new forward Drizzle migration; never run `just db reset`
-against production.
+For an exact application rollback, choose the full Git commit SHA from the
+previous successful image workflow and set the single deployment value:
+
+```dotenv
+MIHC_IMAGE_TAG=sha-0123456789abcdef0123456789abcdef01234567
+```
+
+Verify that both `mihc-nextjs` and `mihc-nextjs-db-release` have that exact tag,
+then validate and redeploy:
+
+```bash
+docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml config --quiet
+docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml up -d
+```
+
+Never mix tags or roll only one of the two images. Image rollback does not undo
+database migrations. Correct schema problems with a new forward Drizzle
+migration, and never run `just db reset` against production.
 
 ## Coolify Deployment
 

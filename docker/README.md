@@ -22,7 +22,11 @@ Deploy and production-image Compose stacks run `db-release` once before
 Next.js and Playwright. The service validates production configuration, applies
 committed Drizzle migrations, and idempotently bootstraps the configured
 maintainer plus the Smoke Testing app catalog. Application services start only
-after the release container exits successfully.
+after the release container exits successfully. The deploy stack requires one
+immutable `MIHC_IMAGE_TAG` (`sha-` plus a full Git commit SHA) for both the
+Next.js and database-release images, so the two targets cannot drift between
+releases. PgDog enables lock-aware query parsing so the release container can
+hold one session advisory lock safely across migrations and bootstrap.
 
 From the repository root, use `just docker local up` and
 `just docker local down` for the normal local lifecycle. The complete

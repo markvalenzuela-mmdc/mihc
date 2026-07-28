@@ -153,12 +153,15 @@ Additional test-run env vars are documented in `playwright/AGENTS.md`.
 
 | Var | Description |
 |---|---|
+| `MIHC_IMAGE_TAG` | Shared immutable app/release image tag (`sha-` plus the full 40-character Git commit SHA) |
 | `PROD_MAINTAINER_NAME` | Name for the production maintainer account |
 | `PROD_MAINTAINER_EMAIL` | Email address for the production maintainer account |
 | `PROD_MAINTAINER_PASSWORD` | Initial password when the production maintainer account is created |
 
 See `docker/.env.deploy.example` for the complete deployment environment
 template. `docker/.env.deploy` is ignored and must contain deployment secrets.
+Normal deployment and rollback always set one `MIHC_IMAGE_TAG` for both the
+Next.js and database-release images; mutable `latest` tags are not published.
 
 ## Extending the Justfile
 

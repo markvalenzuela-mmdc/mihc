@@ -5,7 +5,7 @@ include:
 
 services:
   db-release:
-    image: ghcr.io/markvalenzuela-mmdc/mihc-nextjs-db-release:latest
+    image: ghcr.io/markvalenzuela-mmdc/mihc-nextjs-db-release:${MIHC_IMAGE_TAG:?MIHC_IMAGE_TAG is required}
     restart: "no"
     environment:
       NODE_ENV: production
@@ -20,7 +20,7 @@ services:
         condition: service_started
 
   nextjs:
-    image: ghcr.io/markvalenzuela-mmdc/mihc-nextjs:latest
+    image: ghcr.io/markvalenzuela-mmdc/mihc-nextjs:${MIHC_IMAGE_TAG:?MIHC_IMAGE_TAG is required}
     restart: unless-stopped
     environment:
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}

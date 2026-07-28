@@ -67,7 +67,7 @@ Uses `docker/compose.build.yml`.
 
 ### `just docker deploy [up|down]`
 
-Starts or stops the **deployment-oriented stack** ΓÇö services configured for a Coolify or production-like environment. It uses the ignored `docker/.env.deploy` deployment environment, shared PostgreSQL + PgDog, and shared Redis for Inngest.
+Starts or stops the **deployment-oriented stack** ΓÇö services configured for a Coolify or production-like environment. It uses the ignored `docker/.env.deploy` deployment environment, shared PostgreSQL + PgDog, and shared Redis for Inngest. `MIHC_IMAGE_TAG` is required and selects both the Next.js and database-release images using one immutable `sha-<full-commit>` tag.
 
 ```bash
 just docker deploy up      # start deploy stack
@@ -98,14 +98,30 @@ docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml down
 
 `nextjs` and `playwright` depend on `db-release` with
 `service_completed_successfully`. Compose starts them only after the release
-container exits with status 0; if the release fails, correct the failure and
-retry it before starting the application services:
+container exits with status 0. The release retries database readiness 12 times,
+then holds a PostgreSQL session advisory lock on one dedicated connection
+before migrations so concurrent hosts cannot interleave migrate/bootstrap work.
+PgDog is configured to pin advisory-lock sessions safely while using
+transaction pooling. If the release fails, correct the failure and retry it
+with the same immutable image tag before starting the application services:
 
 ```bash
 docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml logs db-release
 docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml run --rm db-release
 docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml up -d
 ```
+
+If release reports an existing credentialless or malformed maintainer, restore
+the credential through a supported Better Auth password/account recovery flow.
+Changing `PROD_MAINTAINER_PASSWORD` does not repair or reset an existing
+account.
+
+To roll back, set `MIHC_IMAGE_TAG` in `docker/.env.deploy` to the previous
+successful exact tag (for example
+`sha-0123456789abcdef0123456789abcdef01234567`), verify that exact tag exists
+for both published images, then run the `config --quiet` and `up -d` commands
+above. Never mix app and release tags; image rollback does not reverse database
+migrations.
 
 ---
 
