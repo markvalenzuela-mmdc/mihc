@@ -7,7 +7,7 @@ import {
 
 function createFakeTransaction() {
   const onConflictDoUpdate = vi.fn().mockResolvedValue(undefined);
-  const values = vi.fn(() => ({ onConflictDoUpdate }));
+  const values = vi.fn((_value: unknown) => ({ onConflictDoUpdate }));
   const insert = vi.fn(() => ({ values }));
 
   return {
