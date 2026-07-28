@@ -173,9 +173,13 @@ Use `inngest-postgres`, not `localhost`, because pgAdmin runs inside Docker. Ins
 | Credentials | Service-local `.env` files | Supplied via env secrets |
 | Connection pool | PgDog (port 6432) | PgDog (internal) |
 | Inngest databases | Dedicated inngest-postgres + inngest-redis | Shared postgres + redis services |
-| pgAdmin mode | Desktop mode | Server mode + MFA |
+| pgAdmin mode | Desktop mode | Desktop mode; master-password requirement disabled |
 | Port exposure | PgDog and pgAdmin have fixed local ports; Inngest dependencies use dynamic host ports | Deployment-specific |
 | Service layout | Included service-owned Compose files | Included service-owned Compose files plus `db-release`, Next.js, and Playwright |
+
+The deploy stack also runs pgAdmin in desktop mode with its master-password
+requirement disabled. Do not expose pgAdmin publicly; restrict port 5050 to a
+private network or trusted operator access.
 
 ## Smoke Testing live updates
 
@@ -240,7 +244,7 @@ against production.
 1. Copy or reference the `docker/compose.deploy.yml` along with its included service files under `docker/services/*/compose.yml` as the compose definition in Coolify.
 2. Set the environment variables from `docker/.env.deploy.example` as Coolify environment variables.
 3. Generate secrets for `APP_POSTGRES_PASSWORD`, `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`, `PGADMIN_DEFAULT_PASSWORD`, `BETTER_AUTH_SECRET`, and `PROD_MAINTAINER_PASSWORD`.
-4. Enable HTTPS for the Inngest (8288) and pgAdmin (5050) public ports in Coolify.
+4. Enable HTTPS for the Inngest (8288) public port. Keep pgAdmin (5050) private.
 5. Deploy.
 
 > PostgreSQL and Redis use named volumes (`deploy-postgres-data`, `deploy-redis-data`). Coolify will manage these as persistent storage.

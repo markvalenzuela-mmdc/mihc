@@ -8,9 +8,11 @@ This directory contains Docker Compose files and configurations for containerizi
 - `services/pgdog-postgres/` ΓÇö App PostgreSQL and PgDog proxy
 - `services/inngest/` ΓÇö Inngest, its PostgreSQL database, and Redis
 - `services/pgadmin/` ΓÇö pgAdmin
-- `compose.deploy.yml` ΓÇö Deploy entrypoint that includes deploy-variant Compose files and the Next.js service
+- `compose.deploy.yml` ΓÇö Deploy entrypoint that includes shared service Compose files plus the deploy-only `db-release`, Next.js, and Playwright services
 
-Each service folder owns its own `compose.yml` (local), a `compose.deploy.yml` deploy variant (in `pgdog-postgres/`, `inngest/`, `pgadmin/`), `.env.example`, and local `.env` file.
+Each service folder owns its shared `compose.yml`, `.env.example`, and local
+`.env` file. `compose.deploy.yml` defines the deploy-only release and
+application services.
 
 See [Containerized Infrastructure](../docs/containerized-infrastructure.md) for full documentation.
 
