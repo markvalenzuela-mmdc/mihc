@@ -13,17 +13,12 @@ COPY nextjs/package.json nextjs/pnpm-lock.yaml nextjs/pnpm-workspace.yaml ./next
 WORKDIR /app/nextjs
 RUN pnpm install --frozen-lockfile --ignore-scripts
 
-FROM deps AS database-release
+FROM base AS runtime-deps
 
-ENV NODE_ENV="production"
-
-WORKDIR /app
-COPY packages ./packages
-COPY nextjs ./nextjs
-
+COPY packages/enrollmate-contract ./packages/enrollmate-contract
+COPY nextjs/package.json nextjs/pnpm-lock.yaml nextjs/pnpm-workspace.yaml ./nextjs/
 WORKDIR /app/nextjs
-
-CMD ["pnpm", "run", "db:release"]
+RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 
 FROM base AS builder
 
@@ -61,9 +56,15 @@ RUN addgroup --system --gid 1001 nodejs \
 COPY --from=builder /app/nextjs/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/nextjs/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/nextjs/.next/static ./.next/static
+COPY --from=runtime-deps --chown=nextjs:nodejs /app/nextjs/node_modules ./nextjs/node_modules
+COPY --chown=nextjs:nodejs packages ./packages
+COPY --chown=nextjs:nodejs nextjs/package.json nextjs/tsconfig.json ./nextjs/
+COPY --chown=nextjs:nodejs nextjs/drizzle ./nextjs/drizzle
+COPY --chown=nextjs:nodejs nextjs/lib ./nextjs/lib
+COPY --chown=nextjs:nodejs nextjs/scripts ./nextjs/scripts
 
 USER nextjs
 
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["sh", "-c", "cd /app/nextjs && ./node_modules/.bin/tsx scripts/release-database.ts && cd /app && exec node server.js"]
