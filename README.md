@@ -57,8 +57,9 @@ select its other workflows.
 | check | `just check test-all` | Run every Next.js and Playwright test suite |
 | db | `just db generate` | Generate database migrations |
 | db | `just db migrate` | Apply database migrations |
-| db | `just db seed` | Seed the database |
-| db | `just db reset` | Destructively reset, migrate, and seed the database |
+| db | `just db seed` | Development only: seed database fixtures |
+| db | `just db release` | Production only: apply Drizzle migrations and bootstrap the maintainer plus Smoke Testing apps |
+| db | `just db reset` | Development only: destructively reset, migrate, and seed the database |
 | dev | `just dev` | Start the normal Next.js development server |
 | dev | `just dev test` | Run Next.js unit and integration tests |
 | dev | `just dev fresh` | Start Docker, reset the database, and start development |
@@ -72,6 +73,8 @@ select its other workflows.
 | playwright | `just playwright serve` | Start the Inngest consumer server |
 
 `just db reset` permanently resets the configured database after confirmation.
+Never run it against production. Normal deployments instead run `just db
+release` through the one-shot `db-release` Compose service.
 
 ## Development Flow
 
@@ -145,6 +148,17 @@ See `nextjs/.env.example` for defaults.
 See `playwright/.env.example` for defaults.
 
 Additional test-run env vars are documented in `playwright/AGENTS.md`.
+
+### Production database release (`docker/.env.deploy`)
+
+| Var | Description |
+|---|---|
+| `PROD_MAINTAINER_NAME` | Name for the production maintainer account |
+| `PROD_MAINTAINER_EMAIL` | Email address for the production maintainer account |
+| `PROD_MAINTAINER_PASSWORD` | Initial password when the production maintainer account is created |
+
+See `docker/.env.deploy.example` for the complete deployment environment
+template. `docker/.env.deploy` is ignored and must contain deployment secrets.
 
 ## Extending the Justfile
 

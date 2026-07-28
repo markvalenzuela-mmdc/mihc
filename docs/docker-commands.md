@@ -53,6 +53,10 @@ just docker build force # force rebuild without cache
 
 This builds images for both `nextjs/` and `playwright/` using their Dockerfiles, then starts containers alongside the shared infrastructure. Pass `force` to add `--no-cache` to the build step.
 
+`just docker build` uses the non-production values in `docker/.env.build` to
+exercise the production-image path, including the one-shot `db-release`
+service.
+
 The app is available at `http://localhost:3000`.
 
 **Use when:** You want to test the production Docker build or run the app fully containerized.
@@ -63,7 +67,7 @@ Uses `docker/compose.build.yml`.
 
 ### `just docker deploy [up|down]`
 
-Starts or stops the **deployment-oriented stack** ΓÇö services configured for a Coolify or production-like environment. Uses shared Postgres + PgBouncer (instead of PgDog) and a shared Redis for Inngest.
+Starts or stops the **deployment-oriented stack** ΓÇö services configured for a Coolify or production-like environment. It uses the ignored `docker/.env.deploy` deployment environment, shared PostgreSQL + PgDog, and shared Redis for Inngest.
 
 ```bash
 just docker deploy up      # start deploy stack
@@ -72,15 +76,36 @@ just docker deploy down    # stop deploy stack
 
 Uses `docker/compose.deploy.yml`.
 
+For direct Compose operations, pass the deploy environment explicitly:
+
+```bash
+docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml config --quiet
+docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml up -d
+docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml down
+```
+
 **Services started:**
-- PostgreSQL (`postgres`)
-- PgBouncer connection pooler (`pgbouncer`)
+- PostgreSQL (`app-postgres`)
+- PgDog connection pooler (`app-pgdog`)
 - Redis (`redis`)
 - Inngest server (`inngest`, port `8288`)
 - pgAdmin (`pgadmin`, port `5050`)
+- Database release (`db-release`) ΓÇö applies migrations and bootstraps production data
 - Next.js app (`nextjs`, port `3000`) ΓÇö pulled from `ghcr.io/markvalenzuela-mmdc/mihc-nextjs`
+- Playwright consumer (`playwright`)
 
 **Use when:** You want to run the full stack using the published Docker image against shared infrastructure, matching the Coolify deployment topology.
+
+`nextjs` and `playwright` depend on `db-release` with
+`service_completed_successfully`. Compose starts them only after the release
+container exits with status 0; if the release fails, correct the failure and
+retry it before starting the application services:
+
+```bash
+docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml logs db-release
+docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml run --rm db-release
+docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml up -d
+```
 
 ---
 

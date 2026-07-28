@@ -7,8 +7,10 @@ This setup provides local development and Coolify-ready infrastructure for:
 - App PostgreSQL with a PgDog proxy
 - Inngest with its own PostgreSQL database and Redis
 - pgAdmin
+- Next.js and Playwright application services gated on a database release
 
-No application code, schemas, migrations, Dockerfiles, or app images are included.
+Application images are referenced by the deploy Compose stack; the `db-release`
+image applies the committed migration journal before application services start.
 
 ## Compose files
 
@@ -16,10 +18,7 @@ No application code, schemas, migrations, Dockerfiles, or app images are include
 - `docker/services/pgdog-postgres/compose.yml` ΓÇö app PostgreSQL and PgDog
 - `docker/services/inngest/compose.yml` ΓÇö Inngest, Inngest PostgreSQL, and Inngest Redis
 - `docker/services/pgadmin/compose.yml` ΓÇö pgAdmin
-- `docker/compose.deploy.yml` ΓÇö deploy entrypoint that includes deploy-variant Compose files and the Next.js service
-- `docker/services/pgdog-postgres/compose.yml` ΓÇö local and deploy app PostgreSQL plus PgDog
-- `docker/services/inngest/compose.deploy.yml` ΓÇö deploy Redis and Inngest (shared Postgres/Redis)
-- `docker/services/pgadmin/compose.deploy.yml` ΓÇö deploy pgAdmin (server mode + MFA)
+- `docker/compose.deploy.yml` ΓÇö deploy entrypoint that includes service Compose files plus `db-release`, Next.js, and Playwright
 
 Each service folder owns its own `.env.example` and local `.env` file. Local `.env` files are ignored by git.
 
@@ -176,7 +175,7 @@ Use `inngest-postgres`, not `localhost`, because pgAdmin runs inside Docker. Ins
 | Inngest databases | Dedicated inngest-postgres + inngest-redis | Shared postgres + redis services |
 | pgAdmin mode | Desktop mode | Server mode + MFA |
 | Port exposure | PgDog and pgAdmin have fixed local ports; Inngest dependencies use dynamic host ports | Deployment-specific |
-| Service layout | Included service-owned Compose files | Included deploy-variant Compose files |
+| Service layout | Included service-owned Compose files | Included service-owned Compose files plus `db-release`, Next.js, and Playwright |
 
 ## Smoke Testing live updates
 
@@ -188,23 +187,59 @@ The SSE route sends a heartbeat every 20 seconds. A deployment proxy must pass
 `text/event-stream` responses without buffering and must allow idle connections
 longer than the heartbeat interval.
 
-## Deploy Commands
+## Production deployment runbook
 
 From the repository root:
 
+1. Copy `docker/.env.deploy.example` to the ignored `docker/.env.deploy`.
+2. Replace every example credential with a deployment secret. In particular,
+   use the `APP_POSTGRES_PASSWORD` value in `DATABASE_URL` instead of
+   `change-me`.
+3. Back up the production database.
+4. Validate the Compose configuration:
+
+   ```bash
+   docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml config --quiet
+   ```
+
+5. Deploy the stack:
+
+   ```bash
+   docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml up -d
+   ```
+
+   `just docker deploy up` is the equivalent normal deployment shortcut and
+   loads `docker/.env.deploy` automatically.
+
+6. Inspect the database release logs:
+
+   ```bash
+   docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml logs db-release
+   ```
+
+The `db-release` service applies committed Drizzle migrations, then bootstraps
+the configured maintainer and Smoke Testing app catalog. The maintainer
+password initializes a missing account; it does not rotate an existing
+account's password. Production bootstrap never loads synthetic histories or
+profiles.
+
+If configuration or a database dependency fails, correct it, then retry only
+the release service before starting the rest of the stack:
+
 ```bash
-just docker deploy up     # start deploy services (detached)
-just docker deploy down   # stop deploy services
-just docker deploy config # validate and print merged config
+docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml run --rm db-release
+docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml up -d
 ```
 
-`just docker deploy` defaults to `up`.
+To roll back, roll back the application image independently. Correct schema
+problems with a new forward Drizzle migration; never run `just db reset`
+against production.
 
 ## Coolify Deployment
 
-1. Copy or reference the `docker/compose.deploy.yml` along with its included service files under `docker/services/*/compose.deploy.yml` as the compose definition in Coolify.
+1. Copy or reference the `docker/compose.deploy.yml` along with its included service files under `docker/services/*/compose.yml` as the compose definition in Coolify.
 2. Set the environment variables from `docker/.env.deploy.example` as Coolify environment variables.
-3. Generate secrets for `POSTGRES_PASSWORD`, `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`, `PGADMIN_DEFAULT_PASSWORD`.
+3. Generate secrets for `APP_POSTGRES_PASSWORD`, `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`, `PGADMIN_DEFAULT_PASSWORD`, `BETTER_AUTH_SECRET`, and `PROD_MAINTAINER_PASSWORD`.
 4. Enable HTTPS for the Inngest (8288) and pgAdmin (5050) public ports in Coolify.
 5. Deploy.
 

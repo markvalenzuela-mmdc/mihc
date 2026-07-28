@@ -14,6 +14,14 @@ Each service folder owns its own `compose.yml` (local), a `compose.deploy.yml` d
 
 See [Containerized Infrastructure](../docs/containerized-infrastructure.md) for full documentation.
 
+## Database release
+
+Deploy and production-image Compose stacks run `db-release` once before
+Next.js and Playwright. The service validates production configuration, applies
+committed Drizzle migrations, and idempotently bootstraps the configured
+maintainer plus the Smoke Testing app catalog. Application services start only
+after the release container exits successfully.
+
 From the repository root, use `just docker local up` and
 `just docker local down` for the normal local lifecycle. The complete
 namespaced Docker command surface is documented in [`../README.md`](../README.md);
