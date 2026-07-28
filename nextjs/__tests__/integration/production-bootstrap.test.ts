@@ -271,7 +271,6 @@ describe("production database bootstrap", () => {
 
     const first = releaseDatabase({
       environment: releaseEnvironment,
-      connectionAttempts: 1,
       migrateDatabase: async () => {
         events.push("first:migrate");
         markFirstStarted?.();
@@ -286,7 +285,6 @@ describe("production database bootstrap", () => {
 
     const second = releaseDatabase({
       environment: releaseEnvironment,
-      connectionAttempts: 1,
       migrateDatabase: async () => {
         events.push("second:migrate");
       },
