@@ -13,6 +13,17 @@ COPY nextjs/package.json nextjs/pnpm-lock.yaml nextjs/pnpm-workspace.yaml ./next
 WORKDIR /app/nextjs
 RUN pnpm install --frozen-lockfile --ignore-scripts
 
+FROM deps AS database-release
+
+ENV NODE_ENV="production"
+
+COPY packages ./packages
+COPY nextjs ./nextjs
+
+WORKDIR /app/nextjs
+
+CMD ["pnpm", "run", "db:release"]
+
 FROM base AS builder
 
 ARG DATABASE_URL="postgresql://mihc:change-me@app-pgdog:6432/mihc?sslmode=disable"
