@@ -130,7 +130,7 @@ just app build
 |---|---|
 | `DATABASE_URL` | PostgreSQL connection string via PgDog (`localhost:6432`) |
 | `NEXT_PUBLIC_APP_URL` | Public-facing app URL (`http://localhost:3000`) |
-| `BETTER_AUTH_SECRET` | Secret key for Better Auth — generate a random string |
+| `BETTER_AUTH_SECRET` | Secret key for Better Auth — generate at least 32 random characters |
 | `BETTER_AUTH_URL` | Auth callback URL (`http://localhost:3000`) |
 
 See `nextjs/.env.example` for defaults.
@@ -156,7 +156,7 @@ Additional test-run env vars are documented in `playwright/AGENTS.md`.
 |---|---|
 | `PROD_MAINTAINER_NAME` | Name for the production maintainer account |
 | `PROD_MAINTAINER_EMAIL` | Email address for the production maintainer account |
-| `PROD_MAINTAINER_PASSWORD` | Initial password when the production maintainer account is created |
+| `PROD_MAINTAINER_PASSWORD` | Initial password used by startup bootstrap, then removed before the Next.js server starts |
 
 See `docker/.env.deploy.example` for the complete deployment environment
 template. `docker/.env.deploy` is ignored and must contain deployment secrets.

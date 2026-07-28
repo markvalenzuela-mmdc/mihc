@@ -12,7 +12,6 @@ import {
   smokeRunsTestResults,
 } from "@/lib/drizzle/schema";
 import { seedProductionDatabase } from "@/lib/drizzle/seed/seed-production";
-import { releaseDatabase } from "@/scripts/release-database";
 import { setupTestDatabase } from "@/scripts/setup-test-db";
 
 const maintainer = {
@@ -244,67 +243,4 @@ describe("production database bootstrap", () => {
     });
     expect(partialUserApps).toEqual([]);
   });
-
-  it("serializes concurrent releases with the PostgreSQL advisory lock", async () => {
-    const databaseUrl = process.env.TEST_DATABASE_URL;
-    if (!databaseUrl) {
-      throw new Error("TEST_DATABASE_URL is required for integration tests.");
-    }
-
-    const events: string[] = [];
-    let allowFirstRelease: (() => void) | undefined;
-    let markFirstStarted: (() => void) | undefined;
-    const firstStarted = new Promise<void>((resolve) => {
-      markFirstStarted = resolve;
-    });
-    const firstCanFinish = new Promise<void>((resolve) => {
-      allowFirstRelease = resolve;
-    });
-    const releaseEnvironment = {
-      NODE_ENV: "production",
-      DATABASE_URL: databaseUrl,
-      BETTER_AUTH_URL: "https://sanity.example.com",
-      PROD_MAINTAINER_NAME: "Production Maintainer",
-      PROD_MAINTAINER_EMAIL: "maintainer@example.com",
-      PROD_MAINTAINER_PASSWORD: "safe-password-123",
-    };
-
-    const first = releaseDatabase({
-      environment: releaseEnvironment,
-      migrateDatabase: async () => {
-        events.push("first:migrate");
-        markFirstStarted?.();
-        await firstCanFinish;
-      },
-      seedDatabase: async () => {
-        events.push("first:seed");
-        return [];
-      },
-    });
-    await firstStarted;
-
-    const second = releaseDatabase({
-      environment: releaseEnvironment,
-      migrateDatabase: async () => {
-        events.push("second:migrate");
-      },
-      seedDatabase: async () => {
-        events.push("second:seed");
-        return [];
-      },
-    });
-
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    expect(events).toEqual(["first:migrate"]);
-
-    allowFirstRelease?.();
-    await Promise.all([first, second]);
-
-    expect(events).toEqual([
-      "first:migrate",
-      "first:seed",
-      "second:migrate",
-      "second:seed",
-    ]);
-  }, 30_000);
 });

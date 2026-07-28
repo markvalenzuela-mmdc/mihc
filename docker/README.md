@@ -8,10 +8,11 @@ This directory contains Docker Compose files and configurations for containerizi
 - `services/pgdog-postgres/` ΓÇö App PostgreSQL and PgDog proxy
 - `services/inngest/` ΓÇö Inngest, its PostgreSQL database, and Redis
 - `services/pgadmin/` ΓÇö pgAdmin
-- `compose.deploy.yml` ΓÇö Deploy entrypoint that includes shared service Compose files plus Next.js and Playwright services
+- `compose.deploy.yml` ΓÇö Deploy entrypoint with app PostgreSQL, Next.js, and Playwright plus included Inngest and pgAdmin services
 
 Each service folder owns its shared `compose.yml`, `.env.example`, and local
-`.env` file. `compose.deploy.yml` defines the deploy-only application services.
+`.env` file. `compose.deploy.yml` uses the single root `.env.deploy` file and
+defines the deploy-only application database and application services.
 
 See [Containerized Infrastructure](../docs/containerized-infrastructure.md) for full documentation.
 
@@ -28,6 +29,8 @@ development fixtures. For manual development workflows, use `just db migrate`
 to apply migrations, `just db seed` to load complete development fixtures, and
 `just db release` to run the same production migrate/bootstrap sequence. Never
 run `just db reset` against production.
+The entrypoint removes `PROD_MAINTAINER_PASSWORD` before starting the
+long-running Next.js server.
 
 From the repository root, use `just docker local up` and
 `just docker local down` for the normal local lifecycle. The complete

@@ -2,7 +2,9 @@
 
 ## Overview
 
-The project has four Docker workflows, each with a distinct purpose. They share infrastructure services (PostgreSQL, PgDog, Redis, Inngest, pgAdmin) but differ in what they run alongside them.
+The project has four Docker workflows, each with a distinct purpose. They share
+PostgreSQL, Redis, Inngest, and pgAdmin infrastructure; local and build
+workflows additionally use PgDog.
 
 ## Commands
 
@@ -66,7 +68,10 @@ Uses `docker/compose.build.yml`.
 
 ### `just docker deploy [up|down]`
 
-Starts or stops the **deployment-oriented stack** ΓÇö services configured for a Coolify or production-like environment. It uses the ignored `docker/.env.deploy` deployment environment, shared PostgreSQL + PgDog, and shared Redis for Inngest.
+Starts or stops the **deployment-oriented stack** ΓÇö services configured for a
+Coolify or production-like environment. It uses the ignored
+`docker/.env.deploy` as its single environment source and connects application
+services directly to PostgreSQL.
 
 ```bash
 just docker deploy up      # start deploy stack
@@ -85,8 +90,7 @@ docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml down
 
 **Services started:**
 - PostgreSQL (`app-postgres`)
-- PgDog connection pooler (`app-pgdog`)
-- Redis (`redis`)
+- Redis (`inngest-redis`)
 - Inngest server (`inngest`, port `8288`)
 - pgAdmin (`pgadmin`, port `5050`)
 - Next.js app (`nextjs`, port `3000`) ΓÇö pulled from `ghcr.io/markvalenzuela-mmdc/mihc-nextjs`
@@ -106,6 +110,8 @@ to apply migrations, `just db seed` to load complete development fixtures, and
 `just db release` to run the same production migrate/bootstrap sequence. Never
 run `just db reset` against production. Image rollback does not undo database
 migrations; correct schema problems with a new forward Drizzle migration.
+The entrypoint removes `PROD_MAINTAINER_PASSWORD` from the environment before
+the long-running Next.js server starts.
 
 ---
 
@@ -145,6 +151,19 @@ Used by `just docker build`. All service hostnames use Docker service names sinc
 
 The `.env.build` file is a copy of `nextjs/.env` with `localhost` replaced by the appropriate Docker service names. Client-facing vars like `NEXT_PUBLIC_APP_URL` and `BETTER_AUTH_URL` keep `localhost:3000` since they are used by the browser, not internal service calls.
 
+### `docker/.env.deploy` ΓÇö Deployment
+
+Used by `just docker deploy` for both Compose interpolation and application
+container variables:
+
+| Var | Host |
+|---|---|
+| `DATABASE_URL` | `app-postgres:5432` (direct PostgreSQL via Docker DNS) |
+| `INNGEST_BASE_URL` | `inngest:8288` (Inngest via Docker DNS) |
+
 ### Why not share a single .env?
 
-`localhost` inside a Docker container refers to the container itself, not your host machine. Docker service names like `app-pgdog` only resolve inside the Docker Compose network. A single env file can't serve both contexts, so we maintain two ΓÇö one for each environment.
+`localhost` inside a Docker container refers to the container itself, not your
+host machine. Docker service names only resolve inside the Docker Compose
+network, so local, build, and deployment workflows keep environment files for
+their own network context.

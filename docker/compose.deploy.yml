@@ -1,12 +1,23 @@
 include:
-  - path: services/pgdog-postgres/compose.yml
-    env_file: services/pgdog-postgres/.env
   - path: services/inngest/compose.yml
-    env_file: services/inngest/.env
   - path: services/pgadmin/compose.yml
-    env_file: services/pgadmin/.env
 
 services:
+  app-postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${APP_POSTGRES_USER:?APP_POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${APP_POSTGRES_PASSWORD:?APP_POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${APP_POSTGRES_DB:?APP_POSTGRES_DB is required}
+    volumes:
+      - app-postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${APP_POSTGRES_USER} -d ${APP_POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   nextjs:
     image: ghcr.io/markvalenzuela-mmdc/mihc-nextjs:latest
     restart: unless-stopped
@@ -16,8 +27,6 @@ services:
     depends_on:
       app-postgres:
         condition: service_healthy
-      app-pgdog:
-        condition: service_started
       inngest:
         condition: service_healthy
 
@@ -35,8 +44,6 @@ services:
     depends_on:
       app-postgres:
         condition: service_healthy
-      app-pgdog:
-        condition: service_started
       inngest-redis:
         condition: service_healthy
       inngest:
@@ -47,4 +54,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
+
+volumes:
+  app-postgres-data:
 

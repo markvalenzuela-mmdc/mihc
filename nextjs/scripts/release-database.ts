@@ -43,6 +43,31 @@ function sanitizeErrorMessage(
   return message;
 }
 
+function validateBetterAuthEnvironment(
+  environment: Record<string, string | undefined>,
+) {
+  const betterAuthSecret = environment.BETTER_AUTH_SECRET?.trim();
+  if (!betterAuthSecret) {
+    throw new Error("BETTER_AUTH_SECRET is required for database release.");
+  }
+  if (betterAuthSecret.length < 32) {
+    throw new Error(
+      "BETTER_AUTH_SECRET must contain at least 32 characters.",
+    );
+  }
+
+  const betterAuthUrl = environment.BETTER_AUTH_URL?.trim();
+  if (!betterAuthUrl) {
+    throw new Error("BETTER_AUTH_URL is required for database release.");
+  }
+
+  try {
+    new URL(betterAuthUrl);
+  } catch {
+    throw new Error("BETTER_AUTH_URL must be a valid URL.");
+  }
+}
+
 export async function releaseDatabase({
   environment = process.env,
   createClient = createDatabaseClient,
@@ -62,6 +87,7 @@ export async function releaseDatabase({
     throw new Error("DATABASE_URL is required for database release.");
   }
 
+  validateBetterAuthEnvironment(environment);
   const seedConfig = getProductionSeedConfig(environment);
   const { pool, db } = createClient(databaseUrl);
 

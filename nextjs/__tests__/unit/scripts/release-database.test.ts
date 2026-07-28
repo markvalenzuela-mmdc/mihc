@@ -5,6 +5,7 @@ import { releaseDatabase } from "@/scripts/release-database";
 const environment = {
   NODE_ENV: "production",
   DATABASE_URL: "postgresql://user:password@database:5432/mihc",
+  BETTER_AUTH_SECRET: "safe-auth-secret-for-tests-32-chars",
   BETTER_AUTH_URL: "https://sanity.example.com",
   PROD_MAINTAINER_NAME: "Production Maintainer",
   PROD_MAINTAINER_EMAIL: "maintainer@example.com",
@@ -64,6 +65,60 @@ describe("releaseDatabase", () => {
         createClient,
       }),
     ).rejects.toThrow("DATABASE_URL is required for database release.");
+
+    expect(createClient).not.toHaveBeenCalled();
+  });
+
+  it.each(["BETTER_AUTH_SECRET", "BETTER_AUTH_URL"] as const)(
+    "rejects a missing %s before opening the database",
+    async (key) => {
+      const createClient = vi.fn();
+      const invalidEnvironment: Record<string, string | undefined> = {
+        ...environment,
+      };
+      delete invalidEnvironment[key];
+
+      await expect(
+        releaseDatabase({
+          environment: invalidEnvironment,
+          createClient,
+        }),
+      ).rejects.toThrow(`${key} is required for database release.`);
+
+      expect(createClient).not.toHaveBeenCalled();
+    },
+  );
+
+  it("rejects an invalid Better Auth URL before opening the database", async () => {
+    const createClient = vi.fn();
+
+    await expect(
+      releaseDatabase({
+        environment: {
+          ...environment,
+          BETTER_AUTH_URL: "not-a-url",
+        },
+        createClient,
+      }),
+    ).rejects.toThrow("BETTER_AUTH_URL must be a valid URL.");
+
+    expect(createClient).not.toHaveBeenCalled();
+  });
+
+  it("rejects a short Better Auth secret before opening the database", async () => {
+    const createClient = vi.fn();
+
+    await expect(
+      releaseDatabase({
+        environment: {
+          ...environment,
+          BETTER_AUTH_SECRET: "too-short",
+        },
+        createClient,
+      }),
+    ).rejects.toThrow(
+      "BETTER_AUTH_SECRET must contain at least 32 characters.",
+    );
 
     expect(createClient).not.toHaveBeenCalled();
   });

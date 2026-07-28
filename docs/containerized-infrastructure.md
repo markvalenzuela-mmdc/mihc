@@ -4,7 +4,7 @@
 
 This setup provides local development and Coolify-ready infrastructure for:
 
-- App PostgreSQL with a PgDog proxy
+- App PostgreSQL, reached through PgDog locally and directly in deployment
 - Inngest with its own PostgreSQL database and Redis
 - pgAdmin
 - Next.js and Playwright application services
@@ -24,9 +24,11 @@ development fixtures.
 - `docker/services/pgdog-postgres/compose.yml` ΓÇö app PostgreSQL and PgDog
 - `docker/services/inngest/compose.yml` ΓÇö Inngest, Inngest PostgreSQL, and Inngest Redis
 - `docker/services/pgadmin/compose.yml` ΓÇö pgAdmin
-- `docker/compose.deploy.yml` ΓÇö deploy entrypoint that includes service Compose files plus Next.js and Playwright
+- `docker/compose.deploy.yml` ΓÇö deploy entrypoint with app PostgreSQL, Next.js, and Playwright plus the included Inngest and pgAdmin services
 
-Each service folder owns its own `.env.example` and local `.env` file. Local `.env` files are ignored by git.
+Local Compose uses the ignored service-local `.env` files. Deploy Compose uses
+the single ignored `docker/.env.deploy` file for interpolation and application
+container variables.
 
 ## Local services
 
@@ -47,6 +49,8 @@ Local development uses separate PostgreSQL services:
 - The app PostgreSQL service can host both the main app database and a separate test database. PgDog is configured to route `mihc`, `mihc-test`, and the maintenance database `postgres` to the same `app-postgres` service.
 
 PgDog reads its config from `docker/services/pgdog-postgres/files/`.
+The deploy stack connects Next.js and Playwright directly to `app-postgres`;
+PgDog and its static local user file are not part of the production topology.
 
 ## Local Commands
 
@@ -176,12 +180,12 @@ Use `inngest-postgres`, not `localhost`, because pgAdmin runs inside Docker. Ins
 
 | Aspect | Local | Deploy |
 |---|---|---|
-| Credentials | Service-local `.env` files | Supplied via env secrets |
-| Connection pool | PgDog (port 6432) | PgDog (internal) |
-| Inngest databases | Dedicated inngest-postgres + inngest-redis | Shared postgres + redis services |
+| Credentials | Service-local `.env` files | Root `docker/.env.deploy` or platform secrets |
+| Application database | PgDog (port 6432) | PostgreSQL (`app-postgres:5432`) |
+| Inngest databases | Dedicated inngest-postgres + inngest-redis | Dedicated inngest-postgres + inngest-redis |
 | pgAdmin mode | Desktop mode | Desktop mode; master-password requirement disabled |
 | Port exposure | PgDog and pgAdmin have fixed local ports; Inngest dependencies use dynamic host ports | Deployment-specific |
-| Service layout | Included service-owned Compose files | Included service-owned Compose files plus Next.js and Playwright |
+| Service layout | Included service-owned Compose files | App PostgreSQL and application services plus included Inngest and pgAdmin services |
 
 The deploy stack also runs pgAdmin in desktop mode with its master-password
 requirement disabled. Do not expose pgAdmin publicly; restrict port 5050 to a
@@ -189,9 +193,10 @@ private network or trusted operator access.
 
 ## Smoke Testing live updates
 
-Smoke Testing uses PostgreSQL `LISTEN`/`NOTIFY` through PgDog to invalidate
-database-backed UI state over a Next.js SSE route. PgDog pub/sub must remain
-enabled with `pub_sub_channel_size = 4096`.
+Smoke Testing uses PostgreSQL `LISTEN`/`NOTIFY` to invalidate database-backed
+UI state over a Next.js SSE route. Local development reaches PostgreSQL through
+PgDog, where pub/sub must remain enabled with
+`pub_sub_channel_size = 4096`. Deployment connects directly to PostgreSQL.
 
 The SSE route sends a heartbeat every 20 seconds. A deployment proxy must pass
 `text/event-stream` responses without buffering and must allow idle connections
@@ -202,9 +207,8 @@ longer than the heartbeat interval.
 From the repository root:
 
 1. Copy `docker/.env.deploy.example` to the ignored `docker/.env.deploy`.
-2. Replace every example credential with a deployment secret. In particular,
-   use the `APP_POSTGRES_PASSWORD` value in `DATABASE_URL` instead of
-   `change-me`.
+2. Replace every example credential with a deployment secret. Use the same
+   `APP_POSTGRES_PASSWORD` value in `DATABASE_URL`.
 3. Back up the production database.
 4. Validate the Compose configuration:
 
@@ -227,6 +231,10 @@ From the repository root:
    docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml logs nextjs
    ```
 
+`PROD_MAINTAINER_PASSWORD` is available to the startup bootstrap only. The
+container entrypoint removes it from the environment before starting the
+long-running Next.js server.
+
 For manual development workflows, use `just db migrate` to apply migrations,
 `just db seed` to load complete development fixtures, and `just db release` to
 run the same production migrate/bootstrap sequence. `just db reset` permanently
@@ -236,19 +244,20 @@ Drizzle migration.
 
 ## Coolify Deployment
 
-1. Copy or reference the `docker/compose.deploy.yml` along with its included service files under `docker/services/*/compose.yml` as the compose definition in Coolify.
+1. Copy or reference `docker/compose.deploy.yml` and its included Inngest and pgAdmin service Compose files in Coolify.
 2. Set the environment variables from `docker/.env.deploy.example` as Coolify environment variables.
-3. Generate secrets for `APP_POSTGRES_PASSWORD`, `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`, `PGADMIN_DEFAULT_PASSWORD`, `BETTER_AUTH_SECRET`, and `PROD_MAINTAINER_PASSWORD`.
+3. Generate secrets for `APP_POSTGRES_PASSWORD`, `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`, `PGADMIN_DEFAULT_PASSWORD`, `BETTER_AUTH_SECRET`, and `PROD_MAINTAINER_PASSWORD`. `BETTER_AUTH_SECRET` must contain at least 32 characters.
 4. Enable HTTPS for the Inngest (8288) public port. Keep pgAdmin (5050) private.
 5. Deploy.
 
-> PostgreSQL and Redis use named volumes (`deploy-postgres-data`, `deploy-redis-data`). Coolify will manage these as persistent storage.
+> PostgreSQL and Redis use named volumes managed by Compose. Coolify will manage these as persistent storage.
 
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| PgDog cannot load config | Wrong bind mount path or missing local `users.toml` | Check `docker/services/pgdog-postgres/files/` |
-| pgAdmin cannot connect to PgDog | Host set to `localhost` inside pgAdmin | Use `app-pgdog` as the host |
-| App cannot connect to database | `DATABASE_URL` is not using PgDog host port | Use `localhost:6432` from the host |
+| Local PgDog cannot load config | Wrong bind mount path or missing local `users.toml` | Check `docker/services/pgdog-postgres/files/` |
+| Local pgAdmin cannot connect to PgDog | Host set to `localhost` inside pgAdmin | Use `app-pgdog` as the host |
+| Local app cannot connect to database | `DATABASE_URL` is not using PgDog host port | Use `localhost:6432` from the host |
+| Deployed app cannot connect to database | `DATABASE_URL` credentials do not match app PostgreSQL | Use `APP_POSTGRES_USER`, `APP_POSTGRES_PASSWORD`, and `app-postgres:5432` |
 | Port conflict on 5050 or 6432 | Another local service uses the same port | Stop the other service or change the host port |
