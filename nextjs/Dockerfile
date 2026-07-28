@@ -17,6 +17,7 @@ FROM deps AS database-release
 
 ENV NODE_ENV="production"
 
+WORKDIR /app
 COPY packages ./packages
 COPY nextjs ./nextjs
 
