@@ -14,8 +14,13 @@ const environment = {
 describe("releaseDatabase", () => {
   function createFakeClient(
     events: string[],
-    connectError?: Error,
-    queryErrorAt?: number,
+    {
+      connectError,
+      queryErrors = {},
+    }: {
+      connectError?: Error;
+      queryErrors?: Record<number, Error>;
+    } = {},
   ) {
     let queryCount = 0;
     const db = {};
@@ -24,14 +29,13 @@ describe("releaseDatabase", () => {
         events.push("client:connect");
         if (connectError) throw connectError;
       }),
-      query: vi.fn(async () => {
+      query: vi.fn(async (query: string) => {
         queryCount += 1;
-        if (queryCount === queryErrorAt) {
-          throw new Error("lock unavailable");
-        }
-        if (queryCount === 1) events.push("lock:timeout");
-        if (queryCount === 2) events.push("lock:acquired");
-        if (queryCount === 3) events.push("lock:released");
+        if (query === "SELECT 1") events.push("database:probe");
+        if (queryErrors[queryCount]) throw queryErrors[queryCount];
+        if (query.startsWith("SET lock_timeout")) events.push("lock:timeout");
+        if (query.includes("pg_advisory_lock")) events.push("lock:acquired");
+        if (query.includes("pg_advisory_unlock")) events.push("lock:released");
       }),
       end: vi.fn(async () => {
         events.push("client:end");
@@ -60,6 +64,7 @@ describe("releaseDatabase", () => {
 
     expect(events).toEqual([
       "client:connect",
+      "database:probe",
       "lock:timeout",
       "lock:acquired",
       "migrate",
@@ -73,7 +78,7 @@ describe("releaseDatabase", () => {
     const events: string[] = [];
     const firstConnection = createFakeClient(
       events,
-      new Error("database unavailable"),
+      { connectError: new Error("database unavailable") },
     );
     const secondConnection = createFakeClient(events);
     const createClient = vi
@@ -104,11 +109,62 @@ describe("releaseDatabase", () => {
     expect(secondConnection.client.end).toHaveBeenCalledOnce();
   });
 
-  it("fails readiness after a bounded number of attempts without exposing secrets", async () => {
+  it("retries when connect succeeds but the readiness probe fails", async () => {
     const events: string[] = [];
-    const createClient = vi.fn(() =>
-      createFakeClient(events, new Error(`failed for ${environment.DATABASE_URL}`)),
+    const firstConnection = createFakeClient(events, {
+      queryErrors: { 1: new Error("probe failed") },
+    });
+    const secondConnection = createFakeClient(events);
+    const createClient = vi
+      .fn()
+      .mockReturnValueOnce(firstConnection)
+      .mockReturnValueOnce(secondConnection);
+
+    await releaseDatabase({
+      environment,
+      createClient,
+      connectionAttempts: 2,
+      connectionRetryMs: 10,
+      sleep: async () => {
+        events.push("retry:wait");
+      },
+      migrateDatabase: async () => {
+        events.push("migrate");
+      },
+      seedDatabase: async () => [],
+    });
+
+    expect(events).toEqual([
+      "client:connect",
+      "database:probe",
+      "client:end",
+      "retry:wait",
+      "client:connect",
+      "database:probe",
+      "lock:timeout",
+      "lock:acquired",
+      "migrate",
+      "lock:released",
+      "client:end",
+    ]);
+    expect(firstConnection.client.end).toHaveBeenCalledOnce();
+    expect(secondConnection.client.end).toHaveBeenCalledOnce();
+  });
+
+  it("fails bounded readiness probes without exposing secrets or leaking clients", async () => {
+    const events: string[] = [];
+    const connections = Array.from({ length: 2 }, () =>
+      createFakeClient(events, {
+        queryErrors: {
+          1: new Error(`probe failed for ${environment.DATABASE_URL}`),
+        },
+      }),
     );
+    const createClient = vi
+      .fn()
+      .mockReturnValueOnce(connections[0])
+      .mockReturnValueOnce(connections[1]);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
     const release = releaseDatabase({
       environment,
@@ -123,6 +179,15 @@ describe("releaseDatabase", () => {
     );
     await expect(release).rejects.not.toThrow("password");
     expect(createClient).toHaveBeenCalledTimes(2);
+    expect(connections[0].client.end).toHaveBeenCalledOnce();
+    expect(connections[1].client.end).toHaveBeenCalledOnce();
+    expect(warn).toHaveBeenCalledOnce();
+    expect(warn.mock.calls.flat().join(" ")).not.toContain(
+      environment.DATABASE_URL,
+    );
+    expect(warn.mock.calls.flat().join(" ")).not.toContain("password");
+
+    warn.mockRestore();
   });
 
   it("releases the advisory lock and closes the client on failure", async () => {
@@ -145,6 +210,7 @@ describe("releaseDatabase", () => {
 
     expect(events).toEqual([
       "client:connect",
+      "database:probe",
       "lock:timeout",
       "lock:acquired",
       "migrate",
@@ -156,7 +222,9 @@ describe("releaseDatabase", () => {
 
   it("stops before migrations when the advisory lock cannot be acquired", async () => {
     const events: string[] = [];
-    const connection = createFakeClient(events, undefined, 2);
+    const connection = createFakeClient(events, {
+      queryErrors: { 3: new Error("lock unavailable") },
+    });
 
     await expect(
       releaseDatabase({
@@ -172,6 +240,7 @@ describe("releaseDatabase", () => {
 
     expect(events).toEqual([
       "client:connect",
+      "database:probe",
       "lock:timeout",
       "client:end",
     ]);

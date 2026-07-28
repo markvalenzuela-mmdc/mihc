@@ -203,7 +203,10 @@ From the repository root:
    Git commit SHA. The workflow builds both image targets before it publishes
    either immutable tag, publishes the database-release image first and the
    app image last as the usable-pair completion marker, and does not publish
-   mutable `latest` tags.
+   mutable `latest` tags. Same-commit workflow runs are serialized. A rerun
+   skips an intact image pair without overwriting it; if only one image exists,
+   the workflow fails before any push and directs the operator to remove the
+   orphan tag or restore its same-commit counterpart.
 3. Back up the production database.
 4. Validate the Compose configuration:
 
@@ -234,9 +237,11 @@ profiles.
 
 At cold start, `db-release` makes up to 12 database connection attempts, with a
 5-second connection timeout and 5 seconds between attempts. Migrations do not
-begin until a connection through the configured `DATABASE_URL` succeeds. A
-failed readiness check reports the attempt count and the PgDog/PostgreSQL
-settings to inspect without printing the URL or credentials.
+begin until a connection through the configured `DATABASE_URL` succeeds and a
+`SELECT 1` probe confirms that PostgreSQL can execute a query. A failed
+connection or probe closes that client before retrying. A terminal readiness
+failure reports the attempt count and the PgDog/PostgreSQL settings to inspect
+without printing the URL or credentials.
 
 After readiness succeeds, one dedicated PostgreSQL client holds a session
 advisory lock across the complete migration and bootstrap sequence. PgDog's

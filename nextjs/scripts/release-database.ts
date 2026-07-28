@@ -60,9 +60,12 @@ async function connectToDatabase({
 }) {
   for (let attempt = 1; attempt <= connectionAttempts; attempt += 1) {
     const connection = createClient(databaseUrl);
+    let readinessPhase = "connection";
 
     try {
       await connection.client.connect();
+      readinessPhase = "readiness probe";
+      await connection.client.query("SELECT 1");
       return connection;
     } catch {
       await closeClient(connection.client);
@@ -70,7 +73,7 @@ async function connectToDatabase({
       if (attempt === connectionAttempts) break;
 
       console.warn(
-        `PostgreSQL is not ready for database release ` +
+        `PostgreSQL ${readinessPhase} failed for database release ` +
           `(attempt ${attempt}/${connectionAttempts}); retrying in ` +
           `${connectionRetryMs / 1_000} seconds.`,
       );
