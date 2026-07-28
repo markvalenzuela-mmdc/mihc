@@ -8,16 +8,11 @@ on:
       - "v*.*.*"
     paths:
       - "nextjs/**"
-      - "packages/enrollmate-contract/**"
       - ".github/**"
 
 permissions:
   contents: read
   packages: write
-
-concurrency:
-  group: ghcr-publish-${{ github.repository }}-${{ github.sha }}
-  cancel-in-progress: false
 
 env:
   REGISTRY: ghcr.io
@@ -46,113 +41,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Inspect immutable image pair
-        id: image-pair
-        shell: bash
-        env:
-          APP_IMAGE: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:sha-${{ github.sha }}
-          RELEASE_IMAGE: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-db-release:sha-${{ github.sha }}
-        run: |
-          set -euo pipefail
-
-          inspect_manifest() {
-            local image="$1"
-            local inspection
-
-            if inspection="$(docker buildx imagetools inspect "$image" 2>&1)"; then
-              printf 'present'
-              return
-            fi
-
-            if grep -Eiq \
-              '(manifest unknown|no such manifest|unexpected status from (HEAD|GET) request .*/manifests/.*: 404 Not Found|: not found$)' \
-              <<<"$inspection"; then
-              printf 'absent'
-              return
-            fi
-
-            echo "::error title=GHCR manifest inspection failed::Unable to inspect ${image}. Verify GHCR authentication and network availability; publication was not attempted." >&2
-            printf '%s\n' "$inspection" >&2
-            return 1
-          }
-
-          app_state="$(inspect_manifest "$APP_IMAGE")"
-          release_state="$(inspect_manifest "$RELEASE_IMAGE")"
-
-          case "${app_state}:${release_state}" in
-            present:present)
-              echo "publish=false" >> "$GITHUB_OUTPUT"
-              echo "Both immutable images already exist; skipping builds and publication."
-              ;;
-            absent:absent)
-              echo "publish=true" >> "$GITHUB_OUTPUT"
-              echo "Neither immutable image exists; publishing the release image before the app image."
-              ;;
-            *)
-              echo "::error title=Partial immutable image pair::Found app=${app_state} and release=${release_state} for sha-${GITHUB_SHA}. No image was pushed. Remove the orphan tag through GHCR package controls or restore the missing counterpart from the same commit, then rerun." >&2
-              exit 1
-              ;;
-          esac
-
       - name: Extract Docker metadata
-        if: steps.image-pair.outputs.publish == 'true'
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}
           tags: |
-            type=raw,value=sha-${{ github.sha }}
+            type=ref,event=branch
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-
 
-      - name: Extract database-release Docker metadata
-        if: steps.image-pair.outputs.publish == 'true'
-        id: release-meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}-db-release
-          tags: |
-            type=raw,value=sha-${{ github.sha }}
-
-      - name: Verify Next.js image builds
-        if: steps.image-pair.outputs.publish == 'true'
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./nextjs/Dockerfile
-          push: false
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}
-          cache-from: type=gha,scope=nextjs-app
-          cache-to: type=gha,mode=max,scope=nextjs-app
-
-      - name: Verify database-release image builds
-        if: steps.image-pair.outputs.publish == 'true'
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./nextjs/Dockerfile
-          target: database-release
-          push: false
-          tags: ${{ steps.release-meta.outputs.tags }}
-          labels: ${{ steps.release-meta.outputs.labels }}
-          cache-from: type=gha,scope=nextjs-db-release
-          cache-to: type=gha,mode=max,scope=nextjs-db-release
-
-      - name: Publish database-release immutable image
-        if: steps.image-pair.outputs.publish == 'true'
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./nextjs/Dockerfile
-          target: database-release
-          push: true
-          tags: ${{ steps.release-meta.outputs.tags }}
-          labels: ${{ steps.release-meta.outputs.labels }}
-          cache-from: type=gha,scope=nextjs-db-release
-
-      - name: Publish Next.js immutable image
-        if: steps.image-pair.outputs.publish == 'true'
+      - name: Build and push Next.js image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -162,4 +63,5 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}
-          cache-from: type=gha,scope=nextjs-app
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
