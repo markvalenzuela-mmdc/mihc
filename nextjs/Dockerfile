@@ -13,12 +13,9 @@ COPY nextjs/package.json nextjs/pnpm-lock.yaml nextjs/pnpm-workspace.yaml ./next
 WORKDIR /app/nextjs
 RUN pnpm install --frozen-lockfile --ignore-scripts
 
-FROM base AS runtime-deps
+FROM deps AS runtime-deps
 
-COPY packages/enrollmate-contract ./packages/enrollmate-contract
-COPY nextjs/package.json nextjs/pnpm-lock.yaml nextjs/pnpm-workspace.yaml ./nextjs/
-WORKDIR /app/nextjs
-RUN pnpm install --prod --frozen-lockfile --ignore-scripts
+RUN pnpm prune --prod --ignore-scripts
 
 FROM base AS builder
 
