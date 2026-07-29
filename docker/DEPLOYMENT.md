@@ -92,7 +92,9 @@ production `users.toml` or its credentials.
 The root `--env-file docker/.env.deploy` supplies Compose interpolation, while
 the `nextjs` and `playwright` services also load `docker/.env.deploy` through
 `env_file`. Internal service URLs use Docker DNS, not the public domain and
-not `localhost`.
+not `localhost`. The containerized Inngest SDK/Playwright-Hono path must use
+`http://playwright:3939/api/inngest`, never `host.docker.internal`:
+`host.docker.internal` targets the host, not the containerized consumer.
 
 ## Service-local environment and PgDog configuration
 
