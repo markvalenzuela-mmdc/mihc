@@ -7,6 +7,17 @@ include:
     env_file: services/pgadmin/.env
 
 services:
+  db-reset:
+    image: mihc-nextjs:build
+    profiles:
+      - reset
+    env_file: .env.build
+    command: ["sh", "-c", "cd /app/nextjs && ./node_modules/.bin/tsx scripts/reset-production-database.ts"]
+    restart: "no"
+    depends_on:
+      app-pgdog:
+        condition: service_started
+
   nextjs:
     image: mihc-nextjs:build
     build:

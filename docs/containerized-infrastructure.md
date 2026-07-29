@@ -32,6 +32,11 @@ The build stack uses `docker/.env.build` for the application containers; the
 deploy stack uses `docker/.env.deploy`. The included PostgreSQL, Inngest, and
 pgAdmin services read their own ignored service-local `.env` files.
 
+The build stack has a disabled-by-default `reset` profile containing a one-shot
+database reset service. `just docker build-reset` uses that profile to drop the
+application schemas, apply Drizzle migrations, and run only the production
+bootstrap. The deploy Compose file intentionally has no reset service.
+
 ## Local services
 
 | Service | URL / Port |
@@ -78,6 +83,10 @@ just docker local down
 ```
 
 `just docker local` defaults to `up`.
+
+For the production-like build stack, use `just docker build`. If its persistent
+application volume contains development fixtures, run `just docker build-reset`
+to replace them with the production maintainer and Smoke Testing apps only.
 
 Destroy volumes (resets all data):
 

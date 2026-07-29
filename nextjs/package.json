@@ -14,6 +14,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx lib/drizzle/seed.ts",
     "db:reset": "tsx lib/drizzle/db-reset.ts",
+    "db:reset:production": "tsx scripts/reset-production-database.ts",
     "db:release": "tsx scripts/release-database.ts",
     "db:test:setup": "tsx scripts/setup-test-db.ts"
   },

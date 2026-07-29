@@ -65,6 +65,21 @@ The app is available at `http://localhost:3000`.
 
 Uses `docker/compose.build.yml`.
 
+If the persistent local volume still contains development fixtures, normal
+startup will not delete them. To reset only the build stack database and
+recreate it with migrations plus the production maintainer and Smoke Testing
+apps, run:
+
+```bash
+just docker build-reset
+```
+
+This stops the build app and Playwright containers, runs the explicit `reset`
+Compose profile with the required `DATABASE_RESET_CONFIRMATION`, and starts
+those containers again. It does not exist in `compose.deploy.yml` and is not
+part of normal container startup. The reset is destructive to the local build
+database; it does not reset the Inngest database or Docker volumes.
+
 ---
 
 ### `just docker deploy [up|down]`

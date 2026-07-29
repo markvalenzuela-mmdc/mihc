@@ -65,6 +65,7 @@ select its other workflows.
 | dev | `just dev fresh` | Start Docker, reset the database, and start development |
 | docker | `just docker local [up\|down]` | Start or stop local Compose services; defaults to `up` |
 | docker | `just docker build [force]` | Build and start Docker images; `force` disables cache |
+| docker | `just docker build-reset` | Reset the build database to production bootstrap data |
 | docker | `just docker down` | Stop all project Docker services |
 | docker | `just docker deploy [up\|down]` | Start or stop deploy Compose services; defaults to `up` |
 | playwright | `just playwright smoke` | Run browser smoke tests against live MMDC |
