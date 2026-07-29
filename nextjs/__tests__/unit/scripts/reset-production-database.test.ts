@@ -15,23 +15,26 @@ vi.mock("@/scripts/release-database", () => ({
 const environment = {
   NODE_ENV: "production",
   DATABASE_URL: "postgresql://user:password@database:5432/mihc",
-  DATABASE_RESET_CONFIRMATION: "reset-local-build",
+  DATABASE_RESET: "true",
 };
 
 describe("resetProductionDatabase", () => {
-  it("requires the explicit local-build confirmation", async () => {
-    await expect(
-      resetProductionDatabase({
+  it.each(["false", undefined, "TRUE", "1"])(
+    "refuses to reset when DATABASE_RESET is %s",
+    async (enabled) => {
+      const candidate = {
         ...environment,
-        DATABASE_RESET_CONFIRMATION: "wrong-value",
-      }),
-    ).rejects.toThrow(
-      "Set DATABASE_RESET_CONFIRMATION=reset-local-build.",
-    );
+        DATABASE_RESET: enabled,
+      };
 
-    expect(resetDatabaseSchema).not.toHaveBeenCalled();
-    expect(releaseDatabase).not.toHaveBeenCalled();
-  });
+      await expect(resetProductionDatabase(candidate)).rejects.toThrow(
+        "Set DATABASE_RESET=true.",
+      );
+
+      expect(resetDatabaseSchema).not.toHaveBeenCalled();
+      expect(releaseDatabase).not.toHaveBeenCalled();
+    },
+  );
 
   it("does not run outside the production image environment", async () => {
     await expect(

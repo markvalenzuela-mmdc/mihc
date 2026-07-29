@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { resetDatabaseSchema } from "@/lib/drizzle/reset-schema";
 import { releaseDatabase } from "@/scripts/release-database";
 
-const RESET_CONFIRMATION = "reset-local-build";
+const RESET_ENABLED = "true";
 
 export async function resetProductionDatabase(
   environment: Record<string, string | undefined> = process.env,
@@ -15,9 +15,9 @@ export async function resetProductionDatabase(
     throw new Error("Production-style reset requires NODE_ENV=production.");
   }
 
-  if (environment.DATABASE_RESET_CONFIRMATION !== RESET_CONFIRMATION) {
+  if (environment.DATABASE_RESET !== RESET_ENABLED) {
     throw new Error(
-      `Refusing to reset the database. Set DATABASE_RESET_CONFIRMATION=${RESET_CONFIRMATION}.`,
+      "Refusing to reset the database. Set DATABASE_RESET=true.",
     );
   }
 
