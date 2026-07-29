@@ -170,8 +170,9 @@ migration or bootstrap fails, the server does not start and Docker retries the
 container according to its restart policy.
 
 Production bootstrap creates or validates the configured maintainer, upserts
-the four Smoke Testing apps, never resets an existing password, and never loads
-development fixtures.
+the four Smoke Testing apps and eight E2E workflow step definitions, never
+resets an existing password, and never loads development fixtures such as
+profiles or run history.
 
 ## Extending the Justfile
 

@@ -5,6 +5,7 @@ import { authAccount, authUser } from "../schema";
 import type * as schema from "../schema";
 import type { ProductionSeedConfig } from "./production-config";
 import { seedSmokeTestingApps } from "./seed-apps";
+import { seedE2eSteps } from "./seed-e2e-steps";
 
 type ProductionSeedDatabase = NodePgDatabase<typeof schema>;
 type ProductionSeedTransaction = Parameters<
@@ -117,7 +118,10 @@ export async function seedProductionDatabase(
       })
       .where(eq(authUser.id, maintainerId));
 
-    return seedSmokeTestingApps(tx, maintainerId);
+    const appMessages = await seedSmokeTestingApps(tx, maintainerId);
+    const e2eStepMessages = await seedE2eSteps(tx);
+
+    return [...appMessages, ...e2eStepMessages];
   });
 
   return [`Seeded production maintainer: ${config.email}`, ...messages];

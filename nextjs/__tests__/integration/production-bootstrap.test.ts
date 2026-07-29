@@ -11,6 +11,7 @@ import {
   smokeRuns,
   smokeRunsTestResults,
 } from "@/lib/drizzle/schema";
+import { e2eStepDefinitions } from "@/lib/drizzle/seed/seed-e2e-steps";
 import { seedProductionDatabase } from "@/lib/drizzle/seed/seed-production";
 import { setupTestDatabase } from "@/scripts/setup-test-db";
 
@@ -46,7 +47,7 @@ describe("production database bootstrap", () => {
     vi.unstubAllEnvs();
   });
 
-  it("seeds only the maintainer and Smoke Testing app catalog", async () => {
+  it("seeds only required production reference data", async () => {
     const messages = await seedProductionDatabase(getDb(), maintainer);
 
     const db = getDb();
@@ -72,7 +73,15 @@ describe("production database bootstrap", () => {
       .where(eq(authAccount.userId, seededMaintainer.id));
     const [smokeRunCount] = await db.select({ value: count() }).from(smokeRuns);
     const [profileCount] = await db.select({ value: count() }).from(profiles);
-    const [e2eStepCount] = await db.select({ value: count() }).from(e2eSteps);
+    const seededE2eSteps = await db
+      .select({
+        id: e2eSteps.id,
+        label: e2eSteps.label,
+        description: e2eSteps.description,
+        sortOrder: e2eSteps.sortOrder,
+      })
+      .from(e2eSteps)
+      .orderBy(e2eSteps.sortOrder);
 
     expect(userCount.value).toBe(1);
     expect(seededMaintainer.emailVerified).toBe(true);
@@ -105,7 +114,7 @@ describe("production database bootstrap", () => {
     ]);
     expect(smokeRunCount.value).toBe(0);
     expect(profileCount.value).toBe(0);
-    expect(e2eStepCount.value).toBe(0);
+    expect(seededE2eSteps).toEqual(e2eStepDefinitions);
     expect(messages.join("\n")).not.toContain(maintainer.password);
   });
 
