@@ -3,8 +3,9 @@
 ## Overview
 
 The project has four Docker workflows, each with a distinct purpose. They share
-PostgreSQL, Redis, Inngest, and pgAdmin infrastructure; local and build
-workflows additionally use PgDog.
+the same PostgreSQL, PgDog, Redis, Inngest, and pgAdmin service topology. The
+build workflow builds the application images; the deploy workflow uses the
+published images.
 
 ## Commands
 
@@ -70,8 +71,8 @@ Uses `docker/compose.build.yml`.
 
 Starts or stops the **deployment-oriented stack** ΓÇö services configured for a
 Coolify or production-like environment. It uses the ignored
-`docker/.env.deploy` as its single environment source and connects application
-services directly to PostgreSQL.
+`docker/.env.deploy` for application containers and the service-owned `.env`
+files for infrastructure, matching the build topology.
 
 ```bash
 just docker deploy up      # start deploy stack
@@ -90,11 +91,12 @@ docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml down
 
 **Services started:**
 - PostgreSQL (`app-postgres`)
+- PgDog connection pooler (`app-pgdog`)
 - Redis (`inngest-redis`)
 - Inngest server (`inngest`, port `8288`)
 - pgAdmin (`pgadmin`, port `5050`)
 - Next.js app (`nextjs`, port `3000`) ΓÇö pulled from `ghcr.io/markvalenzuela-mmdc/mihc-nextjs`
-- Playwright consumer (`playwright`)
+- Playwright consumer (`playwright`) ΓÇö pulled from `ghcr.io/markvalenzuela-mmdc/mihc-playwright`
 
 **Use when:** You want to run the full stack using the published Docker image against shared infrastructure, matching the Coolify deployment topology.
 
@@ -153,17 +155,17 @@ The `.env.build` file is a copy of `nextjs/.env` with `localhost` replaced by th
 
 ### `docker/.env.deploy` ΓÇö Deployment
 
-Used by `just docker deploy` for both Compose interpolation and application
-container variables:
+Used by `just docker deploy` for application container variables. The included
+infrastructure services continue to read their own service `.env` files:
 
 | Var | Host |
 |---|---|
-| `DATABASE_URL` | `app-postgres:5432` (direct PostgreSQL via Docker DNS) |
+| `DATABASE_URL` | `app-pgdog:6432` (PgDog via Docker DNS) |
 | `INNGEST_BASE_URL` | `inngest:8288` (Inngest via Docker DNS) |
 
 ### Why not share a single .env?
 
 `localhost` inside a Docker container refers to the container itself, not your
-host machine. Docker service names only resolve inside the Docker Compose
-network, so local, build, and deployment workflows keep environment files for
-their own network context.
+host machine. Docker service names only resolve inside the Docker network, so
+local, build, and deployment workflows keep application and service environment
+files for their own network context.

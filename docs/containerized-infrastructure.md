@@ -4,7 +4,7 @@
 
 This setup provides local development and Coolify-ready infrastructure for:
 
-- App PostgreSQL, reached through PgDog locally and directly in deployment
+- App PostgreSQL reached through PgDog
 - Inngest with its own PostgreSQL database and Redis
 - pgAdmin
 - Next.js and Playwright application services
@@ -24,11 +24,13 @@ development fixtures.
 - `docker/services/pgdog-postgres/compose.yml` ΓÇö app PostgreSQL and PgDog
 - `docker/services/inngest/compose.yml` ΓÇö Inngest, Inngest PostgreSQL, and Inngest Redis
 - `docker/services/pgadmin/compose.yml` ΓÇö pgAdmin
-- `docker/compose.deploy.yml` ΓÇö deploy entrypoint with app PostgreSQL, Next.js, and Playwright plus the included Inngest and pgAdmin services
+- `docker/compose.build.yml` ΓÇö build entrypoint that builds the Next.js and Playwright images
+- `docker/compose.deploy.yml` ΓÇö deploy entrypoint that uses the published Next.js and Playwright images
 
-Local Compose uses the ignored service-local `.env` files. Deploy Compose uses
-the single ignored `docker/.env.deploy` file for interpolation and application
-container variables.
+Both Compose entrypoints include the same service-owned infrastructure files.
+The build stack uses `docker/.env.build` for the application containers; the
+deploy stack uses `docker/.env.deploy`. The included PostgreSQL, Inngest, and
+pgAdmin services read their own ignored service-local `.env` files.
 
 ## Local services
 
@@ -49,8 +51,9 @@ Local development uses separate PostgreSQL services:
 - The app PostgreSQL service can host both the main app database and a separate test database. PgDog is configured to route `mihc`, `mihc-test`, and the maintenance database `postgres` to the same `app-postgres` service.
 
 PgDog reads its config from `docker/services/pgdog-postgres/files/`.
-The deploy stack connects Next.js and Playwright directly to `app-postgres`;
-PgDog and its static local user file are not part of the production topology.
+The deploy stack uses the same PgDog boundary as local and build Compose. Keep
+the `users.toml` credentials aligned with the PgDog service `.env` values and
+the deploy `DATABASE_URL`.
 
 ## Local Commands
 
@@ -180,12 +183,12 @@ Use `inngest-postgres`, not `localhost`, because pgAdmin runs inside Docker. Ins
 
 | Aspect | Local | Deploy |
 |---|---|---|
-| Credentials | Service-local `.env` files | Root `docker/.env.deploy` or platform secrets |
-| Application database | PgDog (port 6432) | PostgreSQL (`app-postgres:5432`) |
+| Credentials | Service-local `.env` files | Service-local `.env` files plus root `docker/.env.deploy` |
+| Application database | PgDog (port 6432) | PgDog (internal port 6432) |
 | Inngest databases | Dedicated inngest-postgres + inngest-redis | Dedicated inngest-postgres + inngest-redis |
 | pgAdmin mode | Desktop mode | Desktop mode; master-password requirement disabled |
 | Port exposure | PgDog and pgAdmin have fixed local ports; Inngest dependencies use dynamic host ports | Deployment-specific |
-| Service layout | Included service-owned Compose files | App PostgreSQL and application services plus included Inngest and pgAdmin services |
+| Service layout | Included service-owned Compose files with locally built app images | The same service layout with published app images |
 
 The deploy stack also runs pgAdmin in desktop mode with its master-password
 requirement disabled. Do not expose pgAdmin publicly; restrict port 5050 to a
@@ -196,7 +199,7 @@ private network or trusted operator access.
 Smoke Testing uses PostgreSQL `LISTEN`/`NOTIFY` to invalidate database-backed
 UI state over a Next.js SSE route. Local development reaches PostgreSQL through
 PgDog, where pub/sub must remain enabled with
-`pub_sub_channel_size = 4096`. Deployment connects directly to PostgreSQL.
+`pub_sub_channel_size = 4096`. Deployment uses the same PgDog path.
 
 The SSE route sends a heartbeat every 20 seconds. A deployment proxy must pass
 `text/event-stream` responses without buffering and must allow idle connections
@@ -207,16 +210,22 @@ longer than the heartbeat interval.
 From the repository root:
 
 1. Copy `docker/.env.deploy.example` to the ignored `docker/.env.deploy`.
-2. Replace every example credential with a deployment secret. Use the same
-   `APP_POSTGRES_PASSWORD` value in `DATABASE_URL`.
-3. Back up the production database.
-4. Validate the Compose configuration:
+2. Copy each service `.env.example` to its ignored `.env` file and replace
+   local credentials with deployment secrets.
+3. Ensure the PgDog username/password in `docker/services/pgdog-postgres/.env`,
+   `docker/services/pgdog-postgres/files/users.toml`, and `DATABASE_URL` all
+   match.
+4. Set `INNGEST_SDK_URL=http://playwright:3939/api/inngest` in the Inngest
+   service `.env` so the deployed consumer is reachable inside the Compose
+   network.
+5. Back up the production database.
+6. Validate the Compose configuration:
 
    ```bash
    docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml config --quiet
    ```
 
-5. Deploy the stack:
+7. Deploy the stack:
 
    ```bash
    docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml up -d
@@ -225,7 +234,7 @@ From the repository root:
    `just docker deploy up` is the equivalent normal deployment shortcut and
    loads `docker/.env.deploy` automatically.
 
-6. Inspect the Next.js startup logs:
+8. Inspect the Next.js startup logs:
 
    ```bash
    docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml logs nextjs
@@ -244,11 +253,17 @@ Drizzle migration.
 
 ## Coolify Deployment
 
-1. Copy or reference `docker/compose.deploy.yml` and its included Inngest and pgAdmin service Compose files in Coolify.
-2. Set the environment variables from `docker/.env.deploy.example` as Coolify environment variables.
-3. Generate secrets for `APP_POSTGRES_PASSWORD`, `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`, `PGADMIN_DEFAULT_PASSWORD`, `BETTER_AUTH_SECRET`, and `PROD_MAINTAINER_PASSWORD`. `BETTER_AUTH_SECRET` must contain at least 32 characters.
-4. Enable HTTPS for the Inngest (8288) public port. Keep pgAdmin (5050) private.
-5. Deploy.
+1. Copy or reference `docker/compose.deploy.yml` and its included service Compose files in Coolify.
+2. Provision the service-local `.env` files required by the included PgDog,
+   Inngest, and pgAdmin Compose files.
+3. Set the application variables from `docker/.env.deploy.example` as Coolify
+   environment variables. `BETTER_AUTH_SECRET` must contain at least 32
+   characters.
+4. Generate deployment secrets for the PgDog database credentials, Inngest
+   keys, pgAdmin password, Better Auth secret, and maintainer bootstrap
+   password.
+5. Enable HTTPS for the Inngest (8288) public port. Keep pgAdmin (5050) private.
+6. Deploy.
 
 > PostgreSQL and Redis use named volumes managed by Compose. Coolify will manage these as persistent storage.
 
@@ -259,5 +274,5 @@ Drizzle migration.
 | Local PgDog cannot load config | Wrong bind mount path or missing local `users.toml` | Check `docker/services/pgdog-postgres/files/` |
 | Local pgAdmin cannot connect to PgDog | Host set to `localhost` inside pgAdmin | Use `app-pgdog` as the host |
 | Local app cannot connect to database | `DATABASE_URL` is not using PgDog host port | Use `localhost:6432` from the host |
-| Deployed app cannot connect to database | `DATABASE_URL` credentials do not match app PostgreSQL | Use `APP_POSTGRES_USER`, `APP_POSTGRES_PASSWORD`, and `app-postgres:5432` |
+| Deployed app cannot connect to database | `DATABASE_URL`, PgDog `.env`, and `users.toml` credentials do not match | Align the PgDog credentials and use `app-pgdog:6432` |
 | Port conflict on 5050 or 6432 | Another local service uses the same port | Stop the other service or change the host port |

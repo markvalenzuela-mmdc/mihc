@@ -158,8 +158,10 @@ Additional test-run env vars are documented in `playwright/AGENTS.md`.
 | `PROD_MAINTAINER_EMAIL` | Email address for the production maintainer account |
 | `PROD_MAINTAINER_PASSWORD` | Initial password used by startup bootstrap, then removed before the Next.js server starts |
 
-See `docker/.env.deploy.example` for the complete deployment environment
-template. `docker/.env.deploy` is ignored and must contain deployment secrets.
+See `docker/.env.deploy.example` for the application deployment environment
+template. The included infrastructure services continue to use their own
+ignored service `.env` files, copied from the matching `.env.example` files.
+`docker/.env.deploy` must contain deployment secrets.
 
 The production Next.js container applies committed Drizzle migrations and runs
 the idempotent production bootstrap before starting the Next.js server. If
