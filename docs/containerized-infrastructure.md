@@ -224,9 +224,10 @@ From the repository root:
 3. Ensure the PgDog username/password in `docker/services/pgdog-postgres/.env`,
    `docker/services/pgdog-postgres/files/users.toml`, and `DATABASE_URL` all
    match.
-4. Set `INNGEST_SDK_URL=http://playwright:3939/api/inngest` in the Inngest
-   service `.env` so the deployed consumer is reachable inside the Compose
-   network.
+4. Set `INNGEST_SDK_URL=http://playwright:3939/api/inngest` in
+   `docker/.env.deploy` so the deployed consumer is reachable inside the
+   Compose network. Do not use `host.docker.internal` for the containerized
+   consumer.
 5. Back up the production database.
 6. Validate the Compose configuration:
 

@@ -8,7 +8,7 @@ local action="up":
 
 # Build Docker images and start the build stack
 build rebuild="":
-    @docker compose -f "{{ justfile_directory() }}/docker/compose.build.yml" build {{if rebuild == "force" { "--no-cache" } else { "" }}} && docker compose -f "{{ justfile_directory() }}/docker/compose.build.yml" up -d
+    @docker compose --env-file "{{ justfile_directory() }}/docker/.env.build" -f "{{ justfile_directory() }}/docker/compose.build.yml" build {{if rebuild == "force" { "--no-cache" } else { "" }}} && docker compose --env-file "{{ justfile_directory() }}/docker/.env.build" -f "{{ justfile_directory() }}/docker/compose.build.yml" up -d
 
 # Hard-reset the build database, then restart the production-like app services
 build-reset:

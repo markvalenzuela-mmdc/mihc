@@ -12,4 +12,7 @@ export const inngest = new Inngest({
   id: "mihc",
   eventKey: process.env.INNGEST_EVENT_KEY,
   baseUrl: process.env.INNGEST_BASE_URL,
+  // The pinned self-hosted server does not support the SDK v4 checkpoint
+  // completion response. Standard step orchestration remains supported.
+  checkpointing: false,
 });

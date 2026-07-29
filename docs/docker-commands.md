@@ -165,6 +165,7 @@ Used by `just docker build`. All service hostnames use Docker service names sinc
 |---|---|
 | `DATABASE_URL` | `app-pgdog:6432` (PgDog via Docker DNS) |
 | `INNGEST_BASE_URL` | `inngest:8288` (Inngest via Docker DNS) |
+| `INNGEST_SDK_URL` | `playwright:3939/api/inngest` (Hono consumer via Docker DNS) |
 
 The `.env.build` file is a copy of `nextjs/.env` with `localhost` replaced by the appropriate Docker service names. Client-facing vars like `NEXT_PUBLIC_APP_URL` and `BETTER_AUTH_URL` keep `localhost:3000` since they are used by the browser, not internal service calls.
 
@@ -177,6 +178,7 @@ infrastructure services continue to read their own service `.env` files:
 |---|---|
 | `DATABASE_URL` | `app-pgdog:6432` (PgDog via Docker DNS) |
 | `INNGEST_BASE_URL` | `inngest:8288` (Inngest via Docker DNS) |
+| `INNGEST_SDK_URL` | `playwright:3939/api/inngest` (Hono consumer via Docker DNS) |
 
 ### Why not share a single .env?
 
