@@ -64,10 +64,13 @@ assets with the previous URL.
 | `pgadmin` | Operator database UI | both PostgreSQL services | No |
 
 `compose.deploy.yml` uses relative `include` paths, and the included PgDog
-Compose file bind-mounts `files/pgdog.toml` and `files/users.toml`. Therefore,
-a PaaS must check out the full repository and preserve those paths, or the
-operator must deliberately translate them into provider-managed file
-mounts/configs.
+Compose file bind-mounts `files/pgdog.toml` and `files/users.toml`. A full
+repository checkout is still required for the includes, `pgdog.toml`, and the
+`users.toml.example` template. The actual
+`docker/services/pgdog-postgres/files/users.toml` is ignored: operators must
+provision it through a secret-backed/platform file mechanism, or on plain
+Docker copy the example and replace its values. Never commit the real
+production `users.toml` or its credentials.
 
 ## Configuration inventory
 
@@ -110,8 +113,8 @@ DATABASE_URL host     == app-pgdog
 pgdog.toml backend    == app-postgres:5432
 ```
 
-The committed `users.toml` values and every `.env.example` value are examples,
-not production secrets. Preserve `pub_sub_channel_size = 4096` because Smoke
+`users.toml.example` and every `.env.example` value are examples, not
+production secrets. Preserve `pub_sub_channel_size = 4096` because Smoke
 Testing live updates use PostgreSQL `LISTEN`/`NOTIFY`.
 
 ## Persistent volumes
