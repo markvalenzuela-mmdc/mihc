@@ -40,7 +40,7 @@ const isMainModule =
 
 if (isMainModule) {
   resetProductionDatabase().catch((error: unknown) => {
-    console.error("Production-style local database reset failed.", error);
+    console.error("Production database reset failed.", error);
     process.exitCode = 1;
   });
 }
