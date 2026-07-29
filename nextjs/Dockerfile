@@ -67,4 +67,4 @@ USER nextjs
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "cd /app/nextjs && ./node_modules/.bin/tsx scripts/release-database.ts && unset PROD_MAINTAINER_PASSWORD && cd /app && exec node server.js"]
+CMD ["sh", "-c", "cd /app/nextjs && if [ \"$DATABASE_RESET\" = \"true\" ]; then ./node_modules/.bin/tsx scripts/reset-production-database.ts; else ./node_modules/.bin/tsx scripts/release-database.ts; fi && unset PROD_MAINTAINER_PASSWORD && cd /app && exec node server.js"]
