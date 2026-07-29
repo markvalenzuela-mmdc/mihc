@@ -24,6 +24,11 @@ just docker local down
 
 See [`docs/containerized-infrastructure.md`](docs/containerized-infrastructure.md) for pgAdmin registration steps and service-specific environment files.
 
+For production, follow [`docker/DEPLOYMENT.md`](docker/DEPLOYMENT.md). It
+documents the GitHub Actions image pipeline, full-repository Compose
+deployment, environment and configuration files, reverse proxy, Coolify,
+Dokploy, backups, and recovery.
+
 ## Folder Structure
 
 | Directory      | Purpose                                                |

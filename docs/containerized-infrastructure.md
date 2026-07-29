@@ -235,68 +235,17 @@ The SSE route sends a heartbeat every 20 seconds. A deployment proxy must pass
 `text/event-stream` responses without buffering and must allow idle connections
 longer than the heartbeat interval.
 
-## Production deployment runbook
+## Production deployment
 
-From the repository root:
+The authoritative production runbook is
+[`../docker/DEPLOYMENT.md`](../docker/DEPLOYMENT.md). It covers the
+GitHub-Actions-to-GHCR delivery flow, repository provisioning, every
+environment and configuration file, reverse-proxy exposure, Coolify, Dokploy,
+database release, backups, retries, rollback, recovery, and first-deploy
+verification.
 
-1. Copy `docker/.env.deploy.example` to the ignored `docker/.env.deploy`.
-2. Copy each service `.env.example` to its ignored `.env` file and replace
-   local credentials with deployment secrets.
-3. Ensure the PgDog username/password in `docker/services/pgdog-postgres/.env`,
-   `docker/services/pgdog-postgres/files/users.toml`, and `DATABASE_URL` all
-   match.
-4. Set `INNGEST_SDK_URL=http://playwright:3939/api/inngest` in
-   `docker/.env.deploy` so the deployed consumer is reachable inside the
-   Compose network. Do not use `host.docker.internal` for the containerized
-   consumer.
-5. Back up the production database.
-6. Validate the Compose configuration:
-
-   ```bash
-   docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml config --quiet
-   ```
-
-7. Deploy the stack:
-
-   ```bash
-   docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml up -d
-   ```
-
-   `just docker deploy up` is the equivalent normal deployment shortcut and
-   loads `docker/.env.deploy` automatically.
-
-8. Inspect the Next.js startup logs:
-
-   ```bash
-   docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml logs nextjs
-   ```
-
-`PROD_MAINTAINER_PASSWORD` is available to the startup bootstrap only. The
-container entrypoint removes it from the environment before starting the
-long-running Next.js server.
-
-For manual development workflows, use `just db migrate` to apply migrations,
-`just db seed` to load complete development fixtures, and `just db release` to
-run the same production migrate/bootstrap sequence. `just db reset` permanently
-resets its configured database; never run it against production. Image rollback
-does not undo database migrations. Correct schema problems with a new forward
-Drizzle migration.
-
-## Coolify Deployment
-
-1. Copy or reference `docker/compose.deploy.yml` and its included service Compose files in Coolify.
-2. Provision the service-local `.env` files required by the included PgDog,
-   Inngest, and pgAdmin Compose files.
-3. Set the application variables from `docker/.env.deploy.example` as Coolify
-   environment variables. `BETTER_AUTH_SECRET` must contain at least 32
-   characters.
-4. Generate deployment secrets for the PgDog database credentials, Inngest
-   keys, pgAdmin password, Better Auth secret, and maintainer bootstrap
-   password.
-5. Enable HTTPS for the Inngest (8288) public port. Keep pgAdmin (5050) private.
-6. Deploy.
-
-> PostgreSQL and Redis use named volumes managed by Compose. Coolify will manage these as persistent storage.
+This document remains the source for local infrastructure topology, database
+access, pgAdmin registration, and service relationships.
 
 ## Troubleshooting
 
@@ -305,5 +254,4 @@ Drizzle migration.
 | Local PgDog cannot load config | Wrong bind mount path or missing local `users.toml` | Check `docker/services/pgdog-postgres/files/` |
 | Local pgAdmin cannot connect to PgDog | Host set to `localhost` inside pgAdmin | Use `app-pgdog` as the host |
 | Local app cannot connect to database | `DATABASE_URL` is not using PgDog host port | Use `localhost:6432` from the host |
-| Deployed app cannot connect to database | `DATABASE_URL`, PgDog `.env`, and `users.toml` credentials do not match | Align the PgDog credentials and use `app-pgdog:6432` |
 | Port conflict on 5050 or 6432 | Another local service uses the same port | Stop the other service or change the host port |
