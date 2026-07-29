@@ -161,10 +161,12 @@ Before any deployment, ensure the operator has:
 
 ## Plain Docker Compose runbook
 
-Run these commands from the repository root. First copy the templates, replace
-all secrets, and update both PgDog TOML files (`pgdog.toml` and `users.toml`) so
-their user, password, database, and backend settings agree with the
-configuration inventory above.
+Run these commands from the repository root. The four copied files are ignored,
+secret-bearing deployment files: `docker/.env.deploy` and the service-local
+`.env` files must remain uncommitted and must never contain production secrets
+in Git. First copy the templates, replace all secrets, and update both PgDog
+TOML files (`pgdog.toml` and `users.toml`) so their user, password, database,
+and backend settings agree with the configuration inventory above.
 
 ```bash
 cp docker/.env.deploy.example docker/.env.deploy
@@ -298,8 +300,10 @@ retain the old container environment and can repeat the destructive reset.
 
 This is the expected production PaaS path, based on
 [Coolify's Docker Compose guidance](https://coolify.io/docs/knowledge-base/docker/compose).
-It is an operator-verified path, not a claim that Coolify creates this
-repository's custom files automatically.
+It has not been validated end-to-end for this repository. The deploying
+operator must verify file provisioning, proxy behavior, persistent volumes,
+service health, and the shared first-deploy verification checklist; do not
+assume Coolify creates this repository's custom files automatically.
 
 1. Create a repository-backed Docker Compose resource, select the production
    branch, and choose `docker/compose.deploy.yml`.
