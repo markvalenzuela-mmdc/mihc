@@ -51544,23 +51544,23 @@
                   "required": false
                 },
                 {
-                  "id": "Referred by Family/Relatives",
-                  "name": "Referred by Family/Relatives",
-                  "label": "Referred by Family/Relatives",
+                  "id": "Recommendation from family, relatives and friends",
+                  "name": "Recommendation from family, relatives and friends",
+                  "label": "Recommendation from family, relatives and friends",
                   "type": "checkbox",
                   "required": false
                 },
                 {
-                  "id": "Referred by someone from Mapúa or Malayan",
-                  "name": "Referred by someone from Mapúa or Malayan",
-                  "label": "Referred by someone from Mapúa or Malayan",
+                  "id": "Recommendation from MMDC student/alumnus",
+                  "name": "Recommendation from MMDC student/alumnus",
+                  "label": "Recommendation from MMDC student/alumnus",
                   "type": "checkbox",
                   "required": false
                 },
                 {
-                  "id": "Referred by Friends",
-                  "name": "Referred by Friends",
-                  "label": "Referred by Friends",
+                  "id": "Recommendation from an employer",
+                  "name": "Recommendation from an employer",
+                  "label": "Recommendation from an employer",
                   "type": "checkbox",
                   "required": false
                 },
@@ -51594,58 +51594,79 @@
               "label": "Why do you want to study in MMDC?",
               "fields": [
                 {
-                  "id": "Accessibility and Location",
-                  "name": "Accessibility and Location",
-                  "label": "Accessibility and Location",
+                  "id": "Flexible schedules for work or personal commitments",
+                  "name": "Flexible schedules for work or personal commitments",
+                  "label": "Flexible schedules for work or personal commitments",
                   "type": "checkbox",
                   "required": false
                 },
                 {
-                  "id": "Affordable Tuition Fees",
-                  "name": "Affordable Tuition Fees",
-                  "label": "Affordable Tuition Fees",
+                  "id": "Fully online learning",
+                  "name": "Fully online learning",
+                  "label": "Fully online learning",
                   "type": "checkbox",
                   "required": false
                 },
                 {
-                  "id": "Learning Hub Facilities and Security",
-                  "name": "Learning Hub Facilities and Security",
-                  "label": "Learning Hub Facilities and Security",
+                  "id": "Affordable tuition and flexible payment options",
+                  "name": "Affordable tuition and flexible payment options",
+                  "label": "Affordable tuition and flexible payment options",
                   "type": "checkbox",
                   "required": false
                 },
                 {
-                  "id": "Recommended by parents/relatives/friends",
-                  "name": "Recommended by parents/relatives/friends",
-                  "label": "Recommended by parents/relatives/friends",
+                  "id": "Scholarships, discounts, or financial assistance",
+                  "name": "Scholarships, discounts, or financial assistance",
+                  "label": "Scholarships, discounts, or financial assistance",
                   "type": "checkbox",
                   "required": false
                 },
                 {
-                  "id": "Learning Modality (Online and Face to Face)",
-                  "name": "Learning Modality (Online and Face to Face)",
-                  "label": "Learning Modality (Online and Face to Face)",
+                  "id": "Preferred degree program or specialization",
+                  "name": "Preferred degree program or specialization",
+                  "label": "Preferred degree program or specialization",
                   "type": "checkbox",
                   "required": false
                 },
                 {
-                  "id": "Quality of education",
-                  "name": "Quality of education",
-                  "label": "Quality of education",
+                  "id": "AI fluency training and microcredentials",
+                  "name": "AI fluency training and microcredentials",
+                  "label": "AI fluency training and microcredentials",
                   "type": "checkbox",
                   "required": false
                 },
                 {
-                  "id": "Competence of Teachers",
-                  "name": "Competence of Teachers",
-                  "label": "Competence of Teachers",
+                  "id": "Practical, industry-relevant learning through Projects, Problems, and Cases",
+                  "name": "Practical, industry-relevant learning through Projects, Problems, and Cases",
+                  "label": "Practical, industry-relevant learning through Projects, Problems, and Cases",
                   "type": "checkbox",
                   "required": false
                 },
                 {
-                  "id": "School Reputation and Legacy",
-                  "name": "School Reputation and Legacy",
-                  "label": "School Reputation and Legacy",
+                  "id": "Quality education and academic support",
+                  "name": "Quality education and academic support",
+                  "label": "Quality education and academic support",
+                  "type": "checkbox",
+                  "required": false
+                },
+                {
+                  "id": "MMDC and Mapúa education group reputation",
+                  "name": "MMDC and Mapúa education group reputation",
+                  "label": "MMDC and Mapúa education group reputation",
+                  "type": "checkbox",
+                  "required": false
+                },
+                {
+                  "id": "MMDC's collaboration with Arizona State University",
+                  "name": "MMDC's collaboration with Arizona State University",
+                  "label": "MMDC's collaboration with Arizona State University",
+                  "type": "checkbox",
+                  "required": false
+                },
+                {
+                  "id": "Career opportunities and employability",
+                  "name": "Career opportunities and employability",
+                  "label": "Career opportunities and employability",
                   "type": "checkbox",
                   "required": false
                 }
@@ -52553,23 +52574,23 @@
                   "required": false
                 },
                 {
-                  "id": "Referred by Family/Relatives",
-                  "name": "Referred by Family/Relatives",
-                  "label": "Referred by Family/Relatives",
+                  "id": "Recommendation from family, relatives and friends",
+                  "name": "Recommendation from family, relatives and friends",
+                  "label": "Recommendation from family, relatives and friends",
                   "type": "checkbox",
                   "required": false
                 },
                 {
-                  "id": "Referred by someone from Mapúa or Malayan",
-                  "name": "Referred by someone from Mapúa or Malayan",
-                  "label": "Referred by someone from Mapúa or Malayan",
+                  "id": "Recommendation from MMDC student/alumnus",
+                  "name": "Recommendation from MMDC student/alumnus",
+                  "label": "Recommendation from MMDC student/alumnus",
                   "type": "checkbox",
                   "required": false
                 },
                 {
-                  "id": "Referred by Friends",
-                  "name": "Referred by Friends",
-                  "label": "Referred by Friends",
+                  "id": "Recommendation from an employer",
+                  "name": "Recommendation from an employer",
+                  "label": "Recommendation from an employer",
                   "type": "checkbox",
                   "required": false
                 },

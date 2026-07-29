@@ -75,14 +75,21 @@ export const religions = [
 
 export const discoveryChannels = [
   "Facebook", "Instagram", "Youtube", "Tiktok", "Online News Platform",
-  "Referred by Family/Relatives", "Referred by someone from Mapúa or Malayan",
-  "Referred by Friends", "Saw a Billboard/Poster Near Me",
+  "Recommendation from family, relatives and friends",
+  "Recommendation from MMDC student/alumnus",
+  "Recommendation from an employer", "Saw a Billboard/Poster Near Me",
   "Visited the Learning Hub", "Others",
 ] as const;
 
 export const studyReasons = [
-  "Accessibility and Location", "Affordable Tuition Fees",
-  "Learning Hub Facilities and Security", "Recommended by parents/relatives/friends",
-  "Learning Modality (Online and Face to Face)", "Quality of education",
-  "Competence of Teachers", "School Reputation and Legacy",
+  "Flexible schedules for work or personal commitments", "Fully online learning",
+  "Affordable tuition and flexible payment options",
+  "Scholarships, discounts, or financial assistance",
+  "Preferred degree program or specialization",
+  "AI fluency training and microcredentials",
+  "Practical, industry-relevant learning through Projects, Problems, and Cases",
+  "Quality education and academic support",
+  "MMDC and Mapúa education group reputation",
+  "MMDC's collaboration with Arizona State University",
+  "Career opportunities and employability",
 ] as const;
