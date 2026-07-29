@@ -10,7 +10,7 @@
 
 ---
 
-### Task 1: Replace the independent runtime installation with pruning
+### Task 1: Deduplicate, verify, and commit the dependency stages
 
 **Files:**
 - Modify: `nextjs/Dockerfile:16`
@@ -62,12 +62,7 @@ Expected:
 1
 ```
 
-### Task 2: Verify the runtime dependency artifact
-
-**Files:**
-- Verify: `nextjs/Dockerfile`
-
-- [ ] **Step 1: Build the runner target**
+- [ ] **Step 4: Build the runner target**
 
 Run:
 
@@ -77,7 +72,7 @@ docker build --target runner -t mihc-nextjs-prune-verification -f nextjs/Dockerf
 
 Expected: Docker exits with status `0`; the log shows `pnpm prune --prod --ignore-scripts` completing successfully.
 
-- [ ] **Step 2: Verify production tools are present and development tools are absent**
+- [ ] **Step 5: Verify production tools are present and development tools are absent**
 
 Run:
 
@@ -87,7 +82,7 @@ docker run --rm --entrypoint sh mihc-nextjs-prune-verification -c 'test -x /app/
 
 Expected: exit status `0` with no output.
 
-- [ ] **Step 3: Import both database startup modules**
+- [ ] **Step 6: Import both database startup modules**
 
 Run:
 
@@ -101,7 +96,7 @@ Expected:
 startup-imports=ok
 ```
 
-- [ ] **Step 4: Verify the standalone server starts**
+- [ ] **Step 7: Verify the standalone server starts**
 
 Run:
 
@@ -118,7 +113,7 @@ Expected:
 status=200
 ```
 
-- [ ] **Step 5: Remove the temporary verification image**
+- [ ] **Step 8: Remove the temporary verification image**
 
 Run:
 
@@ -128,12 +123,7 @@ docker image rm mihc-nextjs-prune-verification
 
 Expected: Docker reports that the temporary image tag was removed.
 
-### Task 3: Review and commit the scoped change
-
-**Files:**
-- Modify: `nextjs/Dockerfile`
-
-- [ ] **Step 1: Inspect the final diff**
+- [ ] **Step 9: Inspect the final diff**
 
 Run:
 
@@ -150,7 +140,7 @@ Expected:
 - No unrelated files are modified.
 - `git diff --check` exits with status `0`.
 
-- [ ] **Step 2: Commit the Dockerfile change**
+- [ ] **Step 10: Commit the Dockerfile change**
 
 Run:
 
