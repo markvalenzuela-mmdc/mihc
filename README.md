@@ -155,53 +155,10 @@ See `playwright/.env.example` for defaults.
 
 Additional test-run env vars are documented in `playwright/AGENTS.md`.
 
-### Production bootstrap (`docker/.env.deploy`)
+### Production deployment
 
-| Var | Description |
-|---|---|
-| `PROD_MAINTAINER_NAME` | Name for the production maintainer account |
-| `PROD_MAINTAINER_EMAIL` | Email address for the production maintainer account |
-| `PROD_MAINTAINER_PASSWORD` | Initial password used by startup bootstrap, then removed before the Next.js server starts |
-| `DATABASE_RESET` | Set to `false` normally; see the startup reset contract below before setting it to `true` |
-
-See `docker/.env.deploy.example` for the application deployment environment
-template. The included infrastructure services continue to use their own
-ignored service `.env` files, copied from the matching `.env.example` files.
-`docker/.env.deploy` must contain deployment secrets.
-
-The production Next.js container applies committed Drizzle migrations and runs
-the idempotent production bootstrap before starting the Next.js server. If
-migration or bootstrap fails, the server does not start and Docker retries the
-container according to its restart policy.
-
-`DATABASE_RESET=false` preserves application data while applying pending
-migrations and production bootstrap data. `DATABASE_RESET=true` drops the
-application `public` and `drizzle` schemas on every Next.js container startup,
-then reapplies all migrations and production bootstrap data. The reset affects
-only the application PostgreSQL schemas and does not erase Inngest PostgreSQL,
-Redis, or pgAdmin volumes.
-
-Immediately after the intended reset, change `DATABASE_RESET` back to `false`
-and recreate or redeploy Next.js. Editing an environment file does not alter an
-existing container, so `docker restart` and `docker compose start` do not
-reread the file; restarting without recreating while the container still has
-`DATABASE_RESET=true` repeats the deletion. For the build or deploy stack, run
-the matching command:
-
-```bash
-docker compose --env-file docker/.env.build -f docker/compose.build.yml up -d --force-recreate nextjs
-docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml up -d --force-recreate nextjs
-```
-
-In Coolify, set `DATABASE_RESET=false` in the application environment and
-redeploy the Next.js service so Coolify creates a container with the updated
-value. A Coolify restart alone keeps the existing container environment and is
-not sufficient.
-
-Production bootstrap creates or validates the configured maintainer, upserts
-the four Smoke Testing apps and eight E2E workflow step definitions, never
-resets an existing password, and never loads development fixtures such as
-profiles or run history.
+For deployment environment values, startup release and reset safety, and all
+operator procedures, follow [`docker/DEPLOYMENT.md`](docker/DEPLOYMENT.md).
 
 ## Extending the Justfile
 
