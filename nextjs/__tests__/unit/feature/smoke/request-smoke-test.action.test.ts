@@ -20,7 +20,7 @@ vi.mock("@/lib/inngest/client", () => ({
     send: mocks.inngestSend,
   },
 }));
-vi.mock("@/feature/smoke/services/enqueue-smoke-run.service", () => ({
+vi.mock("@/feature/smoke/services/smoke-run-enqueue.service", () => ({
   createQueuedSmokeRun: mocks.createQueuedSmokeRun,
   failQueuedSmokeRun: mocks.failQueuedSmokeRun,
 }));
