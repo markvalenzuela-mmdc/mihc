@@ -65,20 +65,13 @@ The app is available at `http://localhost:3000`.
 
 Uses `docker/compose.build.yml`.
 
-If the persistent local volume still contains development fixtures, normal
-startup will not delete them. To reset only the build stack database and
-recreate it with migrations plus the production maintainer and Smoke Testing
-apps, run:
-
-```bash
-just docker build-reset
-```
-
-This stops the build app and Playwright containers, runs the explicit `reset`
-Compose profile with the required `DATABASE_RESET_CONFIRMATION`, and starts
-those containers again. It does not exist in `compose.deploy.yml` and is not
-part of normal container startup. The reset is destructive to the local build
-database; it does not reset the Inngest database or Docker volumes.
+`DATABASE_RESET=false` preserves application data while applying pending
+migrations and production bootstrap data. `DATABASE_RESET=true` drops the
+application `public` and `drizzle` schemas on every Next.js container startup,
+then reapplies all migrations and production bootstrap data. Set it back to
+`false` after the intended reset; automatic restarts repeat the deletion while
+it remains `true`. The reset affects only the application PostgreSQL schemas
+and does not erase Inngest PostgreSQL, Redis, or pgAdmin volumes.
 
 ---
 
@@ -165,6 +158,7 @@ Used by `just docker build`. All service hostnames use Docker service names sinc
 | Var | Host |
 |---|---|
 | `DATABASE_URL` | `app-pgdog:6432` (PgDog via Docker DNS) |
+| `DATABASE_RESET` | `false` by default; set to `true` only for an intended startup reset |
 | `INNGEST_BASE_URL` | `inngest:8288` (Inngest via Docker DNS) |
 | `INNGEST_SDK_URL` | `playwright:3939/api/inngest` (Hono consumer via Docker DNS) |
 
@@ -178,6 +172,7 @@ infrastructure services continue to read their own service `.env` files:
 | Var | Host |
 |---|---|
 | `DATABASE_URL` | `app-pgdog:6432` (PgDog via Docker DNS) |
+| `DATABASE_RESET` | `false` by default; set to `true` only for an intended startup reset |
 | `INNGEST_BASE_URL` | `inngest:8288` (Inngest via Docker DNS) |
 | `INNGEST_SDK_URL` | `playwright:3939/api/inngest` (Hono consumer via Docker DNS) |
 

@@ -23,6 +23,14 @@ the idempotent production bootstrap before starting the Next.js server. If
 migration or bootstrap fails, the server does not start and Docker retries the
 container according to its restart policy.
 
+`DATABASE_RESET=false` preserves application data while applying pending
+migrations and production bootstrap data. `DATABASE_RESET=true` drops the
+application `public` and `drizzle` schemas on every Next.js container startup,
+then reapplies all migrations and production bootstrap data. Set it back to
+`false` after the intended reset; automatic restarts repeat the deletion while
+it remains `true`. The reset affects only the application PostgreSQL schemas
+and does not erase Inngest PostgreSQL, Redis, or pgAdmin volumes.
+
 Production bootstrap creates or validates the configured maintainer, upserts
 the four Smoke Testing apps, never resets an existing password, and never loads
 development fixtures. For manual development workflows, use `just db migrate`
