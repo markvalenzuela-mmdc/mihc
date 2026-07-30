@@ -8,11 +8,14 @@ This directory contains Docker Compose files and configurations for containerizi
 - `services/pgdog-postgres/` ΓÇö App PostgreSQL and PgDog proxy
 - `services/inngest/` ΓÇö Inngest, its PostgreSQL database, and Redis
 - `services/pgadmin/` ΓÇö pgAdmin
-- `compose.deploy.yml` ΓÇö Deploy entrypoint that uses the published Next.js and Playwright images with the same included infrastructure services
+- `services/nextjs/` ΓÇö Published Next.js deployment service
+- `services/playwright/` ΓÇö Published Playwright/Hono deployment service
+- `compose.deploy.yml` ΓÇö Include-only deployment entrypoint for all service-owned Compose files
 
-Each service folder owns its shared `compose.yml`, `.env.example`, and ignored
-`.env` file. The build and deploy entrypoints use those same infrastructure
-files; `.env.build` and `.env.deploy` provide application-container values.
+Each service folder owns its `compose.yml`, `.env.example`, and ignored
+`.env` file. The build entrypoint continues to use `.env.build` for its
+application containers; the deploy entrypoint reads every service's local
+environment through its include.
 
 - [Production Deployment](DEPLOYMENT.md) — authoritative operator runbook
 - [Containerized Infrastructure](../docs/containerized-infrastructure.md) —

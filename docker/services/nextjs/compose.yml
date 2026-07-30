@@ -1,0 +1,23 @@
+services:
+  nextjs:
+    image: ghcr.io/markvalenzuela-mmdc/mihc-nextjs:latest
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_RESET=${DATABASE_RESET}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      - BETTER_AUTH_URL=${BETTER_AUTH_URL}
+      - INNGEST_EVENT_KEY=${INNGEST_EVENT_KEY}
+      - INNGEST_BASE_URL=${INNGEST_BASE_URL}
+      - INNGEST_SIGNING_KEY=${INNGEST_SIGNING_KEY}
+      - PROD_MAINTAINER_NAME=${PROD_MAINTAINER_NAME}
+      - PROD_MAINTAINER_EMAIL=${PROD_MAINTAINER_EMAIL}
+      - PROD_MAINTAINER_PASSWORD=${PROD_MAINTAINER_PASSWORD}
+    ports:
+      - "3000:3000"
+    depends_on:
+      app-pgdog:
+        condition: service_started
+      inngest:
+        condition: service_healthy

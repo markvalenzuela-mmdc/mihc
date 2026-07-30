@@ -81,7 +81,7 @@ the matching command:
 
 ```bash
 docker compose --env-file docker/.env.build -f docker/compose.build.yml up -d --force-recreate nextjs
-docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml up -d --force-recreate nextjs
+docker compose -f docker/compose.deploy.yml up -d --force-recreate nextjs
 ```
 
 In Coolify, set `DATABASE_RESET=false` in the application environment and
@@ -94,9 +94,8 @@ not sufficient.
 ### `just docker deploy [up|down]`
 
 Starts or stops the **deployment-oriented stack** ΓÇö services configured for a
-Coolify or production-like environment. It uses the ignored
-`docker/.env.deploy` for application containers and the service-owned `.env`
-files for infrastructure, matching the build topology.
+Coolify or production-like environment. Every included service reads its own
+ignored service-local `.env` file.
 
 ```bash
 just docker deploy up      # start deploy stack
@@ -105,12 +104,12 @@ just docker deploy down    # stop deploy stack
 
 Uses `docker/compose.deploy.yml`.
 
-For direct Compose operations, pass the deploy environment explicitly:
+For direct Compose operations:
 
 ```bash
-docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml config --quiet
-docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml up -d
-docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml down
+docker compose -f docker/compose.deploy.yml config --quiet
+docker compose -f docker/compose.deploy.yml up -d
+docker compose -f docker/compose.deploy.yml down
 ```
 
 **Services started:**
@@ -180,17 +179,19 @@ Used by `just docker build`. All service hostnames use Docker service names sinc
 
 The `.env.build` file is a copy of `nextjs/.env` with `localhost` replaced by the appropriate Docker service names. Client-facing vars like `NEXT_PUBLIC_APP_URL` and `BETTER_AUTH_URL` keep `localhost:3000` since they are used by the browser, not internal service calls.
 
-### `docker/.env.deploy` ΓÇö Deployment
+### Service-owned application `.env` files ΓÇö Deployment
 
-Used by `just docker deploy` for application container variables. The included
-infrastructure services continue to read their own service `.env` files:
+Next.js owns its authentication, bootstrap, database reset, and public URL
+values in `docker/services/nextjs/.env`. Playwright owns its database and
+Inngest consumer values in `docker/services/playwright/.env`. Values used by
+both services must match:
 
 | Var | Host |
 |---|---|
-| `DATABASE_URL` | `app-pgdog:6432` (PgDog via Docker DNS) |
-| `DATABASE_RESET` | `false` by default; set to `true` only for an intended startup reset |
-| `INNGEST_BASE_URL` | `inngest:8288` (Inngest via Docker DNS) |
-| `INNGEST_SDK_URL` | `playwright:3939/api/inngest` (Hono consumer via Docker DNS) |
+| `DATABASE_URL` | Both application files use `app-pgdog:6432` via Docker DNS |
+| `DATABASE_RESET` | Next.js only; `false` by default and `true` only for an intended startup reset |
+| `INNGEST_BASE_URL` | Both application files use `inngest:8288` via Docker DNS |
+| `INNGEST_SDK_URL` | Inngest owns `playwright:3939/api/inngest` in `docker/services/inngest/.env` |
 
 ### Why not share a single .env?
 

@@ -91,22 +91,20 @@ credential.
 
 | Variable | File/boundary and consumer | Secret? | Production form, status, and alignment |
 |---|---|---:|---|
-| `DATABASE_URL` | `docker/.env.deploy`; Next.js and Playwright/Hono runtime | Yes | Required PostgreSQL URI: `postgresql://<APP_POSTGRES_USER>:<APP_POSTGRES_PASSWORD>@app-pgdog:6432/<APP_POSTGRES_DB>?sslmode=disable`; align all three credentials with PgDog/PostgreSQL. |
-| `DATABASE_RESET` | `docker/.env.deploy`; Next.js startup | No | Required; `false` for normal operation. `true` is temporary and destructive, only in the reset procedure below. |
-| `NEXT_PUBLIC_APP_URL` | GitHub Actions build variable and `docker/.env.deploy`; Next.js build/runtime | No | Required exact public HTTPS origin. The build and runtime values must match; rebuild the image after a change. |
-| `BETTER_AUTH_SECRET` | `docker/.env.deploy`; Next.js runtime | Yes | Required independent random secret of at least 32 characters. |
-| `BETTER_AUTH_URL` | `docker/.env.deploy`; Next.js runtime | No | Required; exactly the same public HTTPS origin as `NEXT_PUBLIC_APP_URL`. |
-| `INNGEST_EVENT_KEY` | `docker/.env.deploy`; Next.js and Playwright/Hono producers/consumers | Yes | Required; exactly equals `INNGEST_EVENT_KEY` in `docker/services/inngest/.env`. |
-| `INNGEST_BASE_URL` | `docker/.env.deploy`; Next.js and Playwright/Hono runtime | No | Required internal URL `http://inngest:8288`. |
-| `INNGEST_SDK_URL` | `docker/.env.deploy`; Inngest registration/runtime | No | Required internal callback `http://playwright:3939/api/inngest`. |
-| `INNGEST_SIGNING_KEY` | `docker/.env.deploy`; Next.js and Playwright/Hono verification | Yes | Required; exactly equals `INNGEST_SIGNING_KEY` in `docker/services/inngest/.env`. |
-| `PROD_MAINTAINER_NAME` | `docker/.env.deploy`; Next.js startup bootstrap | No | Required stable display name for the single production maintainer. |
-| `PROD_MAINTAINER_EMAIL` | `docker/.env.deploy`; Next.js startup bootstrap | No | Required stable production email; do not use the example address. |
-| `PROD_MAINTAINER_PASSWORD` | `docker/.env.deploy`; Next.js startup bootstrap | Yes | Required initial/reconciliation input. It is removed from the environment before `server.js`; repeated release does not reset an existing password. |
+| `DATABASE_URL` | `docker/services/nextjs/.env` and `docker/services/playwright/.env`; application runtimes | Yes | Required PostgreSQL URI: `postgresql://<APP_POSTGRES_USER>:<APP_POSTGRES_PASSWORD>@app-pgdog:6432/<APP_POSTGRES_DB>?sslmode=disable`; keep both copies aligned with PgDog/PostgreSQL. |
+| `DATABASE_RESET` | `docker/services/nextjs/.env`; Next.js startup | No | Required; `false` for normal operation. `true` is temporary and destructive, only in the reset procedure below. |
+| `NEXT_PUBLIC_APP_URL` | GitHub Actions build variable and `docker/services/nextjs/.env`; Next.js build/runtime | No | Required exact public HTTPS origin. The build and runtime values must match; rebuild the image after a change. |
+| `BETTER_AUTH_SECRET` | `docker/services/nextjs/.env`; Next.js runtime | Yes | Required independent random secret of at least 32 characters. |
+| `BETTER_AUTH_URL` | `docker/services/nextjs/.env`; Next.js runtime | No | Required; exactly the same public HTTPS origin as `NEXT_PUBLIC_APP_URL`. |
+| `INNGEST_EVENT_KEY` | Both application service `.env` files; producers/consumers | Yes | Required; keep both copies exactly equal to `INNGEST_EVENT_KEY` in `docker/services/inngest/.env`. |
+| `INNGEST_BASE_URL` | Both application service `.env` files; application runtimes | No | Required internal URL `http://inngest:8288`. |
+| `INNGEST_SIGNING_KEY` | Both application service `.env` files; verification | Yes | Required; keep both copies exactly equal to `INNGEST_SIGNING_KEY` in `docker/services/inngest/.env`. |
+| `PROD_MAINTAINER_NAME` | `docker/services/nextjs/.env`; Next.js startup bootstrap | No | Required stable display name for the single production maintainer. |
+| `PROD_MAINTAINER_EMAIL` | `docker/services/nextjs/.env`; Next.js startup bootstrap | No | Required stable production email; do not use the example address. |
+| `PROD_MAINTAINER_PASSWORD` | `docker/services/nextjs/.env`; Next.js startup bootstrap | Yes | Required initial/reconciliation input. It is removed from the environment before `server.js`; repeated release does not reset an existing password. |
 
-The root `--env-file docker/.env.deploy` supplies Compose interpolation, while
-the `nextjs` and `playwright` services also load `docker/.env.deploy` through
-`env_file`. Internal service URLs use Docker DNS, not the public domain and
+Each application include uses its own service-local `.env` for Compose
+interpolation. Internal service URLs use Docker DNS, not the public domain and
 not `localhost`. The containerized Inngest SDK/Playwright-Hono path must use
 `http://playwright:3939/api/inngest`, never `host.docker.internal`:
 `host.docker.internal` targets the host, not the containerized consumer.
@@ -124,10 +122,11 @@ not `localhost`. The containerized Inngest SDK/Playwright-Hono path must use
 
 | Variable | File/boundary and consumer | Secret? | Production form, status, and alignment |
 |---|---|---:|---|
-| `INNGEST_EVENT_KEY` | `docker/services/inngest/.env`; Inngest | Yes | Required unique key; equals the root deployment value used by producers. |
-| `INNGEST_SIGNING_KEY` | Same file; Inngest | Yes | Required unique key; equals the root deployment value used by consumers. |
+| `INNGEST_EVENT_KEY` | `docker/services/inngest/.env`; Inngest | Yes | Required unique key; equals both application service values used by producers. |
+| `INNGEST_SIGNING_KEY` | Same file; Inngest | Yes | Required unique key; equals both application service values used by consumers. |
 | `INNGEST_POSTGRES_URI` | Same file; Inngest | Yes | Required URI `postgresql://<INNGEST_POSTGRES_USER>:<INNGEST_POSTGRES_PASSWORD>@inngest-postgres:5432/<INNGEST_POSTGRES_DB>?sslmode=disable`; align all credentials below. |
 | `INNGEST_REDIS_URI` | Same file; Inngest | No, unless credentials are added | Required internal URI `redis://inngest-redis:6379`; never use a public or host address. |
+| `INNGEST_SDK_URL` | Same file; Inngest registration/runtime | No | Required internal callback `http://playwright:3939/api/inngest`. |
 | `INNGEST_POLL_INTERVAL` | Same file; Inngest | No | Optional tuning; example and Compose fallback `60`. |
 | `INNGEST_QUEUE_WORKERS` | Same file; Inngest | No | Optional tuning; example and Compose fallback `100`. Size for host/database capacity. |
 | `INNGEST_RETRY_INTERVAL` | Same file; Inngest | No | Optional tuning; example and Compose fallback `1`. |
@@ -206,20 +205,13 @@ platform/network isolation proven to block every assigned host port. Inspect
 the resolved and dynamically assigned mappings after every deploy:
 
 ```bash
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml ps
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml port nextjs 3000
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml port app-pgdog 6432
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml port inngest 8288
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml port pgadmin 80
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml port inngest-postgres 5432
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml port inngest-redis 6379
+docker compose -f docker/compose.deploy.yml ps
+docker compose -f docker/compose.deploy.yml port nextjs 3000
+docker compose -f docker/compose.deploy.yml port app-pgdog 6432
+docker compose -f docker/compose.deploy.yml port inngest 8288
+docker compose -f docker/compose.deploy.yml port pgadmin 80
+docker compose -f docker/compose.deploy.yml port inngest-postgres 5432
+docker compose -f docker/compose.deploy.yml port inngest-redis 6379
 ```
 
 The proxy must not buffer `text/event-stream` and must allow idle connections
@@ -259,7 +251,8 @@ checkout files:
 
 | Required exact path before Compose parsing | Persistence requirement |
 |---|---|
-| `docker/.env.deploy` | Secret-backed content survives every clone/redeploy |
+| `docker/services/nextjs/.env` | Secret-backed content survives every clone/redeploy |
+| `docker/services/playwright/.env` | Secret-backed content survives every clone/redeploy |
 | `docker/services/pgdog-postgres/.env` | Secret-backed content survives every clone/redeploy |
 | `docker/services/inngest/.env` | Secret-backed content survives every clone/redeploy |
 | `docker/services/pgadmin/.env` | Secret-backed content survives every clone/redeploy |
@@ -272,7 +265,7 @@ It must also remove or restrict the five private/admin host-published ports
 identified above. Official
 [Coolify persistent-storage guidance](https://coolify.io/docs/knowledge-base/persistent-storage)
 describes container volume and bind mounts, but it does not establish a
-tested mechanism that writes all five files into a Git checkout before Compose
+tested mechanism that writes all six files into a Git checkout before Compose
 parsing. Do not substitute an untested platform file recipe.
 
 After that separately reviewed adaptation exists:
@@ -281,7 +274,7 @@ After that separately reviewed adaptation exists:
    branch, and use the adapted entrypoint based on `docker/compose.deploy.yml`.
 2. Do not use Raw Compose unless the operator owns its proxy labels and other
    advanced behavior.
-3. Confirm all five exact target files above exist with persistent,
+3. Confirm all six exact target files above exist with persistent,
    secret-backed content before Compose validation.
 4. Assign only Next.js a domain as
    `https://<production-domain>:3000`. Here `:3000` selects the container
@@ -296,12 +289,13 @@ This guide does not claim a live Coolify validation.
 ## Plain Docker Compose runbook
 
 Run from the repository root on a VPS with a dedicated reverse proxy. First
-copy all five ignored files, then replace every example secret and align the
+copy all six ignored files, then replace every example secret and align the
 two PgDog TOML files. The copied files are local secret material and must never
 be committed:
 
 ```bash
-cp docker/.env.deploy.example docker/.env.deploy
+cp docker/services/nextjs/.env.example docker/services/nextjs/.env
+cp docker/services/playwright/.env.example docker/services/playwright/.env
 cp docker/services/pgdog-postgres/.env.example docker/services/pgdog-postgres/.env
 cp docker/services/inngest/.env.example docker/services/inngest/.env
 cp docker/services/pgadmin/.env.example docker/services/pgadmin/.env
@@ -309,11 +303,11 @@ cp docker/services/pgdog-postgres/files/users.toml.example \
   docker/services/pgdog-postgres/files/users.toml
 ```
 
-Replace the example values in all five copies before validation. In particular,
+Replace the example values in all six copies before validation. In particular,
 replace every `users.toml` password and align its users/databases with
 `docker/services/pgdog-postgres/files/pgdog.toml`,
-`docker/services/pgdog-postgres/.env`, and `DATABASE_URL`. Never commit
-`users.toml` or any copied `.env` file.
+`docker/services/pgdog-postgres/.env`, and both application `DATABASE_URL`
+values. Never commit `users.toml` or any copied `.env` file.
 
 Before starting containers, implement and externally verify the port control
 required in “Network and reverse proxy”: a production override that removes
@@ -321,10 +315,8 @@ private `ports`, loopback-only bindings, or a proven host/network firewall.
 Then validate without printing the resolved secret-bearing configuration:
 
 ```bash
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml config --quiet
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml config --services
+docker compose -f docker/compose.deploy.yml config --quiet
+docker compose -f docker/compose.deploy.yml config --services
 ```
 
 For private GHCR images, authenticate through standard input before `pull`;
@@ -340,14 +332,10 @@ with no existing application database volume. If `app-postgres-data` already
 exists, stop and use the backup-gated update procedure instead.
 
 ```bash
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml pull
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml up -d
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml ps
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml logs --tail=200 nextjs
+docker compose -f docker/compose.deploy.yml pull
+docker compose -f docker/compose.deploy.yml up -d
+docker compose -f docker/compose.deploy.yml ps
+docker compose -f docker/compose.deploy.yml logs --tail=200 nextjs
 ```
 
 ### Mandatory backup gate before update or recreate
@@ -365,13 +353,11 @@ umask 077
 : "${APP_POSTGRES_DB:?export the configured non-secret database name}"
 backup_path="mihc-production-$(date -u +%Y%m%dT%H%M%SZ).dump"
 
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml exec -T app-postgres \
+docker compose -f docker/compose.deploy.yml exec -T app-postgres \
   pg_dump -U "$APP_POSTGRES_USER" -d "$APP_POSTGRES_DB" -Fc \
   > "$backup_path"
 test -s "$backup_path"
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml exec -T app-postgres \
+docker compose -f docker/compose.deploy.yml exec -T app-postgres \
   pg_restore --list < "$backup_path" > /dev/null
 printf 'Verified PostgreSQL archive: %s\n' "$backup_path"
 ```
@@ -387,14 +373,10 @@ files, or print credentials while diagnosing a backup.
 Only after the immediately preceding backup gate succeeds:
 
 ```bash
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml pull nextjs playwright
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml up -d --force-recreate nextjs playwright
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml ps
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml logs --tail=200 nextjs playwright
+docker compose -f docker/compose.deploy.yml pull nextjs playwright
+docker compose -f docker/compose.deploy.yml up -d --force-recreate nextjs playwright
+docker compose -f docker/compose.deploy.yml ps
+docker compose -f docker/compose.deploy.yml logs --tail=200 nextjs playwright
 ```
 
 If a release fails, correct the cause, create and verify another current
@@ -421,14 +403,11 @@ services:
     image: ghcr.io/markvalenzuela-mmdc/mihc-playwright:${PLAYWRIGHT_ROLLBACK_TAG}
 YAML
 
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml \
+docker compose -f docker/compose.deploy.yml \
   -f /tmp/mihc-rollback.compose.yml config --quiet
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml \
+docker compose -f docker/compose.deploy.yml \
   -f /tmp/mihc-rollback.compose.yml pull nextjs playwright
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml \
+docker compose -f docker/compose.deploy.yml \
   -f /tmp/mihc-rollback.compose.yml up -d --force-recreate nextjs playwright
 ```
 
@@ -443,8 +422,7 @@ recovery path, then repeat the backup-gated release. For a safe shutdown that
 preserves named volumes:
 
 ```bash
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml down
+docker compose -f docker/compose.deploy.yml down
 ```
 
 Never use `down -v` for routine shutdown, updates, or recovery.
@@ -460,8 +438,8 @@ bounded checker waits at most two minutes and never uses unbounded
 wait_for_database_release() {
   release_seen=false
   for _ in $(seq 1 24); do
-    if docker compose --env-file docker/.env.deploy \
-      -f docker/compose.deploy.yml logs --since=3m nextjs 2>&1 |
+    if docker compose -f docker/compose.deploy.yml \
+      logs --since=3m nextjs 2>&1 |
       grep -Fq "Database release completed."; then
       release_seen=true
       break
@@ -469,18 +447,16 @@ wait_for_database_release() {
     sleep 5
   done
   test "$release_seen" = true
-  docker compose --env-file docker/.env.deploy \
-    -f docker/compose.deploy.yml ps nextjs
+  docker compose -f docker/compose.deploy.yml ps nextjs
 }
 ```
 
-Set `DATABASE_RESET=true` in `docker/.env.deploy`, then perform the first
+Set `DATABASE_RESET=true` in `docker/services/nextjs/.env`, then perform the first
 recreate and bounded completion check:
 
 ```bash
-grep -Fx 'DATABASE_RESET=true' docker/.env.deploy > /dev/null
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml up -d --force-recreate nextjs
+grep -Fx 'DATABASE_RESET=true' docker/services/nextjs/.env > /dev/null
+docker compose -f docker/compose.deploy.yml up -d --force-recreate nextjs
 wait_for_database_release
 ```
 
@@ -488,9 +464,8 @@ Immediately restore `DATABASE_RESET=false`, verify the file, and perform the
 second recreate and check:
 
 ```bash
-grep -Fx 'DATABASE_RESET=false' docker/.env.deploy > /dev/null
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml up -d --force-recreate nextjs
+grep -Fx 'DATABASE_RESET=false' docker/services/nextjs/.env > /dev/null
+docker compose -f docker/compose.deploy.yml up -d --force-recreate nextjs
 wait_for_database_release
 ```
 
@@ -510,7 +485,7 @@ container environment and can repeat the destructive reset.
 Official Dokploy
 [Docker Compose](https://docs.dokploy.com/docs/core/docker-compose) guidance
 states that UI variables are saved to one `.env` beside the Compose file and
-are not automatically injected into containers. That does not satisfy the four
+are not automatically injected into containers. That does not satisfy the five
 distinct literal `env_file` paths here. Official
 [Volumes & Mounts](https://docs.dokploy.com/docs/core/troubleshooting/volumes-mounts)
 guidance says AutoDeploy replaces the `code` checkout and that durable
@@ -522,7 +497,8 @@ required target before parsing:
 
 | Durable Dokploy File Mount content | Required current target/meaning |
 |---|---|
-| `../files/mihc-env.deploy` | `docker/.env.deploy` |
+| `../files/mihc-nextjs.env` | `docker/services/nextjs/.env` |
+| `../files/mihc-playwright.env` | `docker/services/playwright/.env` |
 | `../files/mihc-pgdog.env` | `docker/services/pgdog-postgres/.env` |
 | `../files/mihc-inngest.env` | `docker/services/inngest/.env` |
 | `../files/mihc-pgadmin.env` | `docker/services/pgadmin/.env` |
@@ -568,12 +544,9 @@ Replace `https://sanity.example.com` with the production origin. Run bounded
 status/log checks and inventory the service set:
 
 ```bash
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml config --services
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml ps
-docker compose --env-file docker/.env.deploy \
-  -f docker/compose.deploy.yml logs --tail=200 nextjs playwright inngest app-pgdog
+docker compose -f docker/compose.deploy.yml config --services
+docker compose -f docker/compose.deploy.yml ps
+docker compose -f docker/compose.deploy.yml logs --tail=200 nextjs playwright inngest app-pgdog
 curl --fail --show-error --silent https://sanity.example.com/ > /dev/null
 curl --fail --show-error --silent https://sanity.example.com/favicon.ico > /dev/null
 ```

@@ -25,13 +25,15 @@ profiles or run history.
 - `docker/services/pgdog-postgres/compose.yml` ΓÇö app PostgreSQL and PgDog
 - `docker/services/inngest/compose.yml` ΓÇö Inngest, Inngest PostgreSQL, and Inngest Redis
 - `docker/services/pgadmin/compose.yml` ΓÇö pgAdmin
+- `docker/services/nextjs/compose.yml` ΓÇö published Next.js deployment service
+- `docker/services/playwright/compose.yml` ΓÇö published Playwright/Hono deployment service
 - `docker/compose.build.yml` ΓÇö build entrypoint that builds the Next.js and Playwright images
-- `docker/compose.deploy.yml` ΓÇö deploy entrypoint that uses the published Next.js and Playwright images
+- `docker/compose.deploy.yml` ΓÇö include-only deployment entrypoint
 
 Both Compose entrypoints include the same service-owned infrastructure files.
-The build stack uses `docker/.env.build` for the application containers; the
-deploy stack uses `docker/.env.deploy`. The included PostgreSQL, Inngest, and
-pgAdmin services read their own ignored service-local `.env` files.
+The build stack uses `docker/.env.build` for its application containers. Every
+service included by the deploy stack reads its own ignored service-local
+`.env` file.
 
 `DATABASE_RESET=false` preserves application data while applying pending
 migrations and production bootstrap data. `DATABASE_RESET=true` drops the
@@ -49,7 +51,7 @@ the matching command:
 
 ```bash
 docker compose --env-file docker/.env.build -f docker/compose.build.yml up -d --force-recreate nextjs
-docker compose --env-file docker/.env.deploy -f docker/compose.deploy.yml up -d --force-recreate nextjs
+docker compose -f docker/compose.deploy.yml up -d --force-recreate nextjs
 ```
 
 In Coolify, set `DATABASE_RESET=false` in the application environment and
@@ -213,7 +215,7 @@ Use `inngest-postgres`, not `localhost`, because pgAdmin runs inside Docker. Ins
 
 | Aspect | Local | Deploy |
 |---|---|---|
-| Credentials | Service-local `.env` files | Service-local `.env` files plus root `docker/.env.deploy` |
+| Credentials | Service-local `.env` files | Service-local `.env` files for every included service |
 | Application database | PgDog (port 6432) | PgDog (internal port 6432) |
 | Inngest databases | Dedicated inngest-postgres + inngest-redis | Dedicated inngest-postgres + inngest-redis |
 | pgAdmin mode | Desktop mode | Desktop mode; master-password requirement disabled |

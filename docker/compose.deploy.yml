@@ -5,41 +5,8 @@ include:
     env_file: services/inngest/.env
   - path: services/pgadmin/compose.yml
     env_file: services/pgadmin/.env
-
-services:
-  nextjs:
-    image: ghcr.io/markvalenzuela-mmdc/mihc-nextjs:latest
-    restart: unless-stopped
-    env_file: .env.deploy
-    ports:
-      - "3000:3000"
-    depends_on:
-      app-pgdog:
-        condition: service_started
-      inngest:
-        condition: service_healthy
-
-  playwright:
-    image: ghcr.io/markvalenzuela-mmdc/mihc-playwright:latest
-    env_file: .env.deploy
-    environment:
-      INNGEST_DEV: "0"
-      PORT: "3939"
-    expose:
-      - "3939"
-    depends_on:
-      app-postgres:
-        condition: service_healthy
-      app-pgdog:
-        condition: service_started
-      inngest-redis:
-        condition: service_healthy
-      inngest:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3939/health').then((response)=>process.exit(response.ok?0:1)).catch(()=>process.exit(1))"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
+  - path: services/nextjs/compose.yml
+    env_file: services/nextjs/.env
+  - path: services/playwright/compose.yml
+    env_file: services/playwright/.env
 
