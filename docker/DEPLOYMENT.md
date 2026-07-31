@@ -12,7 +12,7 @@ Create one Compose resource for each service group:
 
 | Resource | Compose file | Platform exposure |
 |---|---|---|
-| PgDog and application PostgreSQL | `docker/services/pgdog-postgres/compose.deploy.yml` | Internal; restrict host port `6432` if used |
+| PgDog and application PostgreSQL | `docker/services/pgdog-postgres/compose.deploy.yml` | Internal on container port `6432` |
 | Inngest, PostgreSQL, and Redis | `docker/services/inngest/compose.deploy.yml` | Internal |
 | Next.js | `docker/services/nextjs/compose.deploy.yml` | Public route to container port `3000` |
 | Playwright/Hono | `docker/services/playwright/compose.deploy.yml` | Internal on container port `3939` |
