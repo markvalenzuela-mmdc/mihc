@@ -13,47 +13,9 @@ just docker local down
 
 ## Production deployment
 
-Production has four independent Compose stacks. `just docker deploy` is the ordered convenience command: PgDog/PostgreSQL, then Inngest, then Next.js and Playwright. On a first deployment, inspect foundational health before applications rather than treating the convenience command as proof.
-
-```bash
-just docker deploy-foundations
-
-docker compose --env-file docker/services/pgdog-postgres/.env \
-  -f docker/services/pgdog-postgres/compose.deploy.yml ps
-docker compose --env-file docker/services/inngest/.env \
-  -f docker/services/inngest/compose.deploy.yml ps
-
-just docker deploy-apps
-```
-
-The direct equivalents are:
-
-```bash
-docker compose --env-file docker/services/pgdog-postgres/.env \
-  -f docker/services/pgdog-postgres/compose.deploy.yml up -d
-docker compose --env-file docker/services/inngest/.env \
-  -f docker/services/inngest/compose.deploy.yml up -d
-docker compose --env-file docker/services/nextjs/.env \
-  -f docker/services/nextjs/compose.deploy.yml up -d
-docker compose --env-file docker/services/playwright/.env \
-  -f docker/services/playwright/compose.deploy.yml up -d
-```
-
-PgDog/PostgreSQL creates `mihc-network`; Inngest, Next.js, and Playwright use that literal network as external and fail until it exists. Do not create it manually. PgDog's restricted `6432:6432` is the sole fixed host publication in the supplied production models. The other services use `expose`; a proxy or platform must join or route to `mihc-network` to reach Next.js port `3000`.
-
-Stop production in reverse dependency order:
-
-```bash
-just docker deploy-down
-```
-
-The equivalent direct commands stop Playwright, Next.js, Inngest, then PgDog/PostgreSQL using their matching `--env-file` and `compose.deploy.yml`. Never append `-v`; deployment volumes contain production data.
-
-## Production configuration and maintenance
-
-Before deployment, copy each production service `.env.example` to its ignored `.env`, and copy PgDog `users.toml.example` to the ignored `users.toml`. Validate each resource independently with its matching `--env-file` and `config --quiet`.
-
-For updates, backups, rollbacks, and destructive reset safeguards, follow [`../docker/DEPLOYMENT.md`](../docker/DEPLOYMENT.md). Backup is required before each application recreate, Next.js and Playwright pull/recreate through separate Compose files, and an image rollback never reverses a database migration.
+Use [`../docker/DEPLOYMENT.md`](../docker/DEPLOYMENT.md) for the four individual
+Coolify or Dokploy Compose resources, their environment and PgDog files, the
+shared network, and deployment order.
 
 ## Environment boundaries
 

@@ -24,9 +24,10 @@ just docker local down
 
 See [`docs/containerized-infrastructure.md`](docs/containerized-infrastructure.md) for pgAdmin registration steps and service-specific environment files.
 
-For production, follow [`docker/DEPLOYMENT.md`](docker/DEPLOYMENT.md). It
-documents the independent service-owned Compose resources, environment and
-configuration files, reverse proxy, Coolify, Dokploy, backups, and recovery.
+For production, follow [`docker/DEPLOYMENT.md`](docker/DEPLOYMENT.md). It shows
+how to configure and deploy the four individual Coolify or Dokploy resources,
+including their environments, shared network, PgDog files, and deployment
+order.
 
 ## Folder Structure
 
@@ -159,8 +160,8 @@ Additional test-run env vars are documented in `playwright/AGENTS.md`.
 
 ### Production deployment
 
-For deployment environment values, startup release and reset safety, and all
-operator procedures, follow [`docker/DEPLOYMENT.md`](docker/DEPLOYMENT.md).
+For production service configuration and deployment order, follow
+[`docker/DEPLOYMENT.md`](docker/DEPLOYMENT.md).
 
 ## Extending the Justfile
 

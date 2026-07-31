@@ -18,11 +18,9 @@ MIHC.
 - `services/pgadmin/compose.yml` — local-only pgAdmin; never provision it for
   production.
 
-Each service owns its example environment file and ignored `.env`. Production
-also requires the ignored PgDog `services/pgdog-postgres/files/users.toml`.
-The authoritative production procedures, including PaaS setup and recovery,
-are in [DEPLOYMENT.md](DEPLOYMENT.md).
+Each service owns its example environment file. Production also requires the
+PgDog `services/pgdog-postgres/files/pgdog.toml` and ignored
+`services/pgdog-postgres/files/users.toml`. See [DEPLOYMENT.md](DEPLOYMENT.md)
+for Coolify or Dokploy configuration and the required deployment order.
 
 Use `just docker local up` / `just docker local down` for local infrastructure.
-For production, deploy foundations before applications and stop in reverse with
-`just docker deploy-down`; see the root [README](../README.md) for commands.

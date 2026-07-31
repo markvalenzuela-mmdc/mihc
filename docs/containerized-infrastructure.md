@@ -19,10 +19,6 @@ To intentionally destroy local data, run `docker compose -f docker/compose.local
 |---|---|
 | Local infrastructure | `docker/compose.local.yml` and service `compose.yml` files |
 | Build stack | `docker/compose.build.yml` |
-| Production Foundation 1 | `docker/services/pgdog-postgres/compose.deploy.yml` |
-| Production Foundation 2 | `docker/services/inngest/compose.deploy.yml` |
-| Production Next.js | `docker/services/nextjs/compose.deploy.yml` |
-| Production Playwright | `docker/services/playwright/compose.deploy.yml` |
 | Local pgAdmin | `docker/services/pgadmin/compose.yml` |
 
 ## Databases and PgDog
@@ -37,21 +33,11 @@ pgAdmin is a local development convenience only. Open `http://localhost:5050` an
 
 For the application database, register `app-pgdog`, port `6432`, database `mihc`, with `APP_POSTGRES_USER` and `APP_POSTGRES_PASSWORD` from `docker/services/pgdog-postgres/.env`. For Inngest PostgreSQL, register `inngest-postgres`, port `5432`, database `inngest`, with `INNGEST_POSTGRES_*` from `docker/services/inngest/.env`. Use service names rather than `localhost` because pgAdmin runs inside Docker.
 
-## Deploy vs. local differences
-
-| Aspect | Local | Production |
-|---|---|---|
-| Entry point | One local Compose workflow | Four independent service-owned Compose resources |
-| Network | Local Compose network | PgDog/PostgreSQL creates `mihc-network`; all other stacks use it as external |
-| pgAdmin | Available at local port `5050` | Not provisioned |
-| Application reachability | Host development ports | Next.js is routed internally on `mihc-network` to port `3000` |
-| Persistence | Development volumes may be destroyed intentionally | Preserve app, Inngest, Inngest PostgreSQL, and Redis volumes; never use `down -v` |
-
 ## Production deployment
 
-Production starts with PgDog/PostgreSQL, which creates `mihc-network`; then Inngest; then Next.js and Playwright after foundations are healthy. `app-pgdog` publishes restricted host port `6432`; other supplied production services use `expose` only. The proxy or platform must reach Next.js through `mihc-network` on port `3000`.
-
-Use [`../docker/DEPLOYMENT.md`](../docker/DEPLOYMENT.md) for production configuration, first deployment, PaaS resources, backups, reset safeguards, rollbacks, and verification. It intentionally contains no pgAdmin production procedure.
+Use [`../docker/DEPLOYMENT.md`](../docker/DEPLOYMENT.md) for the individual
+Coolify or Dokploy resources, production environments, `mihc-network`, PgDog
+files, and deployment order. pgAdmin remains local-only.
 
 ## Smoke Testing live updates
 

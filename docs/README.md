@@ -9,7 +9,7 @@ surfaces; read the relevant project instructions before editing.
 | Area | Authoritative location | Consumer guidance |
 |---|---|---|
 | Repository commands | `../justfile` and `../commands/*.just` | `../README.md`; run `just` for the executable inventory |
-| Production deployment | `../docker/services/*/compose.deploy.yml` and [`../docker/DEPLOYMENT.md`](../docker/DEPLOYMENT.md) | Use the four service-owned resources; the guide owns environment, proxy, PaaS, backup, and recovery procedures |
+| Production deployment | `../docker/services/*/compose.deploy.yml` and [`../docker/DEPLOYMENT.md`](../docker/DEPLOYMENT.md) | Use the four service-owned resources; the guide owns environment, network, PgDog file, platform, and deployment-order instructions |
 | Shared EnrollMate definition | `packages/enrollmate-contract/src/definitions/enrollmate-form-fields.json` | `packages/enrollmate-contract/README.md` |
 | EnrollMate runtime contract | `packages/enrollmate-contract/src/form-definition.schema.ts`, `form-data.schema.ts`, and `registry.ts` | `packages/enrollmate-contract/README.md` |
 | Next.js application | `nextjs/` | `nextjs/AGENTS.md` and `nextjs/README.md` |
