@@ -1,201 +1,69 @@
 # Docker Commands
 
-## Overview
+## Local and build workflows
 
-The project has four Docker workflows, each with a distinct purpose. They share
-the same PostgreSQL, PgDog, Redis, Inngest, and pgAdmin service topology. The
-build workflow builds the application images; the deploy workflow uses the
-published images.
-
-## Commands
-
-### `just docker local [up|down]`
-
-Starts or stops **infrastructure only** ΓÇö the shared services that both the Next.js app and the Playwright consumer depend on. Does not run the application or test servers.
-
-**Services started:**
-- PostgreSQL (`app-postgres`)
-- PgDog connection pooler (`app-pgdog`, port `6432`)
-- Inngest server (`inngest`, port `8288`)
-- Inngest PostgreSQL + Redis
-- pgAdmin (`pgadmin`, port `5050`)
-
-**Use when:** You want to run the app locally via `pnpm dev` or run Playwright tests against a local database.
-
-```bash
-just docker local up      # start infrastructure
-just docker local down    # stop infrastructure
-```
-
-Uses `docker/compose.local.yml`.
-
----
-
-### `just dev fresh`
-
-Full local development setup: starts infrastructure, resets the database, then runs the Next.js dev server. Equivalent to:
+`just docker local [up|down]` starts or stops local infrastructure: application PostgreSQL, PgDog on port `6432`, Inngest and its PostgreSQL/Redis dependencies, and local-only pgAdmin on port `5050`. It uses `docker/compose.local.yml` and does not start application containers.
 
 ```bash
 just docker local up
-just db reset
-just dev
+just docker local down
 ```
 
-**Use when:** Starting a fresh development session from scratch.
+`just docker build [force]` builds application images and starts the production-image test stack using `docker/compose.build.yml` and `docker/.env.build`; `force` disables the build cache. `just docker down` stops the shared local/build Docker project.
 
----
+## Production deployment
 
-### `just docker build [force]`
-
-Builds Docker images and starts the containerized Next.js application. Unlike the commands above, the Next.js app runs **inside a Docker container** rather than directly on your machine.
+Production has four independent Compose stacks. `just docker deploy` is the ordered convenience command: PgDog/PostgreSQL, then Inngest, then Next.js and Playwright. On a first deployment, inspect foundational health before applications rather than treating the convenience command as proof.
 
 ```bash
-just docker build       # build with cache
-just docker build force # force rebuild without cache
+just docker deploy-foundations
+
+docker compose --env-file docker/services/pgdog-postgres/.env \
+  -f docker/services/pgdog-postgres/compose.deploy.yml ps
+docker compose --env-file docker/services/inngest/.env \
+  -f docker/services/inngest/compose.deploy.yml ps
+
+just docker deploy-apps
 ```
 
-This builds images for both `nextjs/` and `playwright/` using their Dockerfiles, then starts containers alongside the shared infrastructure. Pass `force` to add `--no-cache` to the build step.
-
-`just docker build` uses the non-production values in `docker/.env.build` to
-exercise the production-image startup path.
-
-The app is available at `http://localhost:3000`.
-
-**Use when:** You want to test the production Docker build or run the app fully containerized.
-
-Uses `docker/compose.build.yml`.
-
-`DATABASE_RESET=false` preserves application data while applying pending
-migrations and production bootstrap data. `DATABASE_RESET=true` drops the
-application `public` and `drizzle` schemas on every Next.js container startup,
-then reapplies all migrations and production bootstrap data. The reset affects
-only the application PostgreSQL schemas and does not erase Inngest PostgreSQL,
-Redis, or pgAdmin volumes.
-
-Immediately after the intended reset, change `DATABASE_RESET` back to `false`
-and recreate or redeploy Next.js. Editing an environment file does not alter an
-existing container, so `docker restart` and `docker compose start` do not
-reread the file; restarting without recreating while the container still has
-`DATABASE_RESET=true` repeats the deletion. For the build or deploy stack, run
-the matching command:
+The direct equivalents are:
 
 ```bash
-docker compose --env-file docker/.env.build -f docker/compose.build.yml up -d --force-recreate nextjs
-docker compose -f docker/compose.deploy.yml up -d --force-recreate nextjs
+docker compose --env-file docker/services/pgdog-postgres/.env \
+  -f docker/services/pgdog-postgres/compose.deploy.yml up -d
+docker compose --env-file docker/services/inngest/.env \
+  -f docker/services/inngest/compose.deploy.yml up -d
+docker compose --env-file docker/services/nextjs/.env \
+  -f docker/services/nextjs/compose.deploy.yml up -d
+docker compose --env-file docker/services/playwright/.env \
+  -f docker/services/playwright/compose.deploy.yml up -d
 ```
 
-In Coolify, set `DATABASE_RESET=false` in the application environment and
-redeploy the Next.js service so Coolify creates a container with the updated
-value. A Coolify restart alone keeps the existing container environment and is
-not sufficient.
+PgDog/PostgreSQL creates `mihc-network`; Inngest, Next.js, and Playwright use that literal network as external and fail until it exists. Do not create it manually. PgDog's restricted `6432:6432` is the sole fixed host publication in the supplied production models. The other services use `expose`; a proxy or platform must join or route to `mihc-network` to reach Next.js port `3000`.
 
----
-
-### `just docker deploy [up|down]`
-
-Starts or stops the **deployment-oriented stack** ΓÇö services configured for a
-Coolify or production-like environment. Every included service reads its own
-ignored service-local `.env` file.
+Stop production in reverse dependency order:
 
 ```bash
-just docker deploy up      # start deploy stack
-just docker deploy down    # stop deploy stack
+just docker deploy-down
 ```
 
-Uses `docker/compose.deploy.yml`.
+The equivalent direct commands stop Playwright, Next.js, Inngest, then PgDog/PostgreSQL using their matching `--env-file` and `compose.deploy.yml`. Never append `-v`; deployment volumes contain production data.
 
-For direct Compose operations:
+## Production configuration and maintenance
 
-```bash
-docker compose -f docker/compose.deploy.yml config --quiet
-docker compose -f docker/compose.deploy.yml up -d
-docker compose -f docker/compose.deploy.yml down
-```
+Before deployment, copy each production service `.env.example` to its ignored `.env`, and copy PgDog `users.toml.example` to the ignored `users.toml`. Validate each resource independently with its matching `--env-file` and `config --quiet`.
 
-**Services started:**
-- PostgreSQL (`app-postgres`)
-- PgDog connection pooler (`app-pgdog`)
-- Redis (`inngest-redis`)
-- Inngest server (`inngest`, port `8288`)
-- pgAdmin (`pgadmin`, port `5050`)
-- Next.js app (`nextjs`, port `3000`) ΓÇö pulled from `ghcr.io/markvalenzuela-mmdc/mihc-nextjs`
-- Playwright consumer (`playwright`) ΓÇö pulled from `ghcr.io/markvalenzuela-mmdc/mihc-playwright`
+For updates, backups, rollbacks, and destructive reset safeguards, follow [`../docker/DEPLOYMENT.md`](../docker/DEPLOYMENT.md). Backup is required before each application recreate, Next.js and Playwright pull/recreate through separate Compose files, and an image rollback never reverses a database migration.
 
-**Use when:** You want to run the full stack using the published Docker image against shared infrastructure, matching the Coolify deployment topology.
+## Environment boundaries
 
-The production Next.js container applies committed Drizzle migrations and runs
-the idempotent production bootstrap before starting the Next.js server. If
-migration or bootstrap fails, the server does not start and Docker retries the
-container according to its restart policy.
+`nextjs/.env` is for host-local development and uses `localhost:6432`. `docker/.env.build` is for the containerized build stack and uses Docker DNS. Production environment files are service-owned:
 
-Production bootstrap creates or validates the configured maintainer, upserts
-the four Smoke Testing apps and eight E2E workflow step definitions, never
-resets an existing password, and never loads development fixtures such as
-profiles or run history. For manual development workflows, use `just db migrate`
-to apply migrations, `just db seed` to load complete development fixtures, and
-`just db release` to run the same production migrate/bootstrap sequence. Never
-run `just db reset` against production. Image rollback does not undo database
-migrations; correct schema problems with a new forward Drizzle migration.
-The entrypoint removes `PROD_MAINTAINER_PASSWORD` from the environment before
-the long-running Next.js server starts.
-
----
-
-### `just docker down`
-
-Stops and removes all project Docker services, regardless of which compose file started them.
-
-```bash
-just docker down
-```
-
-This runs `docker compose -p docker down`, targeting the `docker` project name shared by `compose.local.yml`, `compose.build.yml`, and `compose.deploy.yml`.
-
-**Use when:** You want to stop all Docker services for this project.
-
----
-
-## Environment Files
-
-### `nextjs/.env` ΓÇö Local development
-
-Used by `just dev` and `just dev fresh`. All service hostnames use `localhost` since you're running outside Docker:
-
-| Var | Host |
+| Service | Production environment file |
 |---|---|
-| `DATABASE_URL` | `localhost:6432` (PgDog via host port) |
-| `INNGEST_BASE_URL` | `localhost:8288` (Inngest via host port) |
+| PgDog/PostgreSQL | `docker/services/pgdog-postgres/.env` |
+| Inngest | `docker/services/inngest/.env` |
+| Next.js | `docker/services/nextjs/.env` |
+| Playwright | `docker/services/playwright/.env` |
 
-### `docker/.env.build` ΓÇö Docker build
-
-Used by `just docker build`. All service hostnames use Docker service names since the app runs **inside** the container and reaches services via the internal Docker network:
-
-| Var | Host |
-|---|---|
-| `DATABASE_URL` | `app-pgdog:6432` (PgDog via Docker DNS) |
-| `DATABASE_RESET` | `false` by default; set to `true` only for an intended startup reset |
-| `INNGEST_BASE_URL` | `inngest:8288` (Inngest via Docker DNS) |
-| `INNGEST_SDK_URL` | `playwright:3939/api/inngest` (Hono consumer via Docker DNS) |
-
-The `.env.build` file is a copy of `nextjs/.env` with `localhost` replaced by the appropriate Docker service names. Client-facing vars like `NEXT_PUBLIC_APP_URL` and `BETTER_AUTH_URL` keep `localhost:3000` since they are used by the browser, not internal service calls.
-
-### Service-owned application `.env` files ΓÇö Deployment
-
-Next.js owns its authentication, bootstrap, database reset, and public URL
-values in `docker/services/nextjs/.env`. Playwright owns its database and
-Inngest consumer values in `docker/services/playwright/.env`. Values used by
-both services must match:
-
-| Var | Host |
-|---|---|
-| `DATABASE_URL` | Both application files use `app-pgdog:6432` via Docker DNS |
-| `DATABASE_RESET` | Next.js only; `false` by default and `true` only for an intended startup reset |
-| `INNGEST_BASE_URL` | Both application files use `inngest:8288` via Docker DNS |
-| `INNGEST_SDK_URL` | Inngest owns `playwright:3939/api/inngest` in `docker/services/inngest/.env` |
-
-### Why not share a single .env?
-
-`localhost` inside a Docker container refers to the container itself, not your
-host machine. Docker service names only resolve inside the Docker network, so
-local, build, and deployment workflows keep application and service environment
-files for their own network context.
+Values shared by application services must match the infrastructure values. Production does not use pgAdmin; its environment and port descriptions in this document apply only to local development.

@@ -25,9 +25,8 @@ just docker local down
 See [`docs/containerized-infrastructure.md`](docs/containerized-infrastructure.md) for pgAdmin registration steps and service-specific environment files.
 
 For production, follow [`docker/DEPLOYMENT.md`](docker/DEPLOYMENT.md). It
-documents the GitHub Actions image pipeline, full-repository Compose
-deployment, environment and configuration files, reverse proxy, Coolify,
-Dokploy, backups, and recovery.
+documents the independent service-owned Compose resources, environment and
+configuration files, reverse proxy, Coolify, Dokploy, backups, and recovery.
 
 ## Folder Structure
 
@@ -71,7 +70,10 @@ select its other workflows.
 | docker | `just docker local [up\|down]` | Start or stop local Compose services; defaults to `up` |
 | docker | `just docker build [force]` | Build and start Docker images; `force` disables cache |
 | docker | `just docker down` | Stop all project Docker services |
-| docker | `just docker deploy [up\|down]` | Start or stop deploy Compose services; defaults to `up` |
+| docker | `just docker deploy` | Deploy foundations, then Next.js and Playwright |
+| docker | `just docker deploy-foundations` | Deploy PgDog/PostgreSQL, then Inngest |
+| docker | `just docker deploy-apps` | Deploy Next.js and Playwright after foundations are healthy |
+| docker | `just docker deploy-down` | Stop production stacks in reverse dependency order |
 | playwright | `just playwright smoke` | Run browser smoke tests against live MMDC |
 | playwright | `just playwright e2e` | Run E2E tests against EnrollMate UAT |
 | playwright | `just playwright unit` | Run server-only consumer unit tests |
