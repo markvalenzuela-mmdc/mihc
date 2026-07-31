@@ -1,0 +1,25 @@
+services:
+  playwright:
+    image: ghcr.io/markvalenzuela-mmdc/mihc-playwright:latest
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - INNGEST_EVENT_KEY=${INNGEST_EVENT_KEY}
+      - INNGEST_BASE_URL=${INNGEST_BASE_URL}
+      - INNGEST_SIGNING_KEY=${INNGEST_SIGNING_KEY}
+      - INNGEST_DEV=0
+      - PORT=3939
+    expose:
+      - "3939"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3939/health').then((response)=>process.exit(response.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    networks:
+      - mihc-network
+
+networks:
+  mihc-network:
+    external: true
+    name: mihc-network
