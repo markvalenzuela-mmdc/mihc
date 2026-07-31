@@ -218,19 +218,101 @@ docker compose --env-file docker/services/playwright/.env \
 Inspect each matching stack with `ps` and bounded `logs --tail=200`. If a
 release fails, correct the cause, create another verified backup, then retry.
 
-Rollback pins known-good semantic or `sha-*` tags with **separate** temporary
-overrides: one applied with the Next.js Compose file and one with the
-Playwright Compose file. Validate, pull, and recreate each corresponding
-service using its own base file plus override. Keep each override in use until
-a fixed release is selected. Image rollback does not reverse migrations;
-repair schema problems with a forward Drizzle migration.
+Rollback pins known-good semantic or `sha-*` tags. Run the backup gate again,
+then create one temporary override per application; do not use a combined
+override because each Compose invocation owns one application service.
+
+```bash
+set -euo pipefail
+: "${NEXTJS_ROLLBACK_TAG:?set a known-good semantic or sha-* tag}"
+: "${PLAYWRIGHT_ROLLBACK_TAG:?set a known-good semantic or sha-* tag}"
+
+nextjs_rollback_override=/tmp/mihc-nextjs-rollback.compose.yml
+playwright_rollback_override=/tmp/mihc-playwright-rollback.compose.yml
+
+cat > "$nextjs_rollback_override" <<YAML
+services:
+  nextjs:
+    image: ghcr.io/markvalenzuela-mmdc/mihc-nextjs:${NEXTJS_ROLLBACK_TAG}
+YAML
+
+cat > "$playwright_rollback_override" <<YAML
+services:
+  playwright:
+    image: ghcr.io/markvalenzuela-mmdc/mihc-playwright:${PLAYWRIGHT_ROLLBACK_TAG}
+YAML
+
+docker compose --env-file docker/services/nextjs/.env \
+  -f docker/services/nextjs/compose.deploy.yml -f "$nextjs_rollback_override" \
+  config --quiet
+docker compose --env-file docker/services/nextjs/.env \
+  -f docker/services/nextjs/compose.deploy.yml -f "$nextjs_rollback_override" \
+  pull nextjs
+docker compose --env-file docker/services/nextjs/.env \
+  -f docker/services/nextjs/compose.deploy.yml -f "$nextjs_rollback_override" \
+  up -d --force-recreate nextjs
+
+docker compose --env-file docker/services/playwright/.env \
+  -f docker/services/playwright/compose.deploy.yml -f "$playwright_rollback_override" \
+  config --quiet
+docker compose --env-file docker/services/playwright/.env \
+  -f docker/services/playwright/compose.deploy.yml -f "$playwright_rollback_override" \
+  pull playwright
+docker compose --env-file docker/services/playwright/.env \
+  -f docker/services/playwright/compose.deploy.yml -f "$playwright_rollback_override" \
+  up -d --force-recreate playwright
+```
+
+Keep each override in use until a fixed release is selected. Image rollback
+does not reverse migrations; repair schema problems with a forward Drizzle
+migration.
 
 `DATABASE_RESET=true` is destructive and never a troubleshooting shortcut.
-Run the backup gate immediately before it. Set it only in
-`docker/services/nextjs/.env`, recreate Next.js with its matching Compose file,
-watch bounded logs for `Database release completed.`, then immediately restore
-`DATABASE_RESET=false` and recreate Next.js again. Do not use `docker restart`
-or `docker compose start`, which retain the old container environment and can
+Run the backup gate immediately before it. The following bounded check waits at
+most two minutes, verifies the release log, and reports Next.js status without
+using unbounded log following:
+
+```bash
+wait_for_database_release() {
+  release_seen=false
+  for _ in $(seq 1 24); do
+    if docker compose --env-file docker/services/nextjs/.env \
+      -f docker/services/nextjs/compose.deploy.yml \
+      logs --since=3m nextjs 2>&1 | grep -Fq "Database release completed."; then
+      release_seen=true
+      break
+    fi
+    sleep 5
+  done
+  test "$release_seen" = true
+  docker compose --env-file docker/services/nextjs/.env \
+    -f docker/services/nextjs/compose.deploy.yml ps nextjs
+}
+```
+
+Set `DATABASE_RESET=true` only in `docker/services/nextjs/.env`, then recreate
+Next.js and run the bounded verification:
+
+```bash
+grep -Fx 'DATABASE_RESET=true' docker/services/nextjs/.env > /dev/null
+docker compose --env-file docker/services/nextjs/.env \
+  -f docker/services/nextjs/compose.deploy.yml up -d --force-recreate nextjs
+wait_for_database_release
+```
+
+Immediately restore `DATABASE_RESET=false`, verify it, recreate Next.js a
+second time, and run the bounded check again:
+
+```bash
+grep -Fx 'DATABASE_RESET=false' docker/services/nextjs/.env > /dev/null
+docker compose --env-file docker/services/nextjs/.env \
+  -f docker/services/nextjs/compose.deploy.yml up -d --force-recreate nextjs
+wait_for_database_release
+```
+
+If either check fails, inspect bounded `logs --tail=200 nextjs`, keep the
+application unavailable, and investigate. Do not use `docker restart` or
+`docker compose start`, which retain the old container environment and can
 repeat the reset.
 
 ## Coolify and Dokploy
